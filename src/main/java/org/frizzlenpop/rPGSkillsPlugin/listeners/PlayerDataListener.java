@@ -1,11 +1,13 @@
 package org.frizzlenpop.rPGSkillsPlugin.listeners;
 
-import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.entity.Player;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
+
 import java.util.UUID;
 
 public class PlayerDataListener implements Listener {
@@ -18,18 +20,23 @@ public class PlayerDataListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        UUID playerUUID = event.getPlayer().getUniqueId();
+        Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+
+        // Load player data (will create a new file if it doesn't exist)
         FileConfiguration config = dataManager.getPlayerData(playerUUID);
 
-        // Load player data (no need to modify here)
+        // Debug message to check if data loads
+        player.sendMessage("§a[Skills] Your skill data has been loaded.");
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        UUID playerUUID = event.getPlayer().getUniqueId();
-        FileConfiguration config = dataManager.getPlayerData(playerUUID);
+        Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
 
-        // Save data when player quits
+        // Save player data on quit
+        FileConfiguration config = dataManager.getPlayerData(playerUUID);
         dataManager.savePlayerData(playerUUID, config);
     }
 }

@@ -3,6 +3,7 @@ package org.frizzlenpop.rPGSkillsPlugin.data;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
@@ -14,17 +15,12 @@ public class PlayerDataManager {
     public PlayerDataManager() {
         File pluginFolder = Bukkit.getServer().getPluginManager().getPlugin("RPGSkillsPlugin").getDataFolder();
         if (!pluginFolder.exists()) {
-            pluginFolder.mkdirs(); // Ensure the base plugin folder exists
+            pluginFolder.mkdirs();
         }
 
         this.playerDataFolder = new File(pluginFolder, "playerdata");
         if (!playerDataFolder.exists()) {
-            boolean created = playerDataFolder.mkdirs();
-            if (created) {
-                Bukkit.getLogger().info("✅ Player data folder created: " + playerDataFolder.getAbsolutePath());
-            } else {
-                Bukkit.getLogger().severe("❌ Failed to create player data folder!");
-            }
+            playerDataFolder.mkdirs();
         }
     }
 
@@ -32,7 +28,6 @@ public class PlayerDataManager {
         return playerDataFolder;
     }
 
-    // Load or create player data file
     public FileConfiguration getPlayerData(UUID playerUUID) {
         File playerFile = new File(playerDataFolder, playerUUID + ".yml");
         if (!playerFile.exists()) {
@@ -41,7 +36,6 @@ public class PlayerDataManager {
         return YamlConfiguration.loadConfiguration(playerFile);
     }
 
-    // Save player data file
     public void savePlayerData(UUID playerUUID, FileConfiguration config) {
         File playerFile = new File(playerDataFolder, playerUUID + ".yml");
         try {
@@ -51,7 +45,6 @@ public class PlayerDataManager {
         }
     }
 
-    // Create new player data file
     private void createNewPlayerFile(UUID playerUUID) {
         File playerFile = new File(playerDataFolder, playerUUID + ".yml");
         try {
@@ -74,7 +67,7 @@ public class PlayerDataManager {
             config.set("skills.enchanting.level", 1);
             config.set("skills.enchanting.xp", 0);
 
-            // Milestone tracking
+            // Create milestones section
             config.createSection("milestones");
 
             config.save(playerFile);
