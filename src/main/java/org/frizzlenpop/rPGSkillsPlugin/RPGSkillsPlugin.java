@@ -5,6 +5,9 @@ import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.FarmingListener;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.LoggingListener;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.MiningListener;
+import org.frizzlenpop.rPGSkillsPlugin.listeners.FightingListener;
+import org.frizzlenpop.rPGSkillsPlugin.listeners.EnchantingListener;
+import org.frizzlenpop.rPGSkillsPlugin.listeners.FishingListener;
 import org.frizzlenpop.rPGSkillsPlugin.skills.XPManager;
 
 public class RPGSkillsPlugin extends JavaPlugin {
@@ -27,6 +30,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MiningListener(xpManager), this);
         getServer().getPluginManager().registerEvents(new LoggingListener(xpManager), this);
         getServer().getPluginManager().registerEvents(new FarmingListener(xpManager), this);
+        getServer().getPluginManager().registerEvents(new FightingListener(xpManager), this);
+        getServer().getPluginManager().registerEvents(new FishingListener(xpManager), this);
+        getServer().getPluginManager().registerEvents(new EnchantingListener(xpManager), this);
     }
 
     @Override
