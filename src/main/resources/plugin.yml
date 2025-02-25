@@ -1,0 +1,25 @@
+name: RPGSkillsPlugin
+version: 1.0
+main: org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin
+api-version: 1.21
+author: Frizzlenpop
+commands:
+  skills:
+    description: Opens the RPG Skills Menu.
+    usage: /skills
+  skills top:
+    description: Shows the top-ranked players in skills.
+    usage: /skills top
+  activate:
+    description: Activates a skill ability.
+    usage: /activate <skill>
+permissions:
+  rpg.skills.view:
+    description: Allows players to view their skills.
+    default: true
+  rpg.skills.leaderboard:
+    description: Allows players to view the skills leaderboard.
+    default: true
+  rpg.skills.activate:
+    description: Allows players to activate abilities.
+    default: true
