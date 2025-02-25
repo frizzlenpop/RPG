@@ -38,7 +38,6 @@ public class SkillsGUI implements Listener {
         gui.setItem(14, createSkillIcon(Material.FISHING_ROD, "Fishing", "fishing", config));
         gui.setItem(15, createSkillIcon(Material.ENCHANTING_TABLE, "Enchanting", "enchanting", config));
 
-        // Open the menu
         player.openInventory(gui);
     }
 
@@ -57,6 +56,8 @@ public class SkillsGUI implements Listener {
             lore.add("§7Level: §a" + level);
             lore.add("§7XP: §e" + xp + "§7 / §b" + xpRequired);
             lore.add("§fProgress: §e" + (xp * 100 / xpRequired) + "%");
+            lore.add("");
+            lore.add("§eClick to view details!");
 
             meta.setLore(lore);
             item.setItemMeta(meta);
@@ -64,10 +65,78 @@ public class SkillsGUI implements Listener {
         return item;
     }
 
+    private void openSkillDetailMenu(Player player, String skillName, String skillKey, Material icon) {
+        Inventory detailGUI = Bukkit.createInventory(null, 27, "§a" + skillName + " Details");
+
+        UUID playerUUID = player.getUniqueId();
+        FileConfiguration config = dataManager.getPlayerData(playerUUID);
+
+        int level = config.getInt("skills." + skillKey + ".level", 1);
+        int xp = config.getInt("skills." + skillKey + ".xp", 0);
+        int xpRequired = (int) Math.pow(level, 1.5) * 100;
+
+        // Skill Information Item
+        ItemStack skillInfo = new ItemStack(icon);
+        ItemMeta skillMeta = skillInfo.getItemMeta();
+        if (skillMeta != null) {
+            skillMeta.setDisplayName("§6" + skillName);
+            List<String> lore = new ArrayList<>();
+            lore.add("§7Current Level: §a" + level);
+            lore.add("§7Current XP: §e" + xp + "§7 / §b" + xpRequired);
+            lore.add("");
+            lore.add("§eMilestone Rewards:");
+            lore.add("§7(Level 5) Bonus XP on actions");
+            lore.add("§7(Level 10) Rare Drop Chance");
+            lore.add("§7(Level 15) Special Perks");
+            skillMeta.setLore(lore);
+            skillInfo.setItemMeta(skillMeta);
+        }
+        detailGUI.setItem(13, skillInfo);
+
+        // Back Button
+        ItemStack backButton = new ItemStack(Material.BARRIER);
+        ItemMeta backMeta = backButton.getItemMeta();
+        if (backMeta != null) {
+            backMeta.setDisplayName("§cBack to Skills Menu");
+            backButton.setItemMeta(backMeta);
+        }
+        detailGUI.setItem(18, backButton);
+
+        player.openInventory(detailGUI);
+    }
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (event.getView().getTitle().equals("§aYour Skills")) {
-            event.setCancelled(true); // Prevent item movement
+            event.setCancelled(true);
+
+            Player player = (Player) event.getWhoClicked();
+            switch (event.getSlot()) {
+                case 10:
+                    openSkillDetailMenu(player, "Mining", "mining", Material.IRON_PICKAXE);
+                    break;
+                case 11:
+                    openSkillDetailMenu(player, "Logging", "logging", Material.IRON_AXE);
+                    break;
+                case 12:
+                    openSkillDetailMenu(player, "Farming", "farming", Material.WHEAT);
+                    break;
+                case 13:
+                    openSkillDetailMenu(player, "Fighting", "fighting", Material.IRON_SWORD);
+                    break;
+                case 14:
+                    openSkillDetailMenu(player, "Fishing", "fishing", Material.FISHING_ROD);
+                    break;
+                case 15:
+                    openSkillDetailMenu(player, "Enchanting", "enchanting", Material.ENCHANTING_TABLE);
+                    break;
+            }
+        } else if (event.getView().getTitle().contains("Details")) {
+            event.setCancelled(true);
+            if (event.getSlot() == 18) {
+                Player player = (Player) event.getWhoClicked();
+                openSkillsMenu(player);
+            }
         }
     }
 }
