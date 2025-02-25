@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.UUID;
 
 public class XPManager {
-
     private final PlayerDataManager dataManager;
     private final Map<Material, Integer> miningXPValues;
     private final Map<Material, Integer> loggingXPValues;
@@ -18,10 +17,6 @@ public class XPManager {
     private final Map<String, Integer> fightingXPValues;
     private final Map<String, Integer> fishingXPValues;
     private final Map<Material, Integer> enchantingXPValues;
-
-
-
-
 
     public XPManager(PlayerDataManager dataManager) {
         this.dataManager = dataManager;
@@ -40,6 +35,7 @@ public class XPManager {
         miningXPValues.put(Material.DIAMOND_ORE, 50);
         miningXPValues.put(Material.EMERALD_ORE, 75);
         miningXPValues.put(Material.NETHERITE_BLOCK, 100);
+
         // Assign XP values to different trees
         loggingXPValues.put(Material.OAK_LOG, 10);
         loggingXPValues.put(Material.BIRCH_LOG, 10);
@@ -47,6 +43,7 @@ public class XPManager {
         loggingXPValues.put(Material.JUNGLE_LOG, 20);
         loggingXPValues.put(Material.ACACIA_LOG, 20);
         loggingXPValues.put(Material.DARK_OAK_LOG, 25);
+
         // Assign XP values to different crops
         farmingXPValues.put(Material.WHEAT, 10);
         farmingXPValues.put(Material.CARROTS, 12);
@@ -56,6 +53,7 @@ public class XPManager {
         farmingXPValues.put(Material.PUMPKIN, 18);
         farmingXPValues.put(Material.SWEET_BERRY_BUSH, 20);
         farmingXPValues.put(Material.NETHER_WART, 25);
+
         // Assign XP Values to Different Mobs
         fightingXPValues.put("ZOMBIE", 10);
         fightingXPValues.put("SKELETON", 12);
@@ -67,18 +65,19 @@ public class XPManager {
         fightingXPValues.put("ELDER_GUARDIAN", 75);
         fightingXPValues.put("WITHER", 250);
         fightingXPValues.put("ENDER_DRAGON", 500);
+
         // Assign XP values to different fishing
         fishingXPValues.put("COD", 10);
         fishingXPValues.put("SALMON", 12);
         fishingXPValues.put("TROPICAL_FISH", 15);
         fishingXPValues.put("PUFFERFISH", 20);
+
         // Assign XP values to different enchantments
         enchantingXPValues.put(Material.ENCHANTED_BOOK, 50);
         enchantingXPValues.put(Material.LAPIS_LAZULI, 10);
         enchantingXPValues.put(Material.NETHER_STAR, 200);
         enchantingXPValues.put(Material.DRAGON_BREATH, 250);
         enchantingXPValues.put(Material.AMETHYST_SHARD, 25);
-
     }
 
     public void addXP(Player player, String skill, int xpGained) {
@@ -100,9 +99,10 @@ public class XPManager {
 
             // Notify player of level up
             player.sendMessage("§a[Skills] You leveled up your " + skill + " skill to Level " + currentLevel + "!");
-
-            // Play level-up sound effect
             player.playSound(player.getLocation(), "minecraft:entity.player.levelup", 1.0f, 1.0f);
+
+            // Handle milestone rewards
+            handleSkillRewards(player, skill, currentLevel);
         }
 
         // Save updated values
@@ -110,7 +110,6 @@ public class XPManager {
         config.set("skills." + skill + ".level", currentLevel);
         dataManager.savePlayerData(playerUUID, config);
     }
-
     public int getXPForMaterial(Material material) {
         return miningXPValues.getOrDefault(material, 0);
     }
@@ -130,6 +129,43 @@ public class XPManager {
         return enchantingXPValues.getOrDefault(material, 0);
     }
 
+    private void handleSkillRewards(Player player, String skill, int level) {
+        switch (skill) {
+            case "mining":
+                if (level == 5) player.sendMessage("§e[Mining] You now earn 10% more XP from ores!");
+                if (level == 10) player.sendMessage("§e[Mining] You unlocked auto-smelting for rare ores!");
+                if (level == 15) player.sendMessage("§e[Mining] You have a chance to double ore drops!");
+                break;
 
+            case "logging":
+                if (level == 5) player.sendMessage("§e[Logging] You now earn 10% more XP from chopping trees!");
+                if (level == 10) player.sendMessage("§e[Logging] You chop trees faster!");
+                if (level == 15) player.sendMessage("§e[Logging] You have a chance to double log drops!");
+                break;
 
+            case "farming":
+                if (level == 5) player.sendMessage("§e[Farming] You now earn 10% more XP from harvesting crops!");
+                if (level == 10) player.sendMessage("§e[Farming] You unlocked auto-replanting for crops!");
+                if (level == 15) player.sendMessage("§e[Farming] Your crops have a chance to double harvest!");
+                break;
+
+            case "fighting":
+                if (level == 5) player.sendMessage("§e[Fighting] You deal 5% more damage!");
+                if (level == 10) player.sendMessage("§e[Fighting] You heal slightly when killing mobs!");
+                if (level == 15) player.sendMessage("§e[Fighting] Your critical hit chance is increased!");
+                break;
+
+            case "fishing":
+                if (level == 5) player.sendMessage("§e[Fishing] You now earn 10% more XP from fishing!");
+                if (level == 10) player.sendMessage("§e[Fishing] You have a chance to catch treasure!");
+                if (level == 15) player.sendMessage("§e[Fishing] You catch rare fish more often!");
+                break;
+
+            case "enchanting":
+                if (level == 5) player.sendMessage("§e[Enchanting] Your research success rate increased by 5%!");
+                if (level == 10) player.sendMessage("§e[Enchanting] You have a chance to upgrade books automatically!");
+                if (level == 15) player.sendMessage("§e[Enchanting] You unlocked rare enchantment discoveries!");
+                break;
+        }
+    }
 }

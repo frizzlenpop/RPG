@@ -85,9 +85,16 @@ public class SkillsGUI implements Listener {
             lore.add("§7Current XP: §e" + xp + "§7 / §b" + xpRequired);
             lore.add("");
             lore.add("§eMilestone Rewards:");
-            lore.add("§7(Level 5) Bonus XP on actions");
-            lore.add("§7(Level 10) Rare Drop Chance");
-            lore.add("§7(Level 15) Special Perks");
+            if (level < 5) {
+                lore.add("§7(Level 5) " + getSkillMilestone(skillKey, 5));
+            } else if (level < 10) {
+                lore.add("§7(Level 10) " + getSkillMilestone(skillKey, 10));
+            } else if (level < 15) {
+                lore.add("§7(Level 15) " + getSkillMilestone(skillKey, 15));
+            } else {
+                lore.add("§aAll milestones unlocked!");
+            }
+
             skillMeta.setLore(lore);
             skillInfo.setItemMeta(skillMeta);
         }
@@ -139,4 +146,23 @@ public class SkillsGUI implements Listener {
             }
         }
     }
+    private String getSkillMilestone(String skill, int level) {
+        switch (skill) {
+            case "mining":
+                return (level == 5 ? "10% more XP from ores" : level == 10 ? "Auto-smelt ores" : "Chance to double drops");
+            case "logging":
+                return (level == 5 ? "10% more XP from trees" : level == 10 ? "Faster tree chopping" : "Double wood drops");
+            case "farming":
+                return (level == 5 ? "10% more XP from crops" : level == 10 ? "Auto-replanting" : "Double harvest chance");
+            case "fighting":
+                return (level == 5 ? "5% bonus damage" : level == 10 ? "Heal on kill" : "Higher critical chance");
+            case "fishing":
+                return (level == 5 ? "10% more XP from fishing" : level == 10 ? "Chance to catch treasure" : "More rare fish");
+            case "enchanting":
+                return (level == 5 ? "5% research success boost" : level == 10 ? "Auto-upgrade books" : "Rare enchantment unlocks");
+            default:
+                return "Unknown Reward";
+        }
+    }
+
 }
