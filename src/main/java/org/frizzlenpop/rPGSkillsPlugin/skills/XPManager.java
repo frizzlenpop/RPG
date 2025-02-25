@@ -14,12 +14,15 @@ public class XPManager {
     private final PlayerDataManager dataManager;
     private final Map<Material, Integer> miningXPValues;
     private final Map<Material, Integer> loggingXPValues;
+    private final Map<Material, Integer> farmingXPValues;
+
 
 
     public XPManager(PlayerDataManager dataManager) {
         this.dataManager = dataManager;
         this.miningXPValues = new HashMap<>();
         this.loggingXPValues = new HashMap<>();
+        this.farmingXPValues = new HashMap<>();
 
         // Assign XP values to different ores
         miningXPValues.put(Material.STONE, 5);
@@ -35,6 +38,14 @@ public class XPManager {
         loggingXPValues.put(Material.JUNGLE_LOG, 20);
         loggingXPValues.put(Material.ACACIA_LOG, 20);
         loggingXPValues.put(Material.DARK_OAK_LOG, 25);
+        farmingXPValues.put(Material.WHEAT, 10);
+        farmingXPValues.put(Material.CARROTS, 12);
+        farmingXPValues.put(Material.POTATOES, 12);
+        farmingXPValues.put(Material.BEETROOTS, 15);
+        farmingXPValues.put(Material.MELON, 18);
+        farmingXPValues.put(Material.PUMPKIN, 18);
+        farmingXPValues.put(Material.SWEET_BERRY_BUSH, 20);
+        farmingXPValues.put(Material.NETHER_WART, 25);
     }
 
     public void addXP(Player player, String skill, int xpGained) {
@@ -73,5 +84,9 @@ public class XPManager {
     public int getXPForLog(Material material) {
         return loggingXPValues.getOrDefault(material, 0);
     }
+    public int getXPForCrop(Material material) {
+        return farmingXPValues.getOrDefault(material, 0);
+    }
+
 
 }

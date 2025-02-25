@@ -2,6 +2,7 @@ package org.frizzlenpop.rPGSkillsPlugin;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
+import org.frizzlenpop.rPGSkillsPlugin.listeners.FarmingListener;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.LoggingListener;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.MiningListener;
 import org.frizzlenpop.rPGSkillsPlugin.skills.XPManager;
@@ -25,6 +26,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Register event listeners
         getServer().getPluginManager().registerEvents(new MiningListener(xpManager), this);
         getServer().getPluginManager().registerEvents(new LoggingListener(xpManager), this);
+        getServer().getPluginManager().registerEvents(new FarmingListener(xpManager), this);
     }
 
     @Override
