@@ -1,22 +1,23 @@
 package org.frizzlenpop.rPGSkillsPlugin;
 
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.commands.PassivesCommand;
 import org.frizzlenpop.rPGSkillsPlugin.commands.SkillsCommand;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.gui.SkillsGUI;
-import org.frizzlenpop.rPGSkillsPlugin.listeners.EnchantingListener;
-import org.frizzlenpop.rPGSkillsPlugin.listeners.FarmingListener;
-import org.frizzlenpop.rPGSkillsPlugin.listeners.FightingListener;
-import org.frizzlenpop.rPGSkillsPlugin.listeners.FishingListener;
-import org.frizzlenpop.rPGSkillsPlugin.listeners.LoggingListener;
-import org.frizzlenpop.rPGSkillsPlugin.listeners.MiningListener;
+import org.frizzlenpop.rPGSkillsPlugin.listeners.*;
+import org.frizzlenpop.rPGSkillsPlugin.skills.PassiveSkillManager;
 import org.frizzlenpop.rPGSkillsPlugin.skills.XPManager;
+import org.frizzlenpop.rPGSkillsPlugin.skills.SkillAbilityManager;
 
 public class RPGSkillsPlugin extends JavaPlugin {
-
     private PlayerDataManager playerDataManager;
     private XPManager xpManager;
     private SkillsGUI skillsGUI;
+    private SkillAbilityManager abilityManager;
+    private PassiveSkillManager passiveSkillManager;
 
     @Override
     public void onEnable() {
@@ -26,9 +27,15 @@ public class RPGSkillsPlugin extends JavaPlugin {
         playerDataManager = new PlayerDataManager();
         getLogger().info("Player data directory: " + playerDataManager.getPlayerDataFolder().getAbsolutePath());
 
-        // Initialize XP Manager & GUI
-        xpManager = new XPManager(playerDataManager);
+        // Initialize Passive Skill Manager first
+        passiveSkillManager = new PassiveSkillManager();
+        getServer().getPluginManager().registerEvents(passiveSkillManager, this);
+
+        // Initialize XP Manager, GUI, and Abilities
+        xpManager = new XPManager(playerDataManager, passiveSkillManager);
         skillsGUI = new SkillsGUI(playerDataManager);
+        abilityManager = new SkillAbilityManager();
+        getServer().getPluginManager().registerEvents(abilityManager, this);
 
         // Register event listeners
         getServer().getPluginManager().registerEvents(new MiningListener(xpManager), this);
@@ -40,7 +47,21 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(skillsGUI, this);
 
         // Register commands
-        getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
+        if (getCommand("skills") != null) getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
+        if (getCommand("miningburst") != null) getCommand("miningburst").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof Player) abilityManager.activateMiningBurst((Player) sender);
+            return true;
+        });
+        if (getCommand("timberchop") != null) getCommand("timberchop").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof Player) abilityManager.activateTimberChop((Player) sender);
+            return true;
+        });
+        if (getCommand("berserkerrage") != null) getCommand("berserkerrage").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof Player) abilityManager.activateBerserkerRage((Player) sender);
+            return true;
+        });
+        if (getCommand("passives") != null) getCommand("passives").setExecutor(new PassivesCommand(passiveSkillManager));
+
     }
 
     @Override

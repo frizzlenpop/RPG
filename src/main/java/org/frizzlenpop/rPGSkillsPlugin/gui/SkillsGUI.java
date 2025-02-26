@@ -75,7 +75,6 @@ public class SkillsGUI implements Listener {
         int xp = config.getInt("skills." + skillKey + ".xp", 0);
         int xpRequired = (int) Math.pow(level, 1.5) * 100;
 
-        // Skill Information Item
         ItemStack skillInfo = new ItemStack(icon);
         ItemMeta skillMeta = skillInfo.getItemMeta();
         if (skillMeta != null) {
@@ -84,15 +83,11 @@ public class SkillsGUI implements Listener {
             lore.add("§7Current Level: §a" + level);
             lore.add("§7Current XP: §e" + xp + "§7 / §b" + xpRequired);
             lore.add("");
-            lore.add("§eMilestone Rewards:");
-            if (level < 5) {
-                lore.add("§7(Level 5) " + getSkillMilestone(skillKey, 5));
-            } else if (level < 10) {
-                lore.add("§7(Level 10) " + getSkillMilestone(skillKey, 10));
-            } else if (level < 15) {
-                lore.add("§7(Level 15) " + getSkillMilestone(skillKey, 15));
-            } else {
-                lore.add("§aAll milestones unlocked!");
+            lore.add("§eUnlocked Perks:");
+
+            // Display unlocked perks dynamically
+            for (int i = 5; i <= level; i += 5) {
+                lore.add("§7(Level " + i + ") " + getSkillMilestone(skillKey, i));
             }
 
             skillMeta.setLore(lore);
@@ -100,7 +95,6 @@ public class SkillsGUI implements Listener {
         }
         detailGUI.setItem(13, skillInfo);
 
-        // Back Button
         ItemStack backButton = new ItemStack(Material.BARRIER);
         ItemMeta backMeta = backButton.getItemMeta();
         if (backMeta != null) {

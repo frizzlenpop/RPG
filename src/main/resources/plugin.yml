@@ -5,21 +5,38 @@ api-version: 1.21
 author: Frizzlenpop
 commands:
   skills:
-    description: Opens the RPG Skills Menu.
+    description: Opens the skills menu.
     usage: /skills
-  skills top:
-    description: Shows the top-ranked players in skills.
-    usage: /skills top
-  activate:
-    description: Activates a skill ability.
-    usage: /activate <skill>
+    permission: rpgskills.use
+  passives:
+    description: Opens the passive skills menu.
+    usage: /passives
+    permission: rpgskills.passive
+  miningburst:
+    description: Activates the Mining Burst ability.
+    usage: /miningburst
+    permission: rpgskills.miningburst
+
+  timberchop:
+    description: Activates the Timber Chop ability.
+    usage: /timberchop
+    permission: rpgskills.timberchop
+
+  berserkerrage:
+    description: Activates the Berserker Rage ability.
+    usage: /berserkerrage
+    permission: rpgskills.berserkerrage
+
 permissions:
-  rpg.skills.view:
-    description: Allows players to view their skills.
+  rpgskills.use:
+    description: Allows a player to open the skills menu.
     default: true
-  rpg.skills.leaderboard:
-    description: Allows players to view the skills leaderboard.
+  rpgskills.miningburst:
+    description: Allows a player to use the Mining Burst skill.
     default: true
-  rpg.skills.activate:
-    description: Allows players to activate abilities.
+  rpgskills.timberchop:
+    description: Allows a player to use the Timber Chop skill.
+    default: true
+  rpgskills.berserkerrage:
+    description: Allows a player to use the Berserker Rage skill.
     default: true

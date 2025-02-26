@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public class XPManager {
     private final PlayerDataManager dataManager;
+    private final PassiveSkillManager passiveSkillManager;
     private final Map<Material, Integer> miningXPValues;
     private final Map<Material, Integer> loggingXPValues;
     private final Map<Material, Integer> farmingXPValues;
@@ -18,8 +19,9 @@ public class XPManager {
     private final Map<String, Integer> fishingXPValues;
     private final Map<Material, Integer> enchantingXPValues;
 
-    public XPManager(PlayerDataManager dataManager) {
+    public XPManager(PlayerDataManager dataManager, PassiveSkillManager passiveSkillManager) {
         this.dataManager = dataManager;
+        this.passiveSkillManager = passiveSkillManager;
         this.miningXPValues = new HashMap<>();
         this.loggingXPValues = new HashMap<>();
         this.farmingXPValues = new HashMap<>();
@@ -110,21 +112,27 @@ public class XPManager {
         config.set("skills." + skill + ".level", currentLevel);
         dataManager.savePlayerData(playerUUID, config);
     }
+
     public int getXPForMaterial(Material material) {
         return miningXPValues.getOrDefault(material, 0);
     }
+
     public int getXPForLog(Material material) {
         return loggingXPValues.getOrDefault(material, 0);
     }
+
     public int getXPForCrop(Material material) {
         return farmingXPValues.getOrDefault(material, 0);
     }
+
     public int getXPForMob(String mobName) {
         return fightingXPValues.getOrDefault(mobName.toUpperCase(), 0);
     }
+
     public int getXPForFish(String fishType) {
         return fishingXPValues.getOrDefault(fishType.toUpperCase(), 0);
     }
+
     public int getXPForEnchanting(Material material) {
         return enchantingXPValues.getOrDefault(material, 0);
     }
@@ -132,39 +140,34 @@ public class XPManager {
     private void handleSkillRewards(Player player, String skill, int level) {
         switch (skill) {
             case "mining":
-                if (level == 5) player.sendMessage("§e[Mining] You now earn 10% more XP from ores!");
-                if (level == 10) player.sendMessage("§e[Mining] You unlocked auto-smelting for rare ores!");
-                if (level == 15) player.sendMessage("§e[Mining] You have a chance to double ore drops!");
+                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "mining_xp_boost");
+                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "auto_smelt");
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_ore_drops");
                 break;
-
             case "logging":
-                if (level == 5) player.sendMessage("§e[Logging] You now earn 10% more XP from chopping trees!");
-                if (level == 10) player.sendMessage("§e[Logging] You chop trees faster!");
-                if (level == 15) player.sendMessage("§e[Logging] You have a chance to double log drops!");
+                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "logging_xp_boost");
+                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "fast_chop");
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_wood_drops");
                 break;
-
             case "farming":
-                if (level == 5) player.sendMessage("§e[Farming] You now earn 10% more XP from harvesting crops!");
-                if (level == 10) player.sendMessage("§e[Farming] You unlocked auto-replanting for crops!");
-                if (level == 15) player.sendMessage("§e[Farming] Your crops have a chance to double harvest!");
+                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "farming_xp_boost");
+                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "auto_replant");
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_crop_yield");
                 break;
-
             case "fighting":
-                if (level == 5) player.sendMessage("§e[Fighting] You deal 5% more damage!");
-                if (level == 10) player.sendMessage("§e[Fighting] You heal slightly when killing mobs!");
-                if (level == 15) player.sendMessage("§e[Fighting] Your critical hit chance is increased!");
+                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "fighting_damage_boost");
+                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "heal_on_kill");
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "crit_boost");
                 break;
-
             case "fishing":
-                if (level == 5) player.sendMessage("§e[Fishing] You now earn 10% more XP from fishing!");
-                if (level == 10) player.sendMessage("§e[Fishing] You have a chance to catch treasure!");
-                if (level == 15) player.sendMessage("§e[Fishing] You catch rare fish more often!");
+                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "fishing_xp_boost");
+                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "treasure_boost");
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "rare_fish_boost");
                 break;
-
             case "enchanting":
-                if (level == 5) player.sendMessage("§e[Enchanting] Your research success rate increased by 5%!");
-                if (level == 10) player.sendMessage("§e[Enchanting] You have a chance to upgrade books automatically!");
-                if (level == 15) player.sendMessage("§e[Enchanting] You unlocked rare enchantment discoveries!");
+                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "enchanting_research_boost");
+                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "auto_upgrade_books");
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "custom_enchantments");
                 break;
         }
     }
