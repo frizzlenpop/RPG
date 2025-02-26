@@ -29,7 +29,7 @@ public class XPManager {
         this.fishingXPValues = new HashMap<>();
         this.enchantingXPValues = new HashMap<>();
 
-        // Assign XP values to different ores
+        // Assign XP values to different skills
         miningXPValues.put(Material.STONE, 5);
         miningXPValues.put(Material.COAL_ORE, 10);
         miningXPValues.put(Material.IRON_ORE, 15);
@@ -38,7 +38,6 @@ public class XPManager {
         miningXPValues.put(Material.EMERALD_ORE, 75);
         miningXPValues.put(Material.NETHERITE_BLOCK, 100);
 
-        // Assign XP values to different trees
         loggingXPValues.put(Material.OAK_LOG, 10);
         loggingXPValues.put(Material.BIRCH_LOG, 10);
         loggingXPValues.put(Material.SPRUCE_LOG, 15);
@@ -46,7 +45,6 @@ public class XPManager {
         loggingXPValues.put(Material.ACACIA_LOG, 20);
         loggingXPValues.put(Material.DARK_OAK_LOG, 25);
 
-        // Assign XP values to different crops
         farmingXPValues.put(Material.WHEAT, 10);
         farmingXPValues.put(Material.CARROTS, 12);
         farmingXPValues.put(Material.POTATOES, 12);
@@ -56,7 +54,6 @@ public class XPManager {
         farmingXPValues.put(Material.SWEET_BERRY_BUSH, 20);
         farmingXPValues.put(Material.NETHER_WART, 25);
 
-        // Assign XP Values to Different Mobs
         fightingXPValues.put("ZOMBIE", 10);
         fightingXPValues.put("SKELETON", 12);
         fightingXPValues.put("SPIDER", 15);
@@ -68,13 +65,11 @@ public class XPManager {
         fightingXPValues.put("WITHER", 250);
         fightingXPValues.put("ENDER_DRAGON", 500);
 
-        // Assign XP values to different fishing
         fishingXPValues.put("COD", 10);
         fishingXPValues.put("SALMON", 12);
         fishingXPValues.put("TROPICAL_FISH", 15);
         fishingXPValues.put("PUFFERFISH", 20);
 
-        // Assign XP values to different enchantments
         enchantingXPValues.put(Material.ENCHANTED_BOOK, 50);
         enchantingXPValues.put(Material.LAPIS_LAZULI, 10);
         enchantingXPValues.put(Material.NETHER_STAR, 200);
@@ -89,52 +84,39 @@ public class XPManager {
         int currentXP = config.getInt("skills." + skill + ".xp", 0);
         int currentLevel = config.getInt("skills." + skill + ".level", 1);
 
-        // XP Scaling Formula
-        int requiredXP = (int) Math.pow(currentLevel, 1.5) * 100;
+        int requiredXP = getRequiredXP(currentLevel);
 
         currentXP += xpGained;
 
-        // Check for level up
         if (currentXP >= requiredXP) {
             currentXP -= requiredXP;
             currentLevel++;
 
-            // Notify player of level up
             player.sendMessage("§a[Skills] You leveled up your " + skill + " skill to Level " + currentLevel + "!");
             player.playSound(player.getLocation(), "minecraft:entity.player.levelup", 1.0f, 1.0f);
 
-            // Handle milestone rewards
             handleSkillRewards(player, skill, currentLevel);
         }
 
-        // Save updated values
         config.set("skills." + skill + ".xp", currentXP);
         config.set("skills." + skill + ".level", currentLevel);
         dataManager.savePlayerData(playerUUID, config);
     }
 
-    public int getXPForMaterial(Material material) {
-        return miningXPValues.getOrDefault(material, 0);
+    public int getPlayerLevel(Player player, String skill) {
+        UUID playerUUID = player.getUniqueId();
+        FileConfiguration config = dataManager.getPlayerData(playerUUID);
+        return config.getInt("skills." + skill + ".level", 1);
     }
 
-    public int getXPForLog(Material material) {
-        return loggingXPValues.getOrDefault(material, 0);
+    public int getPlayerXP(Player player, String skill) {
+        UUID playerUUID = player.getUniqueId();
+        FileConfiguration config = dataManager.getPlayerData(playerUUID);
+        return config.getInt("skills." + skill + ".xp", 0);
     }
 
-    public int getXPForCrop(Material material) {
-        return farmingXPValues.getOrDefault(material, 0);
-    }
-
-    public int getXPForMob(String mobName) {
-        return fightingXPValues.getOrDefault(mobName.toUpperCase(), 0);
-    }
-
-    public int getXPForFish(String fishType) {
-        return fishingXPValues.getOrDefault(fishType.toUpperCase(), 0);
-    }
-
-    public int getXPForEnchanting(Material material) {
-        return enchantingXPValues.getOrDefault(material, 0);
+    public int getRequiredXP(int level) {
+        return (int) Math.pow(level, 1.5) * 100;
     }
 
     private void handleSkillRewards(Player player, String skill, int level) {

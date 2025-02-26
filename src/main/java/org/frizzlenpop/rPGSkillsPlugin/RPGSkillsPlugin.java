@@ -33,7 +33,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
 
         // Initialize XP Manager, GUI, and Abilities
         xpManager = new XPManager(playerDataManager, passiveSkillManager);
-        skillsGUI = new SkillsGUI(playerDataManager);
+        skillsGUI = new SkillsGUI(playerDataManager, xpManager); // ✅ Fixed here
         abilityManager = new SkillAbilityManager();
         getServer().getPluginManager().registerEvents(abilityManager, this);
 
@@ -61,7 +61,6 @@ public class RPGSkillsPlugin extends JavaPlugin {
             return true;
         });
         if (getCommand("passives") != null) getCommand("passives").setExecutor(new PassivesCommand(passiveSkillManager));
-
     }
 
     @Override

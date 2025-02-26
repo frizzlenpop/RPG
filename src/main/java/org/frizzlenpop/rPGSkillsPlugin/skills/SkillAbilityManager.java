@@ -90,4 +90,31 @@ public class SkillAbilityManager implements Listener {
             player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 10 * 20, 1)); // Strength II for 10s
         }
     }
+    private final Map<String, List<String>> skillAbilities = new HashMap<>();
+
+    public SkillAbilityManager() {
+        skillAbilities.put("mining", Arrays.asList("Mining Burst"));
+        skillAbilities.put("logging", Arrays.asList("Timber Chop"));
+        skillAbilities.put("fighting", Arrays.asList("Berserker Rage"));
+    }
+
+    public List<String> getAbilitiesForSkill(String skill) {
+        return skillAbilities.getOrDefault(skill, new ArrayList<>());
+    }
+
+    public void activateAbility(Player player, String ability) {
+        switch (ability) {
+            case "Mining Burst":
+                player.sendMessage("§a[Skill] Mining Burst activated!");
+                player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 5 * 20, 2));
+                break;
+            case "Timber Chop":
+                player.sendMessage("§a[Skill] Timber Chop activated!");
+                break;
+            case "Berserker Rage":
+                player.sendMessage("§a[Skill] Berserker Rage activated!");
+                player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 10 * 20, 1));
+                break;
+        }
+    }
 }
