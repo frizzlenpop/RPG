@@ -54,25 +54,31 @@ public class PlayerDataManager {
             FileConfiguration config = YamlConfiguration.loadConfiguration(playerFile);
 
             // Initialize all skills to level 1 with 0 XP
-            config.set("skills.mining.level", 1);
-            config.set("skills.mining.xp", 0);
-            config.set("skills.logging.level", 1);
-            config.set("skills.logging.xp", 0);
-            config.set("skills.farming.level", 1);
-            config.set("skills.farming.xp", 0);
-            config.set("skills.fighting.level", 1);
-            config.set("skills.fighting.xp", 0);
-            config.set("skills.fishing.level", 1);
-            config.set("skills.fishing.xp", 0);
-            config.set("skills.enchanting.level", 1);
-            config.set("skills.enchanting.xp", 0);
+            String[] skills = {"mining", "logging", "farming", "fighting", "fishing", "enchanting"};
+            for (String skill : skills) {
+                config.set("skills." + skill + ".level", 1);
+                config.set("skills." + skill + ".xp", 0);
+            }
 
             // Create milestones section
             config.createSection("milestones");
+
+            // Create an empty section for passive abilities
+            config.createSection("passiveAbilities");
 
             config.save(playerFile);
         } catch (IOException e) {
             Bukkit.getLogger().severe("Failed to create new data file for " + playerUUID);
         }
+    }
+
+    public int getSkillLevel(UUID playerUUID, String skill) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        return config.getInt("skills." + skill + ".level", 1);
+    }
+
+    public boolean hasUnlockedActiveSkill(UUID playerUUID, String skill) {
+        int level = getSkillLevel(playerUUID, skill);
+        return level >= 15;
     }
 }
