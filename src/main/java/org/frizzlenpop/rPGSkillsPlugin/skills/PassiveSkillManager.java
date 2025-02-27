@@ -162,24 +162,131 @@ public class PassiveSkillManager implements Listener {
         }
     }
 
-    public void applyPassiveEffect(Player player, String effect) {
-        UUID playerId = player.getUniqueId();
-        switch (effect.toLowerCase()) {
-            case "auto_smelt":
-                autoSmeltPlayers.add(playerId);
+    public void updatePassiveEffects(Player player, String skill, int level) {
+        // Configure passive unlocks based on skill levels
+        switch (skill.toLowerCase()) {
+            case "mining":
+                if (level >= 10) {
+                    unlockPassive(player, skill, "doubleOreDrop");
+                }
+                if (level >= 20) {
+                    unlockPassive(player, skill, "autoSmelt");
+                }
+                if (level >= 30) {
+                    unlockPassive(player, skill, "fortuneBoost");
+                }
                 break;
-            case "auto_replant":
-                autoReplantPlayers.add(playerId);
+
+            case "woodcutting":
+                if (level >= 10) {
+                    unlockPassive(player, skill, "doubleWoodDrop");
+                }
+                if (level >= 20) {
+                    unlockPassive(player, skill, "treeGrowthBoost");
+                }
+                if (level >= 30) {
+                    unlockPassive(player, skill, "tripleLogDrop");
+                }
                 break;
-            case "double_ore_drop":
-                doubleOreDropPlayers.add(playerId);
+
+            case "farming":
+                if (level >= 10) {
+                    unlockPassive(player, skill, "doubleCropYield");
+                }
+                if (level >= 20) {
+                    unlockPassive(player, skill, "autoReplant");
+                }
+                if (level >= 30) {
+                    unlockPassive(player, skill, "instantGrowth");
+                }
                 break;
-            // Add other cases as needed
-            default:
+
+            case "combat":
+                if (level >= 10) {
+                    unlockPassive(player, skill, "healOnKill");
+                }
+                if (level >= 20) {
+                    unlockPassive(player, skill, "lifesteal");
+                }
+                if (level >= 30) {
+                    unlockPassive(player, skill, "damageReduction");
+                }
                 break;
         }
-        addPassive(playerId, effect);
+
+        // Notify player of new passive unlocks
+        if (level == 10 || level == 20 || level == 30) {
+            player.sendMessage(ChatColor.GREEN + "✨ You've unlocked new passive abilities for " + skill + "!");
+        }
     }
+
+    public double getXPMultiplier(Player player, String skill) {
+        UUID playerId = player.getUniqueId();
+        double multiplier = 1.0; // Base multiplier
+
+        // Get the player's level for the skill
+        int level = xpManager.getPlayerLevel(player, skill);
+
+        // Add skill-specific XP bonuses based on unlocked passives
+        switch (skill.toLowerCase()) {
+            case "mining":
+                if (hasPassive(player, skill, "doubleOreDrop")) {
+                    multiplier += 0.1; // +10% XP
+                }
+                if (hasPassive(player, skill, "autoSmelt")) {
+                    multiplier += 0.15; // +15% XP
+                }
+                if (hasPassive(player, skill, "fortuneBoost")) {
+                    multiplier += 0.25; // +25% XP
+                }
+                break;
+
+            case "woodcutting":
+                if (hasPassive(player, skill, "doubleWoodDrop")) {
+                    multiplier += 0.1;
+                }
+                if (hasPassive(player, skill, "treeGrowthBoost")) {
+                    multiplier += 0.15;
+                }
+                if (hasPassive(player, skill, "tripleLogDrop")) {
+                    multiplier += 0.25;
+                }
+                break;
+
+            case "farming":
+                if (hasPassive(player, skill, "doubleCropYield")) {
+                    multiplier += 0.1;
+                }
+                if (hasPassive(player, skill, "autoReplant")) {
+                    multiplier += 0.15;
+                }
+                if (hasPassive(player, skill, "instantGrowth")) {
+                    multiplier += 0.25;
+                }
+                break;
+
+            case "combat":
+                if (hasPassive(player, skill, "healOnKill")) {
+                    multiplier += 0.1;
+                }
+                if (hasPassive(player, skill, "lifesteal")) {
+                    multiplier += 0.15;
+                }
+                if (hasPassive(player, skill, "damageReduction")) {
+                    multiplier += 0.25;
+                }
+                break;
+        }
+
+        // Add level-based XP bonus
+        // Every 10 levels adds 5% bonus XP (up to 25% at level 50)
+        double levelBonus = Math.min((level / 10) * 0.05, 0.25);
+        multiplier += levelBonus;
+
+        return multiplier;
+    }
+
+
 
     public List<String> getActivePassives(Player player) {
         return new ArrayList<>(getPlayerPassives(player.getUniqueId()));

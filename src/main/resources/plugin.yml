@@ -1,5 +1,5 @@
 name: RPGSkillsPlugin
-version: 1.0
+version: 1.1
 main: org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin
 api-version: 1.21
 author: Frizzlenpop
@@ -18,52 +18,33 @@ commands:
     description: Activates the Mining Burst ability.
     usage: /miningburst
     permission: rpgskills.miningburst
-
   timberchop:
     description: Activates the Timber Chop ability.
     usage: /timberchop
     permission: rpgskills.timberchop
-
   berserkerrage:
     description: Activates the Berserker Rage ability.
     usage: /berserkerrage
     permission: rpgskills.berserkerrage
-
-    superharvest:
-      description: Activates the Super Harvest ability
-      usage: /superharvest
-      permission: rpgskills.superharvest
-
-    instantcatch:
-      description: Activates the Instant Catch ability
-      usage: /instantcatch
-      permission: rpgskills.instantcatch
-
-    doubleenchant:
-      description: Activates the Double Enchant ability
-      usage: /doubleenchant
-      permission: rpgskills.doubleenchant
-
-
-permissions:
-  rpgskills.use:
-    description: Allows a player to open the skills menu.
-    default: true
-  rpgskills.miningburst:
-    description: Allows a player to use the Mining Burst skill.
-    default: true
-  rpgskills.timberchop:
-    description: Allows a player to use the Timber Chop skill.
-    default: true
-  rpgskills.berserkerrage:
-    description: Allows a player to use the Berserker Rage skill.
-    default: true
-  rpgskills.superharvest:
-    description: Allows a player to use the Super Harvest skill
-    default: true
-  rpgskills.instantcatch:
-    description: Allows a player to use the Instant Catch skill
-    default: true
-  rpgskills.doubleenchant:
-    description: Allows a player to use the Double Enchant skill
-    default: true
+  superharvest:
+    description: Activates the Super Harvest ability
+    usage: /superharvest
+    permission: rpgskills.superharvest
+  instantcatch:
+    description: Activates the Instant Catch ability
+    usage: /instantcatch
+    permission: rpgskills.instantcatch
+  doubleenchant:
+    description: Activates the Double Enchant ability
+    usage: /doubleenchant
+    permission: rpgskills.doubleenchant
+  toggleskillmessages:
+    description: Toggle skill-related messages on/off
+    usage: /toggleskillmessages
+  skillsadmin:
+    description: Admin commands for managing skills
+    usage: /skillsadmin <player> <skill> <set/add> <level/xp> <amount>
+    permission: rpgskills.admin
+  abilities:
+    description: Activate skill abilities
+    usage: /abilities <skill>

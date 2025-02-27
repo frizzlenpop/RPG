@@ -3,17 +3,19 @@ package org.frizzlenpop.rPGSkillsPlugin.data;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
 public class PlayerDataManager {
-
     private final File playerDataFolder;
+    private final RPGSkillsPlugin plugin;
 
-    public PlayerDataManager() {
-        File pluginFolder = Bukkit.getServer().getPluginManager().getPlugin("RPGSkillsPlugin").getDataFolder();
+    public PlayerDataManager(RPGSkillsPlugin plugin) {
+        this.plugin = plugin;
+        File pluginFolder = plugin.getDataFolder();
         if (!pluginFolder.exists()) {
             pluginFolder.mkdirs();
         }
@@ -41,7 +43,7 @@ public class PlayerDataManager {
         try {
             config.save(playerFile);
         } catch (IOException e) {
-            Bukkit.getLogger().severe("Failed to save data for " + playerUUID);
+            plugin.getLogger().severe("Failed to save data for " + playerUUID);
         }
     }
 
@@ -49,7 +51,7 @@ public class PlayerDataManager {
         File playerFile = new File(playerDataFolder, playerUUID + ".yml");
         try {
             if (playerFile.createNewFile()) {
-                Bukkit.getLogger().info("✅ Created new player data file: " + playerFile.getAbsolutePath());
+                plugin.getLogger().info("✅ Created new player data file: " + playerFile.getAbsolutePath());
             }
             FileConfiguration config = YamlConfiguration.loadConfiguration(playerFile);
 
@@ -68,7 +70,7 @@ public class PlayerDataManager {
 
             config.save(playerFile);
         } catch (IOException e) {
-            Bukkit.getLogger().severe("Failed to create new data file for " + playerUUID);
+            plugin.getLogger().severe("Failed to create new data file for " + playerUUID);
         }
     }
 
@@ -77,8 +79,29 @@ public class PlayerDataManager {
         return config.getInt("skills." + skill + ".level", 1);
     }
 
+    public void setSkillLevel(UUID playerUUID, String skill, int level) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        config.set("skills." + skill + ".level", level);
+        savePlayerData(playerUUID, config);
+    }
+
+    public int getSkillXP(UUID playerUUID, String skill) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        return config.getInt("skills." + skill + ".xp", 0);
+    }
+
+    public void setSkillXP(UUID playerUUID, String skill, int xp) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        config.set("skills." + skill + ".xp", xp);
+        savePlayerData(playerUUID, config);
+    }
+
     public boolean hasUnlockedActiveSkill(UUID playerUUID, String skill) {
         int level = getSkillLevel(playerUUID, skill);
         return level >= 15;
+    }
+
+    public RPGSkillsPlugin getPlugin() {
+        return plugin;
     }
 }

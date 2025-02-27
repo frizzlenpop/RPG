@@ -1,10 +1,10 @@
 package org.frizzlenpop.rPGSkillsPlugin;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.frizzlenpop.rPGSkillsPlugin.commands.PassivesCommand;
-import org.frizzlenpop.rPGSkillsPlugin.commands.SkillsCommand;
+import org.frizzlenpop.rPGSkillsPlugin.commands.*;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.gui.SkillsGUI;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.*;
@@ -22,116 +22,121 @@ public class RPGSkillsPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Save default config if it doesn't exist
+        // Save default config
         saveDefaultConfig();
-        // Load the config
-        reloadConfig();
-        config = getConfig();
+        this.config = getConfig();
 
-        // Add default values if they don't exist
+        // Add default passive configuration
         addDefaultPassiveConfig();
-        // Save config
         saveConfig();
 
-        getLogger().info("RPG Skills Plugin has been enabled!");
+        // Initialize managers in the correct order
+        this.playerDataManager = new PlayerDataManager(this);
+        this.xpManager = new XPManager(playerDataManager);
+        this.abilityManager = new SkillAbilityManager(this);
+        this.passiveSkillManager = new PassiveSkillManager(xpManager, this);
+        this.skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
 
-        // Initialize the data manager
-        playerDataManager = new PlayerDataManager();
-        getLogger().info("Player data directory: " + playerDataManager.getPlayerDataFolder().getAbsolutePath());
 
-        // Initialize Passive Skill Manager first
-        getServer().getPluginManager().registerEvents(passiveSkillManager, this);
 
-        // Initialize XP Manager, GUI, and Abilities
-        xpManager = new XPManager(playerDataManager, passiveSkillManager);
-        passiveSkillManager = new PassiveSkillManager(xpManager, this);
-        skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
-        abilityManager = new SkillAbilityManager(this);
-        getServer().getPluginManager().registerEvents(abilityManager, this);
+        // Set the passive skill manager after initialization
+        xpManager.setPassiveSkillManager(passiveSkillManager);
 
-        // Register event listeners
+        // Register commands
+        getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
+        getCommand("abilities").setExecutor(new AbilitiesCommand(this, playerDataManager));
+        getCommand("skillsadmin").setExecutor(new SkillsAdminCommand(playerDataManager, xpManager));
+        getCommand("toggleskillmessages").setExecutor(new ToggleSkillMessagesCommand(playerDataManager));
+
+        // Register all listeners
+        registerListeners();
+
+        getLogger().info("RPGSkills plugin has been enabled!");
+    }
+
+    private void registerListeners() {
+        getServer().getPluginManager().registerEvents(new PlayerDataListener(playerDataManager), this);
         getServer().getPluginManager().registerEvents(new MiningListener(xpManager), this);
-        getServer().getPluginManager().registerEvents(new LoggingListener(xpManager), this);
-        getServer().getPluginManager().registerEvents(new FarmingListener(xpManager), this);
-        getServer().getPluginManager().registerEvents(new FightingListener(xpManager), this);
         getServer().getPluginManager().registerEvents(new FishingListener(xpManager), this);
         getServer().getPluginManager().registerEvents(new EnchantingListener(xpManager, this), this);
         getServer().getPluginManager().registerEvents(skillsGUI, this);
-
-        // Register commands
-        if (getCommand("skills") != null) getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
-        if (getCommand("miningburst") != null) getCommand("miningburst").setExecutor((sender, command, label, args) -> {
-            if (sender instanceof Player) abilityManager.activateMiningBurst((Player) sender);
-            return true;
-        });
-        if (getCommand("timberchop") != null) getCommand("timberchop").setExecutor((sender, command, label, args) -> {
-            if (sender instanceof Player) abilityManager.activateTimberChop((Player) sender);
-            return true;
-        });
-        if (getCommand("berserkerrage") != null) getCommand("berserkerrage").setExecutor((sender, command, label, args) -> {
-            if (sender instanceof Player) abilityManager.activateBerserkerRage((Player) sender);
-            return true;
-        });
-        if (getCommand("passives") != null) getCommand("passives").setExecutor(new PassivesCommand(passiveSkillManager));
+        getServer().getPluginManager().registerEvents(new LoggingListener(xpManager), this);
+        getServer().getPluginManager().registerEvents(new FarmingListener(xpManager), this);
     }
+
 
     private void addDefaultPassiveConfig() {
         // Mining passives
-        if (!config.isSet("passives.mining.fortune_boost.chance")) {
-            config.set("passives.mining.fortune_boost.chance", 0.25);
-        }
-        if (!config.isSet("passives.mining.fortune_boost.bonus_amount")) {
-            config.set("passives.mining.fortune_boost.bonus_amount", 2);
-        }
-        if (!config.isSet("passives.mining.auto_smelt_upgrade.bonus_chance")) {
-            config.set("passives.mining.auto_smelt_upgrade.bonus_chance", 0.5);
-        }
+        addDefaultPassiveIfNotExists("mining", "doubleOreChance", "chance", 0.1);
+        addDefaultPassiveIfNotExists("mining", "doubleOreChance", "enabled", true);
 
-        // Logging passives
-        if (!config.isSet("passives.logging.tree_growth_boost.radius")) {
-            config.set("passives.logging.tree_growth_boost.radius", 3);
-        }
-        if (!config.isSet("passives.logging.tree_growth_boost.growth_multiplier")) {
-            config.set("passives.logging.tree_growth_boost.growth_multiplier", 2.0);
-        }
-        if (!config.isSet("passives.logging.triple_log_drop.enabled")) {
-            config.set("passives.logging.triple_log_drop.enabled", true);
-        }
+        // Fishing passives
+        addDefaultPassiveIfNotExists("fishing", "treasureHunter", "chance", 0.15);
+        addDefaultPassiveIfNotExists("fishing", "treasureHunter", "enabled", true);
 
         // Farming passives
-        if (!config.isSet("passives.farming.instant_growth.chance")) {
-            config.set("passives.farming.instant_growth.chance", 0.15);
-        }
-        if (!config.isSet("passives.farming.instant_growth.radius")) {
-            config.set("passives.farming.instant_growth.radius", 2);
-        }
-        if (!config.isSet("passives.farming.auto_harvest.radius")) {
-            config.set("passives.farming.auto_harvest.radius", 2);
-        }
+        addDefaultPassiveIfNotExists("farming", "doubleCropChance", "chance", 0.2);
+        addDefaultPassiveIfNotExists("farming", "doubleCropChance", "enabled", true);
+
+        // Logging passives
+        addDefaultPassiveIfNotExists("logging", "doubleLogChance", "chance", 0.15);
+        addDefaultPassiveIfNotExists("logging", "doubleLogChance", "enabled", true);
 
         // Fighting passives
-        if (!config.isSet("passives.fighting.lifesteal.heal_percent")) {
-            config.set("passives.fighting.lifesteal.heal_percent", 0.15);
-        }
-        if (!config.isSet("passives.fighting.damage_reduction.reduction_percent")) {
-            config.set("passives.fighting.damage_reduction.reduction_percent", 0.25);
+        addDefaultPassiveIfNotExists("fighting", "damageReduction", "reduction", 0.15);
+        addDefaultPassiveIfNotExists("fighting", "damageReduction", "enabled", true);
+
+        // Enchanting passives
+        addDefaultPassiveIfNotExists("enchanting", "doubleEnchantChance", "chance", 0.1);
+        addDefaultPassiveIfNotExists("enchanting", "doubleEnchantChance", "enabled", true);
+    }
+
+    private void addDefaultPassiveIfNotExists(String skill, String passive, String property, Object value) {
+        String path = "passives." + skill + "." + passive + "." + property;
+        if (!config.contains(path)) {
+            config.set(path, value);
         }
     }
 
     public double getPassiveValue(String skill, String passive, String property) {
-        return config.getDouble("passives." + skill + "." + passive + "." + property);
+        String path = "passives." + skill + "." + passive + "." + property;
+        return config.getDouble(path);
     }
 
     public boolean isPassiveEnabled(String skill, String passive) {
-        return config.getBoolean("passives." + skill + "." + passive + ".enabled", true);
+        String path = "passives." + skill + "." + passive + ".enabled";
+        return config.getBoolean(path, true);
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("RPG Skills Plugin has been disabled!");
+        // Save player data
+        if (playerDataManager != null) {
+            for (Player player : getServer().getOnlinePlayers()) {
+                playerDataManager.savePlayerData(player.getUniqueId(), null);
+            }
+        }
+
+        // Save configuration
+        saveConfig();
+
+        getLogger().info("RPGSkills plugin has been disabled!");
     }
 
+    // Getters for accessing managers from other classes
     public PlayerDataManager getPlayerDataManager() {
         return playerDataManager;
+    }
+
+    public XPManager getXpManager() {
+        return xpManager;
+    }
+
+    public SkillAbilityManager getAbilityManager() {
+        return abilityManager;
+    }
+
+    public PassiveSkillManager getPassiveSkillManager() {
+        return passiveSkillManager;
     }
 }

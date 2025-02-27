@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public class XPManager {
     private final PlayerDataManager dataManager;
-    private final PassiveSkillManager passiveSkillManager;
+    private PassiveSkillManager passiveSkillManager; // Removed final modifier
     private final Map<Material, Integer> miningXPValues;
     private final Map<Material, Integer> loggingXPValues;
     private final Map<Material, Integer> farmingXPValues;
@@ -19,117 +19,78 @@ public class XPManager {
     private final Map<String, Integer> fishingXPValues;
     private final Map<Material, Integer> enchantingXPValues;
 
-    public XPManager(PlayerDataManager dataManager, PassiveSkillManager passiveSkillManager) {
+    // Updated constructor to not require PassiveSkillManager
+    public XPManager(PlayerDataManager dataManager) {
         this.dataManager = dataManager;
-        this.passiveSkillManager = passiveSkillManager;
-        this.miningXPValues = new HashMap<>();
-        this.loggingXPValues = new HashMap<>();
-        this.farmingXPValues = new HashMap<>();
-        this.fightingXPValues = new HashMap<>();
-        this.fishingXPValues = new HashMap<>();
-        this.enchantingXPValues = new HashMap<>();
+        this.miningXPValues = initializeMiningXP();
+        this.loggingXPValues = initializeLoggingXP();
+        this.farmingXPValues = initializeFarmingXP();
+        this.fightingXPValues = initializeFightingXP();
+        this.fishingXPValues = initializeFishingXP();
+        this.enchantingXPValues = initializeEnchantingXP();
+    }
 
-        // Assign XP values to different ores
-        miningXPValues.put(Material.STONE, 5);
-        miningXPValues.put(Material.COAL_ORE, 10);
-        miningXPValues.put(Material.IRON_ORE, 15);
-        miningXPValues.put(Material.GOLD_ORE, 20);
-        miningXPValues.put(Material.DIAMOND_ORE, 50);
-        miningXPValues.put(Material.EMERALD_ORE, 75);
-        miningXPValues.put(Material.NETHERITE_BLOCK, 100);
+    public void setPassiveSkillManager(PassiveSkillManager passiveSkillManager) {
+        if (this.passiveSkillManager == null) {
+            this.passiveSkillManager = passiveSkillManager;
+        }
+    }
 
-        // Assign XP values to different trees
-        loggingXPValues.put(Material.OAK_LOG, 10);
-        loggingXPValues.put(Material.BIRCH_LOG, 10);
-        loggingXPValues.put(Material.SPRUCE_LOG, 15);
-        loggingXPValues.put(Material.JUNGLE_LOG, 20);
-        loggingXPValues.put(Material.ACACIA_LOG, 20);
-        loggingXPValues.put(Material.DARK_OAK_LOG, 25);
+    private void handleSkillRewards(Player player, String skill, int level) {
+        // Send level-up notification
+        player.sendMessage("§a✨ Your " + skill + " skill is now level " + level + "!");
 
-        // Assign XP values to different crops
-        farmingXPValues.put(Material.WHEAT, 10);
-        farmingXPValues.put(Material.CARROTS, 12);
-        farmingXPValues.put(Material.POTATOES, 12);
-        farmingXPValues.put(Material.BEETROOTS, 15);
-        farmingXPValues.put(Material.MELON, 18);
-        farmingXPValues.put(Material.PUMPKIN, 18);
-        farmingXPValues.put(Material.SWEET_BERRY_BUSH, 20);
-        farmingXPValues.put(Material.NETHER_WART, 25);
+        // Check for ability unlocks at level 15
+        if (level == 15) {
+            player.sendMessage("§6⚔ You've unlocked the active ability for " + skill + "!");
+        }
 
-        // Assign XP Values to Different Mobs
-        fightingXPValues.put("ZOMBIE", 10);
-        fightingXPValues.put("SKELETON", 12);
-        fightingXPValues.put("SPIDER", 15);
-        fightingXPValues.put("CREEPER", 20);
-        fightingXPValues.put("ENDERMAN", 30);
-        fightingXPValues.put("WITHER_SKELETON", 40);
-        fightingXPValues.put("BLAZE", 35);
-        fightingXPValues.put("ELDER_GUARDIAN", 75);
-        fightingXPValues.put("WITHER", 250);
-        fightingXPValues.put("ENDER_DRAGON", 500);
-
-        // Assign XP values to different fishing
-        fishingXPValues.put("COD", 10);
-        fishingXPValues.put("SALMON", 12);
-        fishingXPValues.put("TROPICAL_FISH", 15);
-        fishingXPValues.put("PUFFERFISH", 20);
-
-        // Assign XP values to different enchantments
-        enchantingXPValues.put(Material.ENCHANTED_BOOK, 50);
-        enchantingXPValues.put(Material.LAPIS_LAZULI, 10);
-        enchantingXPValues.put(Material.NETHER_STAR, 200);
-        enchantingXPValues.put(Material.DRAGON_BREATH, 250);
-        enchantingXPValues.put(Material.AMETHYST_SHARD, 25);
+        // Apply passive effects if PassiveSkillManager is available
+        if (passiveSkillManager != null) {
+            passiveSkillManager.updatePassiveEffects(player, skill, level);
+        }
     }
 
     public void addXP(Player player, String skill, int xpGained) {
         UUID playerUUID = player.getUniqueId();
-        FileConfiguration config = dataManager.getPlayerData(playerUUID);
+        int currentXP = dataManager.getSkillXP(playerUUID, skill);
+        int currentLevel = dataManager.getSkillLevel(playerUUID, skill);
 
-        int currentXP = getPlayerXP(player, skill);
-        int currentLevel = getPlayerLevel(player, skill);
+        // Apply XP multipliers if PassiveSkillManager is available
+        if (passiveSkillManager != null) {
+            xpGained = (int)(xpGained * passiveSkillManager.getXPMultiplier(player, skill));
+        }
 
-        // XP Scaling Formula
+        int newXP = currentXP + xpGained;
         int requiredXP = getRequiredXP(currentLevel);
 
-        currentXP += xpGained;
-
-        // Check for level up
-        if (currentXP >= requiredXP) {
-            currentXP -= requiredXP;
+        while (newXP >= requiredXP) {
+            // Level up
             currentLevel++;
+            newXP -= requiredXP;
+            requiredXP = getRequiredXP(currentLevel);
 
-            // Notify player of level up
-            player.sendMessage("§a[Skills] You leveled up your " + skill + " skill to Level " + currentLevel + "!");
-            player.playSound(player.getLocation(), "minecraft:entity.player.levelup", 1.0f, 1.0f);
+            // Update level in data manager
+            dataManager.setSkillLevel(playerUUID, skill, currentLevel);
 
-            // Handle milestone rewards
+            // Handle rewards
             handleSkillRewards(player, skill, currentLevel);
         }
 
-        // Save updated values
-        config.set("skills." + skill + ".xp", currentXP);
-        config.set("skills." + skill + ".level", currentLevel);
-        dataManager.savePlayerData(playerUUID, config);
+        // Update XP in data manager
+        dataManager.setSkillXP(playerUUID, skill, newXP);
     }
 
-    // ✅ NEW: Method to retrieve player's XP
     public int getPlayerXP(Player player, String skill) {
-        UUID playerUUID = player.getUniqueId();
-        FileConfiguration config = dataManager.getPlayerData(playerUUID);
-        return config.getInt("skills." + skill + ".xp", 0);
+        return dataManager.getSkillXP(player.getUniqueId(), skill);
     }
 
-    // ✅ NEW: Method to retrieve XP required for leveling up
     public int getRequiredXP(int level) {
-        return (int) Math.pow(level, 1.5) * 100;
+        return 100 * level;
     }
 
-    // ✅ Method to retrieve player's skill level
     public int getPlayerLevel(Player player, String skill) {
-        UUID playerUUID = player.getUniqueId();
-        FileConfiguration config = dataManager.getPlayerData(playerUUID);
-        return config.getInt("skills." + skill + ".level", 1);
+        return dataManager.getSkillLevel(player.getUniqueId(), skill);
     }
 
     public int getXPForMaterial(Material material) {
@@ -145,61 +106,73 @@ public class XPManager {
     }
 
     public int getXPForMob(String mobName) {
-        return fightingXPValues.getOrDefault(mobName.toUpperCase(), 0);
+        return fightingXPValues.getOrDefault(mobName, 0);
     }
 
     public int getXPForFish(String fishType) {
-        return fishingXPValues.getOrDefault(fishType.toUpperCase(), 0);
+        return fishingXPValues.getOrDefault(fishType, 0);
     }
 
     public int getXPForEnchanting(Material material) {
         return enchantingXPValues.getOrDefault(material, 0);
     }
 
-    private void handleSkillRewards(Player player, String skill, int level) {
-        switch (skill.toLowerCase()) {
-            case "mining" -> {
-                if (level == 5) passiveSkillManager.unlockPassive(player, "mining", "mining_xp_boost");
-                if (level == 10) passiveSkillManager.unlockPassive(player, "mining", "auto_smelt");
-                if (level == 15) passiveSkillManager.unlockPassive(player, "mining", "double_ore_drop");
-                if (level == 25) passiveSkillManager.unlockPassive(player, "mining", "fortune_boost");
-                if (level == 50) passiveSkillManager.unlockPassive(player, "mining", "auto_smelt_upgrade");
-            }
-            case "logging" -> {
-                if (level == 5) passiveSkillManager.unlockPassive(player, "logging", "logging_xp_boost");
-                if (level == 10) passiveSkillManager.unlockPassive(player, "logging", "fast_chop");
-                if (level == 15) passiveSkillManager.unlockPassive(player, "logging", "double_wood_drop");
-                if (level == 25) passiveSkillManager.unlockPassive(player, "logging", "tree_growth_boost");
-                if (level == 50) passiveSkillManager.unlockPassive(player, "logging", "triple_log_drop");
-            }
-            case "farming" -> {
-                if (level == 5) passiveSkillManager.unlockPassive(player, "farming", "farming_xp_boost");
-                if (level == 10) passiveSkillManager.unlockPassive(player, "farming", "auto_replant");
-                if (level == 15) passiveSkillManager.unlockPassive(player, "farming", "double_crop_yield");
-                if (level == 25) passiveSkillManager.unlockPassive(player, "farming", "instant_growth");
-                if (level == 50) passiveSkillManager.unlockPassive(player, "farming", "auto_harvest");
-            }
-            case "fighting" -> {
-                if (level == 5) passiveSkillManager.unlockPassive(player, "fighting", "damage_boost");
-                if (level == 10) passiveSkillManager.unlockPassive(player, "fighting", "heal_on_kill");
-                if (level == 15) passiveSkillManager.unlockPassive(player, "fighting", "critical_hit");
-                if (level == 25) passiveSkillManager.unlockPassive(player, "fighting", "lifesteal");
-                if (level == 50) passiveSkillManager.unlockPassive(player, "fighting", "damage_reduction");
-            }
-            case "fishing" -> {
-                if (level == 5) passiveSkillManager.unlockPassive(player, "fishing", "fishing_xp_boost");
-                if (level == 10) passiveSkillManager.unlockPassive(player, "fishing", "treasure_hunter");
-                if (level == 15) passiveSkillManager.unlockPassive(player, "fishing", "double_catch");
-                if (level == 25) passiveSkillManager.unlockPassive(player, "fishing", "rare_catch");
-                if (level == 50) passiveSkillManager.unlockPassive(player, "fishing", "master_angler");
-            }
-            case "enchanting" -> {
-                if (level == 5) passiveSkillManager.unlockPassive(player, "enchanting", "enchanting_xp_boost");
-                if (level == 10) passiveSkillManager.unlockPassive(player, "enchanting", "enchant_mastery");
-                if (level == 15) passiveSkillManager.unlockPassive(player, "enchanting", "double_enchant");
-                if (level == 25) passiveSkillManager.unlockPassive(player, "enchanting", "wisdom_boost");
-                if (level == 50) passiveSkillManager.unlockPassive(player, "enchanting", "arcane_mastery");
-            }
-        }
+    // Initialize XP value maps
+    private Map<Material, Integer> initializeMiningXP() {
+        Map<Material, Integer> xpValues = new HashMap<>();
+        xpValues.put(Material.STONE, 1);
+        xpValues.put(Material.COAL_ORE, 5);
+        xpValues.put(Material.IRON_ORE, 10);
+        xpValues.put(Material.GOLD_ORE, 15);
+        xpValues.put(Material.DIAMOND_ORE, 30);
+        return xpValues;
+    }
+
+    private Map<Material, Integer> initializeLoggingXP() {
+        Map<Material, Integer> xpValues = new HashMap<>();
+        xpValues.put(Material.OAK_LOG, 5);
+        xpValues.put(Material.BIRCH_LOG, 5);
+        xpValues.put(Material.SPRUCE_LOG, 5);
+        xpValues.put(Material.JUNGLE_LOG, 5);
+        xpValues.put(Material.ACACIA_LOG, 5);
+        xpValues.put(Material.DARK_OAK_LOG, 5);
+        return xpValues;
+    }
+
+    private Map<Material, Integer> initializeFarmingXP() {
+        Map<Material, Integer> xpValues = new HashMap<>();
+        xpValues.put(Material.WHEAT, 5);
+        xpValues.put(Material.CARROTS, 5);
+        xpValues.put(Material.POTATOES, 5);
+        xpValues.put(Material.BEETROOTS, 5);
+        return xpValues;
+    }
+
+    private Map<String, Integer> initializeFightingXP() {
+        Map<String, Integer> xpValues = new HashMap<>();
+        xpValues.put("ZOMBIE", 10);
+        xpValues.put("SKELETON", 15);
+        xpValues.put("SPIDER", 12);
+        xpValues.put("CREEPER", 20);
+        return xpValues;
+    }
+
+    private Map<String, Integer> initializeFishingXP() {
+        Map<String, Integer> xpValues = new HashMap<>();
+        xpValues.put("RAW_FISH", 5);
+        xpValues.put("RAW_SALMON", 7);
+        xpValues.put("PUFFERFISH", 10);
+        xpValues.put("TROPICAL_FISH", 15);
+        return xpValues;
+    }
+
+    private Map<Material, Integer> initializeEnchantingXP() {
+        Map<Material, Integer> xpValues = new HashMap<>();
+        xpValues.put(Material.WOODEN_SWORD, 5);
+        xpValues.put(Material.STONE_SWORD, 7);
+        xpValues.put(Material.IRON_SWORD, 10);
+        xpValues.put(Material.DIAMOND_SWORD, 15);
+        xpValues.put(Material.NETHERITE_SWORD, 20);
+        return xpValues;
     }
 }
