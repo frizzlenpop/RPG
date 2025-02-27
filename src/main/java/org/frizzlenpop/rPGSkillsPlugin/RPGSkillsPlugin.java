@@ -40,13 +40,13 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getLogger().info("Player data directory: " + playerDataManager.getPlayerDataFolder().getAbsolutePath());
 
         // Initialize Passive Skill Manager first
-        passiveSkillManager = new PassiveSkillManager(this);
         getServer().getPluginManager().registerEvents(passiveSkillManager, this);
 
         // Initialize XP Manager, GUI, and Abilities
         xpManager = new XPManager(playerDataManager, passiveSkillManager);
+        passiveSkillManager = new PassiveSkillManager(xpManager, this);
         skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
-        abilityManager = new SkillAbilityManager();
+        abilityManager = new SkillAbilityManager(this);
         getServer().getPluginManager().registerEvents(abilityManager, this);
 
         // Register event listeners

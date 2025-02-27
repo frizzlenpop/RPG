@@ -205,15 +205,6 @@ public class SkillsGUI implements Listener {
                         "Chance to receive triple drops from chopping wood"));
                 break;
 
-            case "farming":
-                passives.add(new PassiveSkillInfo("Double Crop Yield", 5, Material.WHEAT,
-                        "Chance to receive double crops when harvesting"));
-                passives.add(new PassiveSkillInfo("Auto Replant", 10, Material.WHEAT_SEEDS,
-                        "Automatically replant crops when harvesting"));
-                passives.add(new PassiveSkillInfo("Instant Growth", 15, Material.GOLDEN_HOE,
-                        "Chance for instant crop growth"));
-                break;
-
             case "fighting":
                 passives.add(new PassiveSkillInfo("Lifesteal", 5, Material.REDSTONE,
                         "Chance to heal when dealing damage"));
@@ -221,6 +212,36 @@ public class SkillsGUI implements Listener {
                         "Take less damage from attacks"));
                 passives.add(new PassiveSkillInfo("Heal on Kill", 15, Material.GOLDEN_APPLE,
                         "Heal when killing enemies"));
+                break;
+            case "fishing":
+                passives.add(new PassiveSkillInfo("XP Boost", 5, Material.EXPERIENCE_BOTTLE,
+                        "+10% XP Boost when fishing"));
+                passives.add(new PassiveSkillInfo("Treasure Hunter", 10, Material.CHEST,
+                        "15% increased treasure catch rate"));
+                passives.add(new PassiveSkillInfo("Rare Fish Master", 15, Material.PUFFERFISH,
+                        "Unlocks rare fish catches"));
+                passives.add(new PassiveSkillInfo("Quick Hook", 20, Material.FISHING_ROD,
+                        "10% faster hook time"));
+                break;
+            case "farming":
+                passives.add(new PassiveSkillInfo("Farming XP Boost", 5, Material.EXPERIENCE_BOTTLE,
+                        "+10% XP Boost when harvesting crops"));
+                passives.add(new PassiveSkillInfo("Auto Replant", 10, Material.WHEAT_SEEDS,
+                        "Automatically replants harvested crops"));
+                passives.add(new PassiveSkillInfo("Double Harvest", 15, Material.WHEAT,
+                        "Chance for double crop yields"));
+                passives.add(new PassiveSkillInfo("Growth Boost", 20, Material.BONE_MEAL,
+                        "Crops grow 10% faster"));
+                break;
+            case "enchanting":
+                passives.add(new PassiveSkillInfo("Research Master", 5, Material.BOOK,
+                        "25% more XP from research"));
+                passives.add(new PassiveSkillInfo("Book Upgrade", 10, Material.ENCHANTED_BOOK,
+                        "Chance to upgrade enchanted books"));
+                passives.add(new PassiveSkillInfo("Custom Enchants", 15, Material.EXPERIENCE_BOTTLE,
+                        "Unlocks exclusive enchantments"));
+                passives.add(new PassiveSkillInfo("Rare Enchant Boost", 20, Material.DIAMOND,
+                        "Higher chance of rare enchantments"));
                 break;
         }
 
@@ -294,7 +315,7 @@ public class SkillsGUI implements Listener {
                 openSkillsMenu(player);
             } else if (event.getSlot() == 49) {
                 // Activate active skill when clicking the ability button.
-                // Here we derive the skill key from the title by removing color codes and extra text.
+                // Derive the skill key from the title by removing color codes and extra text.
                 String skillKey = title.replace(ChatColor.DARK_PURPLE.toString(), "").replace(" Details", "").toLowerCase();
                 activateSkill(player, skillKey);
             }

@@ -29,6 +29,22 @@ commands:
     usage: /berserkerrage
     permission: rpgskills.berserkerrage
 
+    superharvest:
+      description: Activates the Super Harvest ability
+      usage: /superharvest
+      permission: rpgskills.superharvest
+
+    instantcatch:
+      description: Activates the Instant Catch ability
+      usage: /instantcatch
+      permission: rpgskills.instantcatch
+
+    doubleenchant:
+      description: Activates the Double Enchant ability
+      usage: /doubleenchant
+      permission: rpgskills.doubleenchant
+
+
 permissions:
   rpgskills.use:
     description: Allows a player to open the skills menu.
@@ -41,4 +57,13 @@ permissions:
     default: true
   rpgskills.berserkerrage:
     description: Allows a player to use the Berserker Rage skill.
+    default: true
+  rpgskills.superharvest:
+    description: Allows a player to use the Super Harvest skill
+    default: true
+  rpgskills.instantcatch:
+    description: Allows a player to use the Instant Catch skill
+    default: true
+  rpgskills.doubleenchant:
+    description: Allows a player to use the Double Enchant skill
     default: true

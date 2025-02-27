@@ -159,32 +159,46 @@ public class XPManager {
     private void handleSkillRewards(Player player, String skill, int level) {
         switch (skill.toLowerCase()) {
             case "mining" -> {
-                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "mining_xp_boost");
-                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "auto_smelt");
-                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_ore_drop");
-                if (level == 25) passiveSkillManager.applyPassiveEffect(player, "fortune_boost");
-                if (level == 50) passiveSkillManager.applyPassiveEffect(player, "auto_smelt_upgrade");
+                if (level == 5) passiveSkillManager.unlockPassive(player, "mining", "mining_xp_boost");
+                if (level == 10) passiveSkillManager.unlockPassive(player, "mining", "auto_smelt");
+                if (level == 15) passiveSkillManager.unlockPassive(player, "mining", "double_ore_drop");
+                if (level == 25) passiveSkillManager.unlockPassive(player, "mining", "fortune_boost");
+                if (level == 50) passiveSkillManager.unlockPassive(player, "mining", "auto_smelt_upgrade");
             }
             case "logging" -> {
-                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "logging_xp_boost");
-                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "fast_chop");
-                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_wood_drop");
-                if (level == 25) passiveSkillManager.applyPassiveEffect(player, "tree_growth_boost");
-                if (level == 50) passiveSkillManager.applyPassiveEffect(player, "triple_log_drop");
+                if (level == 5) passiveSkillManager.unlockPassive(player, "logging", "logging_xp_boost");
+                if (level == 10) passiveSkillManager.unlockPassive(player, "logging", "fast_chop");
+                if (level == 15) passiveSkillManager.unlockPassive(player, "logging", "double_wood_drop");
+                if (level == 25) passiveSkillManager.unlockPassive(player, "logging", "tree_growth_boost");
+                if (level == 50) passiveSkillManager.unlockPassive(player, "logging", "triple_log_drop");
             }
             case "farming" -> {
-                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "farming_xp_boost");
-                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "auto_replant");
-                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_crop_yield");
-                if (level == 25) passiveSkillManager.applyPassiveEffect(player, "instant_growth");
-                if (level == 50) passiveSkillManager.applyPassiveEffect(player, "auto_harvest");
+                if (level == 5) passiveSkillManager.unlockPassive(player, "farming", "farming_xp_boost");
+                if (level == 10) passiveSkillManager.unlockPassive(player, "farming", "auto_replant");
+                if (level == 15) passiveSkillManager.unlockPassive(player, "farming", "double_crop_yield");
+                if (level == 25) passiveSkillManager.unlockPassive(player, "farming", "instant_growth");
+                if (level == 50) passiveSkillManager.unlockPassive(player, "farming", "auto_harvest");
             }
             case "fighting" -> {
-                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "damage_boost");
-                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "heal_on_kill");
-                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "critical_hit");
-                if (level == 25) passiveSkillManager.applyPassiveEffect(player, "lifesteal");
-                if (level == 50) passiveSkillManager.applyPassiveEffect(player, "damage_reduction");
+                if (level == 5) passiveSkillManager.unlockPassive(player, "fighting", "damage_boost");
+                if (level == 10) passiveSkillManager.unlockPassive(player, "fighting", "heal_on_kill");
+                if (level == 15) passiveSkillManager.unlockPassive(player, "fighting", "critical_hit");
+                if (level == 25) passiveSkillManager.unlockPassive(player, "fighting", "lifesteal");
+                if (level == 50) passiveSkillManager.unlockPassive(player, "fighting", "damage_reduction");
+            }
+            case "fishing" -> {
+                if (level == 5) passiveSkillManager.unlockPassive(player, "fishing", "fishing_xp_boost");
+                if (level == 10) passiveSkillManager.unlockPassive(player, "fishing", "treasure_hunter");
+                if (level == 15) passiveSkillManager.unlockPassive(player, "fishing", "double_catch");
+                if (level == 25) passiveSkillManager.unlockPassive(player, "fishing", "rare_catch");
+                if (level == 50) passiveSkillManager.unlockPassive(player, "fishing", "master_angler");
+            }
+            case "enchanting" -> {
+                if (level == 5) passiveSkillManager.unlockPassive(player, "enchanting", "enchanting_xp_boost");
+                if (level == 10) passiveSkillManager.unlockPassive(player, "enchanting", "enchant_mastery");
+                if (level == 15) passiveSkillManager.unlockPassive(player, "enchanting", "double_enchant");
+                if (level == 25) passiveSkillManager.unlockPassive(player, "enchanting", "wisdom_boost");
+                if (level == 50) passiveSkillManager.unlockPassive(player, "enchanting", "arcane_mastery");
             }
         }
     }
