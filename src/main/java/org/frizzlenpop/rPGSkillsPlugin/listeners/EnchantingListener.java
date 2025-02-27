@@ -160,16 +160,25 @@ public class EnchantingListener implements Listener {
                 player.getInventory().setItemInMainHand(null);
             }
 
-            // Award XP
-            int xpGained = enchantingXPValues.get(itemInHand.getType());
-            xpManager.addXP(player, "enchanting", xpGained);
-            player.sendMessage("§6+" + xpGained + " Enchanting XP");
+// Award XP
+            Integer xpValue = enchantingXPValues.get(itemInHand.getType());
+            if (xpValue == null) return;
 
-            // 10% chance to get an unknown enchantment scroll
-            if (random.nextInt(100) < 10) {
+            xpManager.addXP(player, "enchanting", xpValue);
+            player.sendMessage("§6+" + xpValue + " Enchanting XP");
+
+// Calculate chance based on XP value
+// Base chance of 5% + up to additional 15% based on XP value
+            double scrollChance = 5.0 + (xpValue * 0.15);  // Using xpValue instead of recalculating
+
+// Roll for scroll with the calculated chance
+            if (random.nextDouble() * 100 < scrollChance) {
                 giveUnknownScroll(player, getRandomEnchantment());
                 player.sendMessage("§6You found an unknown enchantment scroll!");
             }
+
+
+
         }
     }
 
