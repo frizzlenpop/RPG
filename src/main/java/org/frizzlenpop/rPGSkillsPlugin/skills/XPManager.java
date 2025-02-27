@@ -157,17 +157,35 @@ public class XPManager {
     }
 
     private void handleSkillRewards(Player player, String skill, int level) {
-        switch (skill) {
-            case "mining":
+        switch (skill.toLowerCase()) {
+            case "mining" -> {
                 if (level == 5) passiveSkillManager.applyPassiveEffect(player, "mining_xp_boost");
                 if (level == 10) passiveSkillManager.applyPassiveEffect(player, "auto_smelt");
-                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_ore_drops");
-                break;
-            case "logging":
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_ore_drop");
+                if (level == 25) passiveSkillManager.applyPassiveEffect(player, "fortune_boost");
+                if (level == 50) passiveSkillManager.applyPassiveEffect(player, "auto_smelt_upgrade");
+            }
+            case "logging" -> {
                 if (level == 5) passiveSkillManager.applyPassiveEffect(player, "logging_xp_boost");
                 if (level == 10) passiveSkillManager.applyPassiveEffect(player, "fast_chop");
-                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_wood_drops");
-                break;
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_wood_drop");
+                if (level == 25) passiveSkillManager.applyPassiveEffect(player, "tree_growth_boost");
+                if (level == 50) passiveSkillManager.applyPassiveEffect(player, "triple_log_drop");
+            }
+            case "farming" -> {
+                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "farming_xp_boost");
+                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "auto_replant");
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "double_crop_yield");
+                if (level == 25) passiveSkillManager.applyPassiveEffect(player, "instant_growth");
+                if (level == 50) passiveSkillManager.applyPassiveEffect(player, "auto_harvest");
+            }
+            case "fighting" -> {
+                if (level == 5) passiveSkillManager.applyPassiveEffect(player, "damage_boost");
+                if (level == 10) passiveSkillManager.applyPassiveEffect(player, "heal_on_kill");
+                if (level == 15) passiveSkillManager.applyPassiveEffect(player, "critical_hit");
+                if (level == 25) passiveSkillManager.applyPassiveEffect(player, "lifesteal");
+                if (level == 50) passiveSkillManager.applyPassiveEffect(player, "damage_reduction");
+            }
         }
     }
 }

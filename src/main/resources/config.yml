@@ -1,0 +1,25 @@
+# Add this section to your existing config.yml
+passives:
+  mining:
+    fortune_boost:
+      chance: 0.25
+      bonus_amount: 2
+    auto_smelt_upgrade:
+      bonus_chance: 0.5
+  logging:
+    tree_growth_boost:
+      radius: 3
+      growth_multiplier: 2.0
+    triple_log_drop:
+      enabled: true
+  farming:
+    instant_growth:
+      chance: 0.15
+      radius: 2
+    auto_harvest:
+      radius: 2
+  fighting:
+    lifesteal:
+      heal_percent: 0.15
+    damage_reduction:
+      reduction_percent: 0.25

@@ -3,6 +3,8 @@ version: 1.0
 main: org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin
 api-version: 1.21
 author: Frizzlenpop
+config-yml: config.yml
+
 commands:
   skills:
     description: Opens the skills menu.

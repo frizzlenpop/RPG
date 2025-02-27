@@ -94,9 +94,15 @@ public class SkillsGUI implements Listener {
             lore.add("");
             lore.add("§eUnlocked Perks:");
 
-            // Display unlocked perks dynamically
-            for (int i = 5; i <= level; i += 5) {
-                lore.add("§7(Level " + i + ") " + getSkillMilestone(skillKey, i));
+            // Display all possible milestones with unlock status
+            int[] milestones = {5, 10, 15, 25, 50, 100};
+            for (int milestone : milestones) {
+                String milestone_text = getSkillMilestone(skillKey, milestone);
+                if (level >= milestone) {
+                    lore.add("§a✓ Level " + milestone + ": " + milestone_text);
+                } else {
+                    lore.add("§c✗ Level " + milestone + ": " + milestone_text);
+                }
             }
 
             // Show Active Skill Unlock Level
@@ -187,17 +193,47 @@ public class SkillsGUI implements Listener {
     }
 
     private String getSkillMilestone(String skill, int level) {
-        switch (skill) {
-            case "mining":
-                return (level == 5 ? "10% more XP from ores" : level == 10 ? "Auto-smelt ores" : "Chance to double drops");
-            case "logging":
-                return (level == 5 ? "10% more XP from trees" : level == 10 ? "Faster tree chopping" : "Double wood drops");
-            case "farming":
-                return (level == 5 ? "10% more XP from crops" : level == 10 ? "Auto-replanting" : "Double harvest chance");
-            default:
-                return "Unknown Reward";
-        }
+        return switch (skill.toLowerCase()) {
+            case "mining" -> switch (level) {
+                case 5 -> "§a+10% Mining XP Gain";
+                case 10 -> "§aAuto-Smelt Ores";
+                case 15 -> "§aDouble Ore Drops";
+                case 25 -> "§6Fortune Boost";
+                case 50 -> "§6Advanced Auto-Smelt";
+                case 100 -> "§6Master Miner Status";
+                default -> "§7None";
+            };
+            case "logging" -> switch (level) {
+                case 5 -> "§a+10% Logging XP Gain";
+                case 10 -> "§aFast Tree Chopping";
+                case 15 -> "§aDouble Wood Drops";
+                case 25 -> "§6Tree Growth Boost";
+                case 50 -> "§6Triple Log Drops";
+                case 100 -> "§6Master Logger Status";
+                default -> "§7None";
+            };
+            case "farming" -> switch (level) {
+                case 5 -> "§a+10% Farming XP Gain";
+                case 10 -> "§aAuto-Replant Crops";
+                case 15 -> "§aDouble Crop Yield";
+                case 25 -> "§6Instant Growth Chance";
+                case 50 -> "§6Auto-Harvest";
+                case 100 -> "§6Master Farmer Status";
+                default -> "§7None";
+            };
+            case "fighting" -> switch (level) {
+                case 5 -> "§a+10% Damage";
+                case 10 -> "§aHeal on Kill";
+                case 15 -> "§aCritical Hit Bonus";
+                case 25 -> "§6Lifesteal";
+                case 50 -> "§6Damage Reduction";
+                case 100 -> "§6Master Warrior Status";
+                default -> "§7None";
+            };
+            default -> "§7None";
+        };
     }
+
 
     private String getActiveSkillName(String skill) {
         switch (skill) {
