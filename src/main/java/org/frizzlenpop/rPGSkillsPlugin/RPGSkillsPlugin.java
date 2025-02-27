@@ -45,7 +45,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
 
         // Initialize XP Manager, GUI, and Abilities
         xpManager = new XPManager(playerDataManager, passiveSkillManager);
-        skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager);
+        skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
         abilityManager = new SkillAbilityManager();
         getServer().getPluginManager().registerEvents(abilityManager, this);
 
