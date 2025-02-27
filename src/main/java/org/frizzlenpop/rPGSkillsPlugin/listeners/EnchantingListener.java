@@ -171,13 +171,16 @@ public class EnchantingListener implements Listener {
         ItemStack cursor = event.getCursor();
         ItemStack current = event.getCurrentItem();
 
-        if (cursor == null || current == null) return;
-
-        // Check if the cursor item is an identified scroll
+        // Allow placing scrolls back into inventory
         if (isIdentifiedScroll(cursor)) {
+            // If clicking into an empty slot or onto another item, allow the normal inventory behavior
+            if (current == null || current.getType() == Material.AIR) {
+                return; // Don't cancel the event, let the item be placed
+            }
+
+            // If clicking onto an enchantable item, try to apply the enchantment
             event.setCancelled(true);
 
-            // Get the enchantment from the scroll
             PersistentDataContainer container = cursor.getItemMeta().getPersistentDataContainer();
             String enchantName = container.get(SCROLL_ENCHANT_KEY, PersistentDataType.STRING);
             Enchantment enchantment = Enchantment.getByKey(NamespacedKey.minecraft(enchantName.toLowerCase()));
@@ -196,6 +199,7 @@ public class EnchantingListener implements Listener {
                 player.sendMessage("§cThis enchantment cannot be applied to this item!");
             }
         }
+
         // Check if trying to identify an unknown scroll
         else if (isUnknownScroll(current) && event.getClick().isRightClick()) {
             event.setCancelled(true);
