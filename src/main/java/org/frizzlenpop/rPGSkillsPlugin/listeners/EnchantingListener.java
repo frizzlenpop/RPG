@@ -145,15 +145,25 @@ public class EnchantingListener implements Listener {
 
     @EventHandler
     public void onOreClick(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if (event.getClickedBlock() == null) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) return;
 
-        Material clickedType = event.getClickedBlock().getType();
-        if (enchantingXPValues.containsKey(clickedType)) {
-            Player player = event.getPlayer();
-            int xpGained = enchantingXPValues.get(clickedType);
+        Player player = event.getPlayer();
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+
+        if (itemInHand.getType() != Material.AIR && enchantingXPValues.containsKey(itemInHand.getType())) {
+            event.setCancelled(true); // Prevent any block interaction
+
+            // Reduce the item stack by 1
+            if (itemInHand.getAmount() > 1) {
+                itemInHand.setAmount(itemInHand.getAmount() - 1);
+            } else {
+                player.getInventory().setItemInMainHand(null);
+            }
+
+            // Award XP
+            int xpGained = enchantingXPValues.get(itemInHand.getType());
             xpManager.addXP(player, "enchanting", xpGained);
-            player.sendMessage("§6You gained " + xpGained + " XP from " + (clickedType) + " ore!");
+            player.sendMessage("§6+" + xpGained + " Enchanting XP");
 
             // 10% chance to get an unknown enchantment scroll
             if (random.nextInt(100) < 10) {
