@@ -16,10 +16,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -83,47 +85,47 @@ public class PassiveSkillManager implements Listener {
 
         // Mining passives
         if (miningLevel >= 5) {
-            passives.add("double_ore_drop");
+            passives.add("doubleOreDrop");
             doubleOreDropPlayers.add(playerId);
         }
         if (miningLevel >= 10) {
-            passives.add("auto_smelt");
+            passives.add("autoSmelt");
             autoSmeltPlayers.add(playerId);
         }
         if (miningLevel >= 15) {
-            passives.add("fortune_boost");
+            passives.add("fortuneBoost");
             fortuneBoostPlayers.add(playerId);
         }
         if (miningLevel >= 20) {
-            passives.add("auto_smelt_upgrade");
+            passives.add("autoSmeltUpgrade");
             autoSmeltUpgradePlayers.add(playerId);
         }
 
         // Logging passives
         if (loggingLevel >= 5) {
-            passives.add("double_wood_drop");
+            passives.add("doubleWoodDrop");
             doubleWoodDropPlayers.add(playerId);
         }
         if (loggingLevel >= 10) {
-            passives.add("tree_growth_boost");
+            passives.add("treeGrowthBoost");
             treeGrowthBoostPlayers.add(playerId);
         }
         if (loggingLevel >= 15) {
-            passives.add("triple_log_drop");
+            passives.add("tripleLogDrop");
             tripleLogDropPlayers.add(playerId);
         }
 
         // Farming passives
         if (farmingLevel >= 5) {
-            passives.add("double_crop_yield");
+            passives.add("doubleCropYield");
             doubleCropYieldPlayers.add(playerId);
         }
         if (farmingLevel >= 10) {
-            passives.add("auto_replant");
+            passives.add("autoReplant");
             autoReplantPlayers.add(playerId);
         }
         if (farmingLevel >= 15) {
-            passives.add("instant_growth");
+            passives.add("instantGrowth");
             instantGrowthPlayers.add(playerId);
         }
 
@@ -133,11 +135,11 @@ public class PassiveSkillManager implements Listener {
             lifestealPlayers.add(playerId);
         }
         if (fightingLevel >= 10) {
-            passives.add("damage_reduction");
+            passives.add("damageReduction");
             damageReductionPlayers.add(playerId);
         }
         if (fightingLevel >= 15) {
-            passives.add("heal_on_kill");
+            passives.add("healOnKill");
             healOnKillPlayers.add(playerId);
         }
 
@@ -490,24 +492,22 @@ public class PassiveSkillManager implements Listener {
         return material.name().contains("_ORE") || material == Material.ANCIENT_DEBRIS;
     }
 
-    private Material getOreDrop(Material oreMaterial) {
-        // Determine the drop for a given ore (typically the raw form).
-        return switch (oreMaterial) {
-            case IRON_ORE, DEEPSLATE_IRON_ORE -> Material.RAW_IRON;
-            case GOLD_ORE, DEEPSLATE_GOLD_ORE -> Material.RAW_GOLD;
-            case COPPER_ORE, DEEPSLATE_COPPER_ORE -> Material.RAW_COPPER;
-            case ANCIENT_DEBRIS -> Material.NETHERITE_SCRAP;
-            default -> oreMaterial;  // Fallback: drop the ore itself.
-        };
-    }
 
-    private Material getSmeltedOre(Material oreMaterial) {
-        // Convert the ore (or raw item) to its smelted form.
-        return switch (oreMaterial) {
-            case IRON_ORE, DEEPSLATE_IRON_ORE, RAW_IRON -> Material.IRON_INGOT;
-            case GOLD_ORE, DEEPSLATE_GOLD_ORE, RAW_GOLD -> Material.GOLD_INGOT;
-            case COPPER_ORE, DEEPSLATE_COPPER_ORE, RAW_COPPER -> Material.COPPER_INGOT;
-            case ANCIENT_DEBRIS -> Material.NETHERITE_SCRAP;
+    // Determines the appropriate drop material based on the mined block type.
+    private Material getOreDrop(Material material, boolean isSmelted) {
+        return switch (material) {
+            case IRON_ORE, DEEPSLATE_IRON_ORE -> isSmelted ? Material.IRON_INGOT : Material.RAW_IRON;
+            case GOLD_ORE, DEEPSLATE_GOLD_ORE -> isSmelted ? Material.GOLD_INGOT : Material.RAW_GOLD;
+            case COPPER_ORE, DEEPSLATE_COPPER_ORE -> isSmelted ? Material.COPPER_INGOT : Material.RAW_COPPER;
+            case ANCIENT_DEBRIS -> isSmelted ? Material.NETHERITE_SCRAP : Material.ANCIENT_DEBRIS;
+
+            case DIAMOND_ORE, DEEPSLATE_DIAMOND_ORE -> Material.DIAMOND;
+            case EMERALD_ORE, DEEPSLATE_EMERALD_ORE -> Material.EMERALD;
+            case LAPIS_ORE, DEEPSLATE_LAPIS_ORE -> Material.LAPIS_LAZULI;
+            case REDSTONE_ORE, DEEPSLATE_REDSTONE_ORE -> Material.REDSTONE;
+            case COAL_ORE, DEEPSLATE_COAL_ORE -> Material.COAL;
+            case NETHER_QUARTZ_ORE -> Material.QUARTZ;
+            case NETHER_GOLD_ORE -> Material.GOLD_NUGGET;
             default -> null;
         };
     }
@@ -518,24 +518,28 @@ public class PassiveSkillManager implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
         UUID playerId = player.getUniqueId();
+        if (!isOre(block.getType())) {
+            return;
+        }
+        event.setDropItems(false);
 
-        // Example: If the block is an ore and the player has the "auto_smelt" passive,
-        // prevent the normal drop and drop the smelted item instead.
-        if (isOre(block.getType())) {
-            if (hasPassive(playerId, "auto_smelt")) {
-                event.setDropItems(false);
-                Material smelted = getSmeltedOre(block.getType());
-                if (smelted != null) {
-                    block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(smelted, 1));
-                }
+        int amount = 1;
+        if (hasPassive(playerId, "doubleOreDrop")) {
+            if (Math.random() < 0.5) { // 50% chance to double drop
+                amount = 2;
+                player.sendMessage("§6You got lucky and the ore dropped twice as much!");
             }
         }
 
-        // You can add additional logic for crops or other block types here.
+        boolean isSmelted = hasPassive(playerId, "autoSmelt");
+        Material dropMaterial = getOreDrop(block.getType(), isSmelted);
+
+        block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(dropMaterial, amount));
+
     }
 
     @EventHandler
-    public void onEntityDeath(org.bukkit.event.entity.EntityDeathEvent event) {
+    public void onEntityDeath(EntityDeathEvent event) {
         // Example: If the killer has a "heal_on_kill" passive, heal them upon a kill.
         Player killer = event.getEntity().getKiller();
         if (killer != null) {
