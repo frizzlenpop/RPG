@@ -67,7 +67,9 @@ public class SkillAbilityManager implements Listener {
     public void activateTimberChop(Player player) {
         if (canUseAbility(player, "TimberChop", 30)) {
             player.sendMessage("§a[Skill] Timber Chop activated! The next tree you break will fall instantly.");
+
             timberChopPlayers.add(player.getUniqueId());
+            Bukkit.broadcastMessage(Arrays.toString(timberChopPlayers.toArray()));
         }
     }
 
@@ -77,29 +79,38 @@ public class SkillAbilityManager implements Listener {
         Block block = event.getBlock();
 
         if (timberChopPlayers.contains(player.getUniqueId()) && isLog(block.getType())) {
+            Bukkit.broadcastMessage("Block broken: " + block.getType());
             chopTree(block);
             timberChopPlayers.remove(player.getUniqueId());
         }
     }
 
     private boolean isLog(Material material) {
-        return material.name().endsWith("_LOG"); // Works for all wood types
+        return material.name().contains("_LOG"); // Works for all wood types
     }
 
     private void chopTree(Block block) {
         Queue<Block> logsToBreak = new LinkedList<>();
+        Set<Block> visited = new HashSet<>();
+
         logsToBreak.add(block);
+        visited.add(block);
 
         while (!logsToBreak.isEmpty()) {
             Block current = logsToBreak.poll();
             if (isLog(current.getType())) {
                 current.breakNaturally();
+
                 for (Block relative : getAdjacentBlocks(current)) {
-                    logsToBreak.add(relative);
+                    if (!visited.contains(relative) && isLog(relative.getType())) {
+                        logsToBreak.add(relative);
+                        visited.add(relative);
+                    }
                 }
             }
         }
     }
+
 
     private List<Block> getAdjacentBlocks(Block block) {
         List<Block> adjacent = new ArrayList<>();
@@ -126,15 +137,13 @@ public class SkillAbilityManager implements Listener {
     public void activateAbility(Player player, String ability) {
         switch (ability) {
             case "Mining Burst":
-                player.sendMessage("§a[Skill] Mining Burst activated!");
-                player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 5 * 20, 2));
+                activateMiningBurst(player);
                 break;
             case "Timber Chop":
-                player.sendMessage("§a[Skill] Timber Chop activated!");
+                activateTimberChop(player);
                 break;
             case "Berserker Rage":
-                player.sendMessage("§a[Skill] Berserker Rage activated!");
-                player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 10 * 20, 1));
+                activateBerserkerRage(player);
                 break;
         }
     }

@@ -38,7 +38,6 @@ public class RPGSkillsPlugin extends JavaPlugin {
         this.skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
 
 
-
         // Set the passive skill manager after initialization
         xpManager.setPassiveSkillManager(passiveSkillManager);
 
@@ -47,6 +46,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getCommand("abilities").setExecutor(new AbilitiesCommand(this, playerDataManager));
         getCommand("skillsadmin").setExecutor(new SkillsAdminCommand(playerDataManager, xpManager));
         getCommand("toggleskillmessages").setExecutor(new ToggleSkillMessagesCommand(playerDataManager));
+        getCommand("passives").setExecutor(new PassivesCommand(passiveSkillManager));
 
         // Register all listeners
         registerListeners();
@@ -62,6 +62,8 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(skillsGUI, this);
         getServer().getPluginManager().registerEvents(new LoggingListener(xpManager), this);
         getServer().getPluginManager().registerEvents(new FarmingListener(xpManager), this);
+
+        getServer().getPluginManager().registerEvents(abilityManager, this);
     }
 
 
@@ -113,7 +115,8 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Save player data
         if (playerDataManager != null) {
             for (Player player : getServer().getOnlinePlayers()) {
-                playerDataManager.savePlayerData(player.getUniqueId(), null);
+                FileConfiguration playerData = playerDataManager.getPlayerData(player.getUniqueId());
+                playerDataManager.savePlayerData(player.getUniqueId(), playerData);
             }
         }
 
