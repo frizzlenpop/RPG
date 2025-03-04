@@ -80,7 +80,7 @@ public class SkillAbilityManager implements Listener {
 
         if (timberChopPlayers.contains(player.getUniqueId()) && isLog(block.getType())) {
             Bukkit.broadcastMessage("Block broken: " + block.getType());
-            chopTree(block);
+            chopTree(block, player);
             timberChopPlayers.remove(player.getUniqueId());
         }
     }
@@ -89,7 +89,8 @@ public class SkillAbilityManager implements Listener {
         return material.name().contains("_LOG"); // Works for all wood types
     }
 
-    private void chopTree(Block block) {
+    private void chopTree(Block block, Player player) {
+
         Queue<Block> logsToBreak = new LinkedList<>();
         Set<Block> visited = new HashSet<>();
 
@@ -99,7 +100,14 @@ public class SkillAbilityManager implements Listener {
         while (!logsToBreak.isEmpty()) {
             Block current = logsToBreak.poll();
             if (isLog(current.getType())) {
-                current.breakNaturally();
+                int amount = 1;
+                if (plugin.getPassiveSkillManager().hasPassive(player.getUniqueId(), "doubleWoodDrop")) {
+                    if (Math.random() < plugin.getPassiveValue("logging", "doubleLogChance")) { // 50% chance to triple drop
+                        amount = 3;
+                    }
+                }
+                current.getWorld().dropItemNaturally(current.getLocation(), new ItemStack(current.getType(), amount));
+                current.setType(Material.AIR);
 
                 for (Block relative : getAdjacentBlocks(current)) {
                     if (!visited.contains(relative) && isLog(relative.getType())) {
