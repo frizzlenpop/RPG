@@ -5,6 +5,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
@@ -372,41 +373,6 @@ public class PassiveSkillManager implements Listener {
     }
 
     @EventHandler
-    public void onCropBreak(BlockBreakEvent event) {
-        Player player = event.getPlayer();
-        Block block = event.getBlock();
-
-        if (!isCrop(block.getType())) return;
-
-        int level = xpManager.getPlayerLevel(player, "farming");
-
-        // Farming XP Boost (Level 5) – handled in XPManager if player has the passive
-        if (hasPassive(player, "farming", "Farming XP Boost")) {
-            // XP boost logic here
-        }
-
-        // Auto Replant (Level 10)
-        if (hasPassive(player, "farming", "Auto Replant")) {
-            Material cropType = block.getType();
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                block.setType(cropType);
-                Ageable crop = (Ageable) block.getBlockData();
-                crop.setAge(0);
-                block.setBlockData(crop);
-            }, 1L);
-        }
-
-        // Double Harvest (Level 15)
-        if (hasPassive(player, "farming", "Double Harvest")) {
-            if (Math.random() < 0.2) { // 20% chance
-                for (ItemStack drop : block.getDrops()) {
-                    block.getWorld().dropItemNaturally(block.getLocation(), drop.clone());
-                }
-            }
-        }
-    }
-
-    @EventHandler
     public void onEnchant(EnchantItemEvent event) {
         Player player = event.getEnchanter();
         int level = xpManager.getPlayerLevel(player, "enchanting");
@@ -459,15 +425,16 @@ public class PassiveSkillManager implements Listener {
         }
     }
 
-    // --- Utility Methods (stubs to be replaced with your implementations) ---
-    private ItemStack getCropDrops(Material cropType) {
+    private ItemStack getCropDrops(Material cropType, int amount) {
         // Returns the default drop for a given crop type.
         return switch (cropType) {
-            case WHEAT -> new ItemStack(Material.WHEAT, 1);
-            case CARROTS -> new ItemStack(Material.CARROT, 1);
-            case POTATOES -> new ItemStack(Material.POTATO, 1);
-            case BEETROOTS -> new ItemStack(Material.BEETROOT, 1);
-            case NETHER_WART -> new ItemStack(Material.NETHER_WART, 1);
+            case WHEAT -> new ItemStack(Material.WHEAT_SEEDS, amount);
+            case CARROTS -> new ItemStack(Material.CARROT, amount);
+            case POTATOES -> new ItemStack(Material.POTATO, amount);
+            case BEETROOTS -> new ItemStack(Material.BEETROOT_SEEDS, amount);
+            case NETHER_WART -> new ItemStack(Material.NETHER_WART, amount);
+            case PUMPKIN -> new ItemStack(Material.PUMPKIN_SEEDS, amount);
+            case MELON -> new ItemStack(Material.MELON_SEEDS, amount);
             default -> null;
         };
     }
@@ -481,9 +448,10 @@ public class PassiveSkillManager implements Listener {
 
     private boolean isCrop(Material material) {
         // Define which materials are considered crops.
-        return material == Material.WHEAT || material == Material.CARROTS ||
-                material == Material.POTATOES || material == Material.BEETROOTS ||
-                material == Material.NETHER_WART;
+        return switch (material) {
+            case WHEAT, CARROTS, POTATOES, BEETROOTS, NETHER_WART -> true;
+            default -> false;
+        };
     }
 
 
@@ -512,7 +480,7 @@ public class PassiveSkillManager implements Listener {
         };
     }
 
-    // Stub event handlers from the older version (if needed)
+    // handles the block break event for ores
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -521,13 +489,14 @@ public class PassiveSkillManager implements Listener {
         if (!isOre(block.getType())) {
             return;
         }
+
         event.setDropItems(false);
 
         int amount = 1;
         if (hasPassive(playerId, "doubleOreDrop")) {
             if (Math.random() < 0.5) { // 50% chance to double drop
                 amount = 2;
-                player.sendMessage("§6You got lucky and the ore dropped twice as much!");
+                player.sendActionBar("§6You got lucky and the ore dropped twice as much!");
             }
         }
 
@@ -536,6 +505,39 @@ public class PassiveSkillManager implements Listener {
 
         block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(dropMaterial, amount));
 
+    }
+
+    @EventHandler
+    public void onCropBlockBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        Block block = event.getBlock();
+        UUID playerId = player.getUniqueId();
+        if (!isCrop(block.getType())) {
+            return;
+        }
+
+        if (!isMatureCrop(block)) {
+            return;
+        }
+
+        boolean autoReplant = hasPassive(playerId, "autoReplant");
+
+        if (autoReplant) {
+            event.setCancelled(true);
+            Ageable crop = (Ageable) block.getBlockData();
+            crop.setAge(0);
+            block.setBlockData(crop);
+        }
+
+        int amount = 1;
+        if (hasPassive(playerId, "doubleCropYield")) {
+            if (Math.random() < 0.5) { // 50% chance to double drop
+                amount = 2;
+                player.sendMessage("§6You got lucky and the crop dropped twice as much!");
+            }
+        }
+
+        block.getWorld().dropItemNaturally(block.getLocation(), getCropDrops(block.getType(), amount));
     }
 
     @EventHandler
