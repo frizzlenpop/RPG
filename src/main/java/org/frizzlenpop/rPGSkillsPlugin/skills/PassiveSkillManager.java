@@ -493,8 +493,8 @@ public class PassiveSkillManager implements Listener {
         event.setDropItems(false);
 
         int amount = 1;
-        if (hasPassive(playerId, "doubleOreDrop")) {
-            if (Math.random() < 0.5) { // 50% chance to double drop
+        if (hasPassive(playerId, "doubleOreDrop") && plugin.isPassiveEnabled("mining", "doubleOreChance")) {
+            if (Math.random() < plugin.getPassiveValue("mining", "doubleOreChance")) {
                 amount = 2;
                 player.sendActionBar("§6You got lucky and the ore dropped twice as much!");
             }
@@ -530,8 +530,8 @@ public class PassiveSkillManager implements Listener {
         }
 
         int amount = 1;
-        if (hasPassive(playerId, "doubleCropYield")) {
-            if (Math.random() < 0.5) { // 50% chance to double drop
+        if (hasPassive(playerId, "doubleCropYield") && plugin.isPassiveEnabled("farming", "doubleCropChance")) {
+            if (Math.random() < plugin.getPassiveValue("farming", "doubleCropChance")) {
                 amount = 2;
                 player.sendMessage("§6You got lucky and the crop dropped twice as much!");
             }
