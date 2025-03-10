@@ -100,8 +100,8 @@ public class RPGSkillsPlugin extends JavaPlugin {
         }
     }
 
-    public double getPassiveValue(String skill, String passive, String property) {
-        String path = "passives." + skill + "." + passive + "." + property;
+    public double getPassiveValue(String skill, String passive) {
+        String path = "passives." + skill + "." + passive + "." + "chance";
         return config.getDouble(path);
     }
 
