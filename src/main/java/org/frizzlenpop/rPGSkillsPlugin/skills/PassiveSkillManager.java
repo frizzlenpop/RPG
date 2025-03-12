@@ -32,6 +32,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 import org.jetbrains.annotations.Nullable;
+import org.bukkit.inventory.Inventory;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.util.*;
 
@@ -139,6 +142,49 @@ public class PassiveSkillManager implements Listener {
     private final Set<UUID> legendaryFisherPlayers = new HashSet<>();
     private final Set<UUID> ancientTreasuresPlayers = new HashSet<>();
     private final Set<UUID> masterFisherPlayers = new HashSet<>();
+    
+    // Enchanting passives
+    private final Set<UUID> enchantingBasicsPlayers = new HashSet<>();
+    private final Set<UUID> lapisSaverIPlayers = new HashSet<>();
+    private final Set<UUID> lapisSaverIIPlayers = new HashSet<>();
+    private final Set<UUID> lapisSaverIIIPlayers = new HashSet<>();
+    private final Set<UUID> lapisSaverIVPlayers = new HashSet<>();
+    private final Set<UUID> lapisSaverVPlayers = new HashSet<>();
+    private final Set<UUID> researchMasterIPlayers = new HashSet<>();
+    private final Set<UUID> researchMasterIIPlayers = new HashSet<>();
+    private final Set<UUID> researchMasterIIIPlayers = new HashSet<>();
+    private final Set<UUID> researchMasterIVPlayers = new HashSet<>();
+    private final Set<UUID> researchMasterVPlayers = new HashSet<>();
+    private final Set<UUID> enchantingXpBoostIPlayers = new HashSet<>();
+    private final Set<UUID> enchantingXpBoostIIPlayers = new HashSet<>();
+    private final Set<UUID> enchantingXpBoostIIIPlayers = new HashSet<>();
+    private final Set<UUID> enchantingXpBoostIVPlayers = new HashSet<>();
+    private final Set<UUID> enchantingXpBoostVPlayers = new HashSet<>();
+    private final Set<UUID> bookUpgradeIPlayers = new HashSet<>();
+    private final Set<UUID> bookUpgradeIIPlayers = new HashSet<>();
+    private final Set<UUID> bookUpgradeIIIPlayers = new HashSet<>();
+    private final Set<UUID> bookUpgradeIVPlayers = new HashSet<>();
+    private final Set<UUID> bookUpgradeVPlayers = new HashSet<>();
+    private final Set<UUID> efficiencySpecialistPlayers = new HashSet<>();
+    private final Set<UUID> customEnchantsIPlayers = new HashSet<>();
+    private final Set<UUID> customEnchantsIIPlayers = new HashSet<>();
+    private final Set<UUID> customEnchantsIIIPlayers = new HashSet<>();
+    private final Set<UUID> customEnchantsIVPlayers = new HashSet<>();
+    private final Set<UUID> customEnchantsVPlayers = new HashSet<>();
+    private final Set<UUID> protectionSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> rareEnchantBoostIPlayers = new HashSet<>();
+    private final Set<UUID> rareEnchantBoostIIPlayers = new HashSet<>();
+    private final Set<UUID> rareEnchantBoostIIIPlayers = new HashSet<>();
+    private final Set<UUID> rareEnchantBoostIVPlayers = new HashSet<>();
+    private final Set<UUID> sharpnessSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> fortuneSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> lootingSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> silkTouchSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> powerSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> mendingSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> unbreakingSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> legendaryEnchanterPlayers = new HashSet<>();
+    private final Set<UUID> masterEnchanterPlayers = new HashSet<>();
 
     private final XPManager xpManager;
     private final RPGSkillsPlugin plugin; // Needed for scheduling and config
@@ -555,6 +601,173 @@ public class PassiveSkillManager implements Listener {
                 }
                 if (level >= 100) {
                     unlockPassive(player, skill, "Master Fisher");
+                }
+                break;
+                
+            case "enchanting":
+                if (level >= 1) {
+                    unlockPassive(player, skill, "Enchanting Basics");
+                    enchantingBasicsPlayers.add(player.getUniqueId());
+                }
+                if (level >= 3) {
+                    unlockPassive(player, skill, "Lapis Saver I");
+                    lapisSaverIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 5) {
+                    unlockPassive(player, skill, "Research Master I");
+                    researchMasterIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 7) {
+                    unlockPassive(player, skill, "Enchanting XP Boost I");
+                    enchantingXpBoostIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 10) {
+                    unlockPassive(player, skill, "Book Upgrade I");
+                    bookUpgradeIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 12) {
+                    unlockPassive(player, skill, "Efficiency Specialist");
+                    efficiencySpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 15) {
+                    unlockPassive(player, skill, "Custom Enchants I");
+                    customEnchantsIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 17) {
+                    unlockPassive(player, skill, "Protection Specialist");
+                    protectionSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 20) {
+                    unlockPassive(player, skill, "Rare Enchant Boost I");
+                    rareEnchantBoostIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 22) {
+                    unlockPassive(player, skill, "Enchanting XP Boost II");
+                    enchantingXpBoostIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 25) {
+                    unlockPassive(player, skill, "Lapis Saver II");
+                    lapisSaverIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 27) {
+                    unlockPassive(player, skill, "Research Master II");
+                    researchMasterIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 30) {
+                    unlockPassive(player, skill, "Sharpness Specialist");
+                    sharpnessSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 32) {
+                    unlockPassive(player, skill, "Book Upgrade II");
+                    bookUpgradeIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 35) {
+                    unlockPassive(player, skill, "Custom Enchants II");
+                    customEnchantsIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 37) {
+                    unlockPassive(player, skill, "Fortune Specialist");
+                    fortuneSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 40) {
+                    unlockPassive(player, skill, "Rare Enchant Boost II");
+                    rareEnchantBoostIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 42) {
+                    unlockPassive(player, skill, "Enchanting XP Boost III");
+                    enchantingXpBoostIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 45) {
+                    unlockPassive(player, skill, "Lapis Saver III");
+                    lapisSaverIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 47) {
+                    unlockPassive(player, skill, "Research Master III");
+                    researchMasterIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 50) {
+                    unlockPassive(player, skill, "Looting Specialist");
+                    lootingSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 52) {
+                    unlockPassive(player, skill, "Book Upgrade III");
+                    bookUpgradeIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 55) {
+                    unlockPassive(player, skill, "Custom Enchants III");
+                    customEnchantsIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 57) {
+                    unlockPassive(player, skill, "Silk Touch Specialist");
+                    silkTouchSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 60) {
+                    unlockPassive(player, skill, "Rare Enchant Boost III");
+                    rareEnchantBoostIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 62) {
+                    unlockPassive(player, skill, "Enchanting XP Boost IV");
+                    enchantingXpBoostIVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 65) {
+                    unlockPassive(player, skill, "Lapis Saver IV");
+                    lapisSaverIVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 67) {
+                    unlockPassive(player, skill, "Research Master IV");
+                    researchMasterIVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 70) {
+                    unlockPassive(player, skill, "Power Specialist");
+                    powerSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 72) {
+                    unlockPassive(player, skill, "Book Upgrade IV");
+                    bookUpgradeIVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 75) {
+                    unlockPassive(player, skill, "Custom Enchants IV");
+                    customEnchantsIVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 77) {
+                    unlockPassive(player, skill, "Mending Specialist");
+                    mendingSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 80) {
+                    unlockPassive(player, skill, "Rare Enchant Boost IV");
+                    rareEnchantBoostIVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 82) {
+                    unlockPassive(player, skill, "Enchanting XP Boost V");
+                    enchantingXpBoostVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 85) {
+                    unlockPassive(player, skill, "Lapis Saver V");
+                    lapisSaverVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 87) {
+                    unlockPassive(player, skill, "Research Master V");
+                    researchMasterVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 90) {
+                    unlockPassive(player, skill, "Unbreaking Specialist");
+                    unbreakingSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 92) {
+                    unlockPassive(player, skill, "Book Upgrade V");
+                    bookUpgradeVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 95) {
+                    unlockPassive(player, skill, "Legendary Enchanter");
+                    legendaryEnchanterPlayers.add(player.getUniqueId());
+                }
+                if (level >= 97) {
+                    unlockPassive(player, skill, "Custom Enchants V");
+                    customEnchantsVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 100) {
+                    unlockPassive(player, skill, "Master Enchanter");
+                    masterEnchanterPlayers.add(player.getUniqueId());
                 }
                 break;
         }
@@ -1184,73 +1397,335 @@ public class PassiveSkillManager implements Listener {
     public void onEnchant(EnchantItemEvent event) {
         Player player = event.getEnchanter();
         int level = xpManager.getPlayerLevel(player, "enchanting");
-
-        // Research Master (Level 5) – XP boost for enchanting
-        if (hasPassive(player, "enchanting", "Research Master")) {
-            // Add 25% more XP from enchanting
+        double xpMultiplier = 1.0;
+        boolean lapisSaved = false;
+        
+        // Enchanting Basics (Level 1) - Basic enchanting knowledge
+        if (enchantingBasicsPlayers.contains(player.getUniqueId())) {
+            // This is a base passive, no specific effect needed
+        }
+        
+        // Lapis Saver (Level 3, 25, 45, 65, 85) - Chance to not consume lapis
+        double lapisSaveChance = 0.0;
+        if (lapisSaverVPlayers.contains(player.getUniqueId())) {
+            lapisSaveChance = 0.50; // 50% chance at level 85
+        } else if (lapisSaverIVPlayers.contains(player.getUniqueId())) {
+            lapisSaveChance = 0.40; // 40% chance at level 65
+        } else if (lapisSaverIIIPlayers.contains(player.getUniqueId())) {
+            lapisSaveChance = 0.30; // 30% chance at level 45
+        } else if (lapisSaverIIPlayers.contains(player.getUniqueId())) {
+            lapisSaveChance = 0.20; // 20% chance at level 25
+        } else if (lapisSaverIPlayers.contains(player.getUniqueId())) {
+            lapisSaveChance = 0.10; // 10% chance at level 3
+        }
+        
+        if (lapisSaveChance > 0 && Math.random() < lapisSaveChance) {
+            // Get the enchanting inventory
+            Inventory inventory = event.getInventory();
+            
+            // Find the lapis lazuli slot (typically slot 1)
+            ItemStack lapis = inventory.getItem(1);
+            
+            if (lapis != null && lapis.getType() == Material.LAPIS_LAZULI) {
+                // Add one lapis back after the enchantment
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    lapis.setAmount(lapis.getAmount() + 1);
+                    inventory.setItem(1, lapis);
+                    player.sendMessage("§b✧ Your Lapis Saver passive preserved some lapis lazuli!");
+                });
+                lapisSaved = true;
+            }
+        }
+        
+        // Research Master (Level 5, 27, 47, 67, 87) - XP boost for enchanting
+        if (researchMasterVPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.45; // 45% XP boost at level 87
+        } else if (researchMasterIVPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.40; // 40% XP boost at level 67
+        } else if (researchMasterIIIPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.35; // 35% XP boost at level 47
+        } else if (researchMasterIIPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.30; // 30% XP boost at level 27
+        } else if (researchMasterIPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.25; // 25% XP boost at level 5
+        }
+        
+        // Enchanting XP Boost (Level 7, 22, 42, 62, 82) - Additional XP from enchanting
+        if (enchantingXpBoostVPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.25; // Additional 25% XP boost at level 82
+        } else if (enchantingXpBoostIVPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.20; // Additional 20% XP boost at level 62
+        } else if (enchantingXpBoostIIIPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.15; // Additional 15% XP boost at level 42
+        } else if (enchantingXpBoostIIPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.10; // Additional 10% XP boost at level 22
+        } else if (enchantingXpBoostIPlayers.contains(player.getUniqueId())) {
+            xpMultiplier += 0.05; // Additional 5% XP boost at level 7
+        }
+        
+        // Apply XP multiplier if it's greater than 1.0
+        if (xpMultiplier > 1.0) {
             int baseXP = event.getExpLevelCost() * 5; // Base XP from enchanting
-            int bonusXP = (int)(baseXP * 0.25);
+            int bonusXP = (int)(baseXP * (xpMultiplier - 1.0));
             
             if (bonusXP > 0) {
                 // Award the bonus XP directly
                 xpManager.addXP(player, "enchanting", bonusXP);
-                player.sendActionBar("§a+25% Enchanting XP from Research Master!");
+                player.sendActionBar(Component.text("+" + (int)((xpMultiplier - 1.0) * 100) + "% Enchanting XP from passives!").color(NamedTextColor.GREEN));
             }
         }
 
-        // Book Upgrade (Level 10)
-        if (hasPassive(player, "enchanting", "Book Upgrade") && event.getItem().getType() == Material.BOOK) {
-            if (Math.random() < 0.15) { // 15% chance to upgrade
-                Map<Enchantment, Integer> enchants = event.getEnchantsToAdd();
-                enchants.forEach((ench, lvl) -> {
-                    if (lvl < ench.getMaxLevel()) {
-                        enchants.put(ench, lvl + 1);
+        // Book Upgrade (Level 10, 32, 52, 72, 92) - Chance to upgrade enchantment levels on books
+        double bookUpgradeChance = 0.0;
+        if (bookUpgradeVPlayers.contains(player.getUniqueId())) {
+            bookUpgradeChance = 0.35; // 35% chance at level 92
+        } else if (bookUpgradeIVPlayers.contains(player.getUniqueId())) {
+            bookUpgradeChance = 0.30; // 30% chance at level 72
+        } else if (bookUpgradeIIIPlayers.contains(player.getUniqueId())) {
+            bookUpgradeChance = 0.25; // 25% chance at level 52
+        } else if (bookUpgradeIIPlayers.contains(player.getUniqueId())) {
+            bookUpgradeChance = 0.20; // 20% chance at level 32
+        } else if (bookUpgradeIPlayers.contains(player.getUniqueId())) {
+            bookUpgradeChance = 0.15; // 15% chance at level 10
+        }
+        
+        if (bookUpgradeChance > 0 && event.getItem().getType() == Material.BOOK && Math.random() < bookUpgradeChance) {
+            Map<Enchantment, Integer> enchants = event.getEnchantsToAdd();
+            boolean upgraded = false;
+            
+            for (Map.Entry<Enchantment, Integer> entry : new HashMap<>(enchants).entrySet()) {
+                Enchantment ench = entry.getKey();
+                int lvl = entry.getValue();
+                
+                if (lvl < ench.getMaxLevel()) {
+                    enchants.put(ench, lvl + 1);
+                    upgraded = true;
+                }
+            }
+            
+            if (upgraded) {
+                player.sendMessage("§d✨ Your Book Upgrade passive increased an enchantment level!");
+            }
+        }
+        
+        // Enchantment Specialists (Various levels) - Boost specific enchantments
+        Map<Enchantment, Integer> enchants = event.getEnchantsToAdd();
+        boolean specialistApplied = false;
+        
+        // Efficiency Specialist (Level 12)
+        if (efficiencySpecialistPlayers.contains(player.getUniqueId()) && 
+            enchants.containsKey(Enchantment.EFFICIENCY)) {
+            int currentLevel = enchants.get(Enchantment.EFFICIENCY);
+            if (currentLevel < Enchantment.EFFICIENCY.getMaxLevel()) {
+                enchants.put(Enchantment.EFFICIENCY, currentLevel + 1);
+                specialistApplied = true;
+            }
+        }
+        
+        // Protection Specialist (Level 17)
+        if (protectionSpecialistPlayers.contains(player.getUniqueId())) {
+            for (Enchantment ench : new ArrayList<>(enchants.keySet())) {
+                if (ench.equals(Enchantment.PROTECTION) || 
+                    ench.equals(Enchantment.BLAST_PROTECTION) || 
+                    ench.equals(Enchantment.PROJECTILE_PROTECTION) || 
+                    ench.equals(Enchantment.FIRE_PROTECTION) || 
+                    ench.equals(Enchantment.THORNS)) {
+                    int currentLevel = enchants.get(ench);
+                    if (currentLevel < ench.getMaxLevel()) {
+                        enchants.put(ench, currentLevel + 1);
+                        specialistApplied = true;
+                        break; // Only upgrade one protection enchantment
                     }
-                });
+                }
+            }
+        }
+        
+        // Sharpness Specialist (Level 30)
+        if (sharpnessSpecialistPlayers.contains(player.getUniqueId()) && 
+            enchants.containsKey(Enchantment.SHARPNESS)) {
+            int currentLevel = enchants.get(Enchantment.SHARPNESS);
+            if (currentLevel < Enchantment.SHARPNESS.getMaxLevel()) {
+                enchants.put(Enchantment.SHARPNESS, currentLevel + 1);
+                specialistApplied = true;
+            }
+        }
+        
+        // Fortune Specialist (Level 37)
+        if (fortuneSpecialistPlayers.contains(player.getUniqueId()) && 
+            enchants.containsKey(Enchantment.FORTUNE)) {
+            int currentLevel = enchants.get(Enchantment.FORTUNE);
+            if (currentLevel < Enchantment.FORTUNE.getMaxLevel()) {
+                enchants.put(Enchantment.FORTUNE, currentLevel + 1);
+                specialistApplied = true;
+            }
+        }
+        
+        // Looting Specialist (Level 50)
+        if (lootingSpecialistPlayers.contains(player.getUniqueId()) && 
+            enchants.containsKey(Enchantment.LOOTING)) {
+            int currentLevel = enchants.get(Enchantment.LOOTING);
+            if (currentLevel < Enchantment.LOOTING.getMaxLevel()) {
+                enchants.put(Enchantment.LOOTING, currentLevel + 1);
+                specialistApplied = true;
+            }
+        }
+        
+        // Silk Touch Specialist (Level 57)
+        if (silkTouchSpecialistPlayers.contains(player.getUniqueId()) && 
+            !enchants.containsKey(Enchantment.SILK_TOUCH) && 
+            event.getItem().getType().name().contains("PICKAXE")) {
+            // Add Silk Touch if it's not already there and item is a pickaxe
+            enchants.put(Enchantment.SILK_TOUCH, 1);
+            specialistApplied = true;
+        }
+        
+        // Power Specialist (Level 70)
+        if (powerSpecialistPlayers.contains(player.getUniqueId()) && 
+            enchants.containsKey(Enchantment.POWER)) {
+            int currentLevel = enchants.get(Enchantment.POWER);
+            if (currentLevel < Enchantment.POWER.getMaxLevel()) {
+                enchants.put(Enchantment.POWER, currentLevel + 1);
+                specialistApplied = true;
+            }
+        }
+        
+        // Mending Specialist (Level 77)
+        if (mendingSpecialistPlayers.contains(player.getUniqueId()) && 
+            !enchants.containsKey(Enchantment.MENDING)) {
+            // Add Mending if it's not already there
+            enchants.put(Enchantment.MENDING, 1);
+            specialistApplied = true;
+        }
+        
+        // Unbreaking Specialist (Level 90)
+        if (unbreakingSpecialistPlayers.contains(player.getUniqueId()) && 
+            enchants.containsKey(Enchantment.UNBREAKING)) {
+            int currentLevel = enchants.get(Enchantment.UNBREAKING);
+            if (currentLevel < Enchantment.UNBREAKING.getMaxLevel()) {
+                enchants.put(Enchantment.UNBREAKING, currentLevel + 1);
+                specialistApplied = true;
+            }
+        }
+        
+        if (specialistApplied) {
+            player.sendMessage("§d✨ Your Enchantment Specialist passive improved an enchantment!");
+        }
+
+        // Custom Enchants (Level 15, 35, 55, 75, 97) - Chance to add custom enchantment lore
+        double customEnchantChance = 0.0;
+        if (customEnchantsVPlayers.contains(player.getUniqueId())) {
+            customEnchantChance = 0.30; // 30% chance at level 97
+        } else if (customEnchantsIVPlayers.contains(player.getUniqueId())) {
+            customEnchantChance = 0.25; // 25% chance at level 75
+        } else if (customEnchantsIIIPlayers.contains(player.getUniqueId())) {
+            customEnchantChance = 0.20; // 20% chance at level 55
+        } else if (customEnchantsIIPlayers.contains(player.getUniqueId())) {
+            customEnchantChance = 0.15; // 15% chance at level 35
+        } else if (customEnchantsIPlayers.contains(player.getUniqueId())) {
+            customEnchantChance = 0.10; // 10% chance at level 15
+        }
+        
+        if (customEnchantChance > 0 && Math.random() < customEnchantChance) {
+            // Get the item being enchanted
+            ItemStack item = event.getItem();
+            ItemMeta meta = item.getItemMeta();
+            
+            if (meta != null) {
+                // Add a custom lore "enchantment" based on the item type
+                List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<>();
+                
+                // Add a different custom enchant based on item type
+                String customEnchant = getCustomEnchantForItem(item.getType());
+                if (customEnchant != null) {
+                    lore.add("§5" + customEnchant);
+                    meta.setLore(lore);
+                    item.setItemMeta(meta);
+                    
+                    // Notify the player
+                    player.sendMessage("§d✨ Your Custom Enchants passive added: " + customEnchant);
+                }
             }
         }
 
-        // Custom Enchants (Level 15)
-        if (hasPassive(player, "enchanting", "Custom Enchants")) {
-            // 10% chance to add a custom enchantment lore
+        // Rare Enchant Boost (Level 20, 40, 60, 80) - Chance to add rare enchantment
+        double rareEnchantChance = 0.0;
+        if (rareEnchantBoostIVPlayers.contains(player.getUniqueId())) {
+            rareEnchantChance = 0.35; // 35% chance at level 80
+        } else if (rareEnchantBoostIIIPlayers.contains(player.getUniqueId())) {
+            rareEnchantChance = 0.30; // 30% chance at level 60
+        } else if (rareEnchantBoostIIPlayers.contains(player.getUniqueId())) {
+            rareEnchantChance = 0.25; // 25% chance at level 40
+        } else if (rareEnchantBoostIPlayers.contains(player.getUniqueId())) {
+            rareEnchantChance = 0.20; // 20% chance at level 20
+        }
+        
+        if (rareEnchantChance > 0 && Math.random() < rareEnchantChance) {
+            ItemStack item = event.getItem();
+            
+            // Get a rare enchantment appropriate for this item
+            Enchantment rareEnchant = getRareEnchantment(item.getType());
+            if (rareEnchant != null && !item.containsEnchantment(rareEnchant)) {
+                // Add the rare enchantment to the existing enchants
+                enchants.put(rareEnchant, 1); // Start with level 1
+                
+                player.sendMessage("§d✨ Your Rare Enchant Boost added a rare enchantment!");
+            }
+        }
+        
+        // Legendary Enchanter (Level 95) - Chance for max level enchantments
+        if (legendaryEnchanterPlayers.contains(player.getUniqueId()) && Math.random() < 0.15) { // 15% chance
+            boolean maxLevelApplied = false;
+            
+            for (Map.Entry<Enchantment, Integer> entry : new HashMap<>(enchants).entrySet()) {
+                Enchantment ench = entry.getKey();
+                int maxLevel = ench.getMaxLevel();
+                
+                if (entry.getValue() < maxLevel) {
+                    enchants.put(ench, maxLevel);
+                    maxLevelApplied = true;
+                    break; // Only max out one enchantment
+                }
+            }
+            
+            if (maxLevelApplied) {
+                player.sendMessage("§6✨ Your Legendary Enchanter passive maximized an enchantment level!");
+            }
+        }
+        
+        // Master Enchanter (Level 100) - All enchanting abilities enhanced
+        if (masterEnchanterPlayers.contains(player.getUniqueId())) {
+            // 10% chance to add an additional enchantment
             if (Math.random() < 0.10) {
-                // Get the item being enchanted
                 ItemStack item = event.getItem();
-                ItemMeta meta = item.getItemMeta();
+                List<Enchantment> possibleEnchants = new ArrayList<>();
                 
-                if (meta != null) {
-                    // Add a custom lore "enchantment" based on the item type
-                    List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<>();
-                    
-                    // Add a different custom enchant based on item type
-                    String customEnchant = getCustomEnchantForItem(item.getType());
-                    if (customEnchant != null) {
-                        lore.add("§5" + customEnchant);
-                        meta.setLore(lore);
-                        item.setItemMeta(meta);
-                        
-                        // Notify the player
-                        player.sendMessage("§d✨ Your Custom Enchants passive added: " + customEnchant);
+                // Find all possible enchantments for this item
+                for (Enchantment ench : Enchantment.values()) {
+                    if (ench.canEnchantItem(item) && !enchants.containsKey(ench)) {
+                        possibleEnchants.add(ench);
                     }
                 }
-            }
-        }
-
-        // Rare Enchant Boost (Level 20)
-        if (hasPassive(player, "enchanting", "Rare Enchant Boost")) {
-            // 20% chance to add a rare enchantment
-            if (Math.random() < 0.20) {
-                ItemStack item = event.getItem();
                 
-                // Get a rare enchantment appropriate for this item
-                Enchantment rareEnchant = getRareEnchantment(item.getType());
-                if (rareEnchant != null && !item.containsEnchantment(rareEnchant)) {
-                    // Add the rare enchantment to the existing enchants
-                    Map<Enchantment, Integer> enchants = event.getEnchantsToAdd();
-                    enchants.put(rareEnchant, 1); // Start with level 1
+                if (!possibleEnchants.isEmpty()) {
+                    // Add a random enchantment from the possible ones
+                    Enchantment randomEnchant = possibleEnchants.get(new Random().nextInt(possibleEnchants.size()));
+                    int enchLevel = 1 + new Random().nextInt(randomEnchant.getMaxLevel());
+                    enchants.put(randomEnchant, enchLevel);
                     
-                    player.sendMessage("§d✨ Your Rare Enchant Boost added a rare enchantment!");
+                    player.sendMessage("§6✨ Your Master Enchanter passive added an additional enchantment!");
                 }
+            }
+            
+            // 30% XP boost (already included in the XP multiplier section)
+            
+            // 20% chance to not consume any experience levels
+            if (Math.random() < 0.20) {
+                // Schedule a task to restore the player's levels after the enchantment
+                final int expLevelCost = event.getExpLevelCost();
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    player.setLevel(player.getLevel() + expLevelCost);
+                    player.sendMessage("§6✨ Your Master Enchanter passive restored your experience levels!");
+                });
             }
         }
     }
