@@ -58,6 +58,11 @@ public class XPManager {
         if (passiveSkillManager != null) {
             xpGained = (int)(xpGained * passiveSkillManager.getXPMultiplier(player, skill));
         }
+        
+        // Display XP gain popup message if there's XP to add
+        if (xpGained > 0) {
+            showXPGainMessage(player, skill, xpGained);
+        }
 
         int newXP = currentXP + xpGained;
         int requiredXP = getRequiredXP(currentLevel);
@@ -77,6 +82,52 @@ public class XPManager {
 
         // Update XP in data manager
         dataManager.setSkillXP(playerUUID, skill, newXP);
+    }
+
+    /**
+     * Displays a popup message to the player when they gain XP
+     * 
+     * @param player The player who gained XP
+     * @param skill The skill for which XP was gained
+     * @param xpGained The amount of XP gained
+     */
+    private void showXPGainMessage(Player player, String skill, int xpGained) {
+        // Format the skill name nicely (capitalize first letter)
+        String formattedSkill = skill.substring(0, 1).toUpperCase() + skill.substring(1).toLowerCase();
+        
+        // Get a color for the skill
+        String color = getSkillColor(skill);
+        
+        // Show action bar message
+        String message = String.format("%s+%d %s XP", color, xpGained, formattedSkill);
+        player.sendActionBar(message);
+    }
+    
+    /**
+     * Returns the color code for a given skill
+     * 
+     * @param skill The skill name
+     * @return The color code for the skill
+     */
+    private String getSkillColor(String skill) {
+        switch (skill.toLowerCase()) {
+            case "mining":
+                return "§b"; // Aqua
+            case "logging":
+            case "woodcutting":
+                return "§2"; // Dark Green
+            case "farming":
+                return "§a"; // Green
+            case "fighting":
+            case "combat":
+                return "§c"; // Red
+            case "fishing":
+                return "§9"; // Blue
+            case "enchanting":
+                return "§d"; // Light Purple
+            default:
+                return "§e"; // Yellow
+        }
     }
 
     public int getPlayerXP(Player player, String skill) {

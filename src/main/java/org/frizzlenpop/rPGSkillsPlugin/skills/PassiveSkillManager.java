@@ -912,15 +912,56 @@ public class PassiveSkillManager implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
         UUID playerId = player.getUniqueId();
+        ItemStack tool = player.getInventory().getItemInMainHand();
+        boolean hasSilkTouch = tool.containsEnchantment(Enchantment.SILK_TOUCH);
         
         // Handle Stone Efficiency
         if (hasPassive(playerId, "stoneEfficiency") && isStone(block.getType())) {
             // Cancel default drops since we're custom handling them
-            event.setCancelled(true);
-            // Break the block and handle our own drops
-            block.setType(Material.AIR);
-            // Drop the stone normally
-            block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(block.getType(), 1));
+            event.setDropItems(false);
+            
+            // Determine what to drop based on block type and enchantments
+            Material dropType;
+            if (block.getType() == Material.STONE) {
+                // Drop stone with silk touch, otherwise cobblestone
+                dropType = hasSilkTouch ? Material.STONE : Material.COBBLESTONE;
+            } else {
+                // For other stone types, drop themselves
+                dropType = block.getType();
+            }
+            
+            // Calculate fortune bonus if applicable
+            int amount = 1;
+            if (tool.containsEnchantment(Enchantment.FORTUNE) && !hasSilkTouch) {
+                int fortuneLevel = tool.getEnchantmentLevel(Enchantment.FORTUNE);
+                int fortuneBonus = 0;
+                
+                // Apply fortune boost passives
+                if (hasPassive(playerId, "fortuneBoost")) {
+                    fortuneBonus += 1;
+                }
+                if (hasPassive(playerId, "advancedFortune")) {
+                    fortuneBonus += 1; // +2 total with fortuneBoost
+                }
+                if (hasPassive(playerId, "masterFortune")) {
+                    fortuneBonus += 1; // +3 total with previous boosts
+                }
+                if (hasPassive(playerId, "legendaryFortune")) {
+                    fortuneBonus += 1; // +4 total with all boosts
+                }
+                
+                // Apply the fortune effect with our enhancement (only 25% chance for stone blocks)
+                if (Math.random() < 0.25) {
+                    int bonusDrops = calculateFortuneDrops(fortuneLevel + fortuneBonus);
+                    amount += bonusDrops;
+                    if (bonusDrops > 0) {
+                        player.sendActionBar("§6Fortune " + (fortuneLevel + fortuneBonus) + " gave you extra drops!");
+                    }
+                }
+            }
+            
+            // Drop the items
+            block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(dropType, amount));
             
             // Apply XP boost for mining stone
             if (hasPassive(playerId, "miningXpBoost")) {
@@ -960,6 +1001,21 @@ public class PassiveSkillManager implements Listener {
 
         int amount = 1;
         Material oreType = block.getType();
+        
+        // Check for silk touch on ores
+        if (hasSilkTouch) {
+            // With silk touch, just drop the ore block itself
+            block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(oreType, 1));
+            
+            // Apply XP boost for mining
+            if (hasPassive(playerId, "miningXpBoost")) {
+                givePlayerMiningXP(player, calculateOreXP(block.getType()));
+            } else {
+                givePlayerMiningXP(player, calculateOreXP(block.getType()) * 0.5); // Less XP for silk touch
+            }
+            
+            return;
+        }
         
         // Apply ore specialization bonuses
         boolean hasSpecialization = false;
@@ -1022,7 +1078,6 @@ public class PassiveSkillManager implements Listener {
         }
 
         // Fortune effects implementation
-        ItemStack tool = player.getInventory().getItemInMainHand();
         if (tool.containsEnchantment(Enchantment.FORTUNE)) {
             int fortuneLevel = tool.getEnchantmentLevel(Enchantment.FORTUNE);
             int fortuneBonus = 0;
