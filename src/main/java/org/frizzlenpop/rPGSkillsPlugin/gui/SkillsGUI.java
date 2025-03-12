@@ -54,6 +54,8 @@ public class SkillsGUI implements Listener {
         gui.setItem(13, createSkillIcon(Material.IRON_SWORD, "Fighting", "fighting", config));
         gui.setItem(14, createSkillIcon(Material.FISHING_ROD, "Fishing", "fishing", config));
         gui.setItem(15, createSkillIcon(Material.ENCHANTING_TABLE, "Enchanting", "enchanting", config));
+        gui.setItem(16, createSkillIcon(Material.IRON_SHOVEL, "Excavation", "excavation", config));
+        gui.setItem(17, createSkillIcon(Material.ANVIL, "Repair", "repair", config));
 
         // Add exit button
         gui.setItem(18, createExitButton());
@@ -857,6 +859,68 @@ public class SkillsGUI implements Listener {
                 passives.add(new PassiveSkillInfo("Master Farmer", 100, Material.DRAGON_EGG,
                         "Ultimate farming mastery with multiple bonuses"));
                 break;
+            case "excavation":
+                // Level 1-10
+                passives.add(new PassiveSkillInfo("Excavation Basics", 5, Material.WOODEN_SHOVEL,
+                        "Basic excavation techniques"));
+                passives.add(new PassiveSkillInfo("Double Drops", 10, Material.DIRT,
+                        "15% chance to receive double drops from excavation"));
+                
+                // Level 11-20
+                passives.add(new PassiveSkillInfo("Archaeology Basics", 15, Material.BONE,
+                        "Chance to find ancient bones and artifacts"));
+                passives.add(new PassiveSkillInfo("Treasure Finder", 20, Material.GOLD_NUGGET,
+                        "10% chance to find treasure when digging"));
+                
+                // Level 21-30
+                passives.add(new PassiveSkillInfo("Shovel Efficiency", 25, Material.IRON_SHOVEL,
+                        "Dig 20% faster with shovels"));
+                passives.add(new PassiveSkillInfo("XP Boost", 30, Material.EXPERIENCE_BOTTLE,
+                        "+15% Excavation XP Gain"));
+                
+                // Level 31-50
+                passives.add(new PassiveSkillInfo("Rare Find", 40, Material.EMERALD,
+                        "5% chance to find rare gems when excavating"));
+                passives.add(new PassiveSkillInfo("Multi-Block", 50, Material.DIAMOND_SHOVEL,
+                        "8% chance to excavate a 3x3 area"));
+                
+                // Level 51-100
+                passives.add(new PassiveSkillInfo("Ancient Artifacts", 75, Material.GOLD_INGOT,
+                        "2% chance to find ancient artifacts with special properties"));
+                passives.add(new PassiveSkillInfo("Master Excavator", 100, Material.NETHERITE_SHOVEL,
+                        "All excavation abilities enhanced, 25% faster digging"));
+                break;
+            case "repair":
+                // Level 1-10
+                passives.add(new PassiveSkillInfo("Repair Basics", 5, Material.WOODEN_PICKAXE,
+                        "Basic repair techniques, 5% more durability restored"));
+                passives.add(new PassiveSkillInfo("Material Saver I", 10, Material.IRON_INGOT,
+                        "10% chance to not consume materials during repairs"));
+                
+                // Level 11-20
+                passives.add(new PassiveSkillInfo("Experience Saver I", 15, Material.EXPERIENCE_BOTTLE,
+                        "15% reduced experience cost for repairs"));
+                passives.add(new PassiveSkillInfo("Quality Repair I", 20, Material.IRON_BLOCK,
+                        "Repairs restore 10% more durability"));
+                
+                // Level 21-30
+                passives.add(new PassiveSkillInfo("Tool Expert", 25, Material.DIAMOND_PICKAXE,
+                        "20% more efficient repairs on tools"));
+                passives.add(new PassiveSkillInfo("Weapon Expert", 30, Material.DIAMOND_SWORD,
+                        "20% more efficient repairs on weapons"));
+                
+                // Level 31-50
+                passives.add(new PassiveSkillInfo("Armor Expert", 40, Material.DIAMOND_CHESTPLATE,
+                        "20% more efficient repairs on armor"));
+                passives.add(new PassiveSkillInfo("Material Saver II", 50, Material.GOLD_INGOT,
+                        "20% chance to not consume materials during repairs"));
+                
+                // Level 51-100
+                passives.add(new PassiveSkillInfo("Experience Saver II", 75, Material.EXPERIENCE_BOTTLE,
+                        "30% reduced experience cost for repairs"));
+                passives.add(new PassiveSkillInfo("Master Smith", 100, Material.NETHERITE_INGOT,
+                        "All repair abilities enhanced, 50% more efficient repairs"));
+                break;
         }
 
         return passives;
@@ -927,6 +991,14 @@ public class SkillsGUI implements Listener {
                     playerPassivePages.put(player.getUniqueId(), 0);
                     openSkillDetailMenu(player, "Enchanting", "enchanting", Material.ENCHANTING_TABLE);
                     break;
+                case 16:
+                    playerPassivePages.put(player.getUniqueId(), 0);
+                    openSkillDetailMenu(player, "Excavation", "excavation", Material.IRON_SHOVEL);
+                    break;
+                case 17:
+                    playerPassivePages.put(player.getUniqueId(), 0);
+                    openSkillDetailMenu(player, "Repair", "repair", Material.ANVIL);
+                    break;
             }
         } else if (title.contains("Details")) {
             event.setCancelled(true);
@@ -973,6 +1045,8 @@ public class SkillsGUI implements Listener {
             case "fighting" -> Material.IRON_SWORD;
             case "fishing" -> Material.FISHING_ROD;
             case "enchanting" -> Material.ENCHANTING_TABLE;
+            case "excavation" -> Material.IRON_SHOVEL;
+            case "repair" -> Material.ANVIL;
             default -> Material.BOOK;
         };
     }
@@ -1006,6 +1080,12 @@ public class SkillsGUI implements Listener {
             case "fishing":
                 abilityManager.activateInstantCatch(player);
                 break;
+            case "excavation":
+                abilityManager.activateAreaExcavation(player);
+                break;
+            case "repair":
+                abilityManager.activateAdvancedRepair(player);
+                break;
             default:
                 player.sendMessage("§cNo active skill available for this category.");
         }
@@ -1030,12 +1110,17 @@ public class SkillsGUI implements Listener {
             case "farming": return "Super Harvest";
             case "enchanting": return "Double Enchant";
             case "fishing": return "Instant Catch";
+            case "excavation": return "Area Excavation";
+            case "repair": return "Advanced Repair";
             default: return "None";
         }
     }
 
     private int getActiveSkillUnlockLevel(String skill) {
-        return 15;
+        switch (skill) {
+            case "mining", "logging", "farming", "fighting", "fishing", "enchanting", "excavation", "repair": return 25;
+            default: return 999; // Very high level to effectively disable
+        }
     }
 
     private ItemStack createExitButton() {

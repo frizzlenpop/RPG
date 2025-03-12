@@ -4,19 +4,24 @@ import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
+import org.frizzlenpop.rPGSkillsPlugin.data.PartyManager;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class XPManager {
     private final PlayerDataManager dataManager;
     private PassiveSkillManager passiveSkillManager; // Removed final modifier
+    private PartyManager partyManager; // Added for XP sharing
     private final Map<Material, Integer> miningXPValues;
     private final Map<Material, Integer> loggingXPValues;
     private final Map<Material, Integer> farmingXPValues;
     private final Map<String, Integer> fightingXPValues;
     private final Map<String, Integer> fishingXPValues;
+    private final Map<Material, Integer> excavationXPValues; // Added for excavation
 
     // Updated constructor to not require PassiveSkillManager
     public XPManager(PlayerDataManager dataManager) {
@@ -26,11 +31,18 @@ public class XPManager {
         this.farmingXPValues = initializeFarmingXP();
         this.fightingXPValues = initializeFightingXP();
         this.fishingXPValues = initializeFishingXP();
+        this.excavationXPValues = initializeExcavationXP();
     }
 
     public void setPassiveSkillManager(PassiveSkillManager passiveSkillManager) {
         if (this.passiveSkillManager == null) {
             this.passiveSkillManager = passiveSkillManager;
+        }
+    }
+
+    public void setPartyManager(PartyManager partyManager) {
+        if (this.partyManager == null) {
+            this.partyManager = partyManager;
         }
     }
 
@@ -68,11 +80,63 @@ public class XPManager {
             }
         }
         
+        // Calculate amount to share with party members
+        int sharedAmount = 0;
+        Map<UUID, Integer> sharedXp = null;
+        
+        if (partyManager != null && partyManager.isInParty(playerUUID)) {
+            // Get the party leader UUID
+            UUID leaderUUID = partyManager.getPartyLeader(playerUUID);
+            
+            // Get share percentage from party settings
+            double sharePercent = partyManager.getXpSharePercent(leaderUUID);
+            
+            // Get online party members (excluding the player)
+            List<UUID> onlineMembers = partyManager.getPartyMembers(leaderUUID).stream()
+                    .filter(uuid -> !uuid.equals(playerUUID))
+                    .filter(uuid -> player.getServer().getPlayer(uuid) != null)
+                    .collect(Collectors.toList());
+            
+            // Only calculate shared XP if there are online members to share with
+            if (!onlineMembers.isEmpty()) {
+                // Calculate total amount to share with all members
+                sharedAmount = (int)(xpGained * sharePercent);
+                
+                // Only proceed if there's something to share
+                if (sharedAmount > 0) {
+                    // Reduce player's XP by the shared amount
+                    xpGained -= sharedAmount;
+                    
+                    // Calculate shared XP for distribution to party members
+                    sharedXp = partyManager.calculateSharedXp(playerUUID, sharedAmount);
+                }
+            }
+        }
+        
         // Display XP gain popup message if there's XP to add
         if (xpGained > 0) {
-            showXPGainMessage(player, skill, baseXP, bonusXP);
+            // If we're sharing XP, include that in the message
+            if (sharedAmount > 0) {
+                showXPGainMessageWithSharing(player, skill, baseXP, bonusXP, sharedAmount);
+            } else {
+                showXPGainMessage(player, skill, baseXP, bonusXP);
+            }
         }
 
+        // Add remaining XP to the player
+        addXPToPlayer(player, skill, xpGained, currentXP, currentLevel);
+        
+        // Distribute the shared XP to party members
+        if (sharedXp != null && !sharedXp.isEmpty()) {
+            distributeSharedXP(player, skill, sharedXp);
+        }
+    }
+    
+    /**
+     * Add XP to a player and handle level ups
+     */
+    private void addXPToPlayer(Player player, String skill, int xpGained, int currentXP, int currentLevel) {
+        UUID playerUUID = player.getUniqueId();
         int newXP = currentXP + xpGained;
         int requiredXP = getRequiredXP(currentLevel);
 
@@ -91,6 +155,59 @@ public class XPManager {
 
         // Update XP in data manager
         dataManager.setSkillXP(playerUUID, skill, newXP);
+    }
+    
+    /**
+     * Displays a popup message to the player when they gain XP and share some with the party
+     */
+    private void showXPGainMessageWithSharing(Player player, String skill, int baseXP, int bonusXP, int sharedAmount) {
+        // Format the skill name nicely (capitalize first letter)
+        String formattedSkill = skill.substring(0, 1).toUpperCase() + skill.substring(1).toLowerCase();
+        
+        // Get a color for the skill
+        String color = getSkillColor(skill);
+        
+        // Calculate actual XP received (base + bonus - shared)
+        int actualXP = baseXP + bonusXP - sharedAmount;
+        
+        // Show action bar message
+        String message;
+        if (bonusXP > 0) {
+            message = String.format("%s+%d %s XP %s(+%d Bonus, -%d Shared)", 
+                color, actualXP, formattedSkill, "§6", bonusXP, sharedAmount);
+        } else {
+            message = String.format("%s+%d %s XP %s(-%d Shared)", 
+                color, actualXP, formattedSkill, "§7", sharedAmount);
+        }
+        
+        player.sendActionBar(message);
+    }
+    
+    /**
+     * Distribute shared XP to party members
+     */
+    private void distributeSharedXP(Player source, String skill, Map<UUID, Integer> sharedXp) {
+        for (Map.Entry<UUID, Integer> entry : sharedXp.entrySet()) {
+            UUID memberUUID = entry.getKey();
+            int xpAmount = entry.getValue();
+            
+            // Get the party member
+            Player member = source.getServer().getPlayer(memberUUID);
+            if (member != null && !member.equals(source)) {
+                // Get current XP and level
+                int currentXP = dataManager.getSkillXP(memberUUID, skill);
+                int currentLevel = dataManager.getSkillLevel(memberUUID, skill);
+                
+                // Add the shared XP (without triggering further sharing)
+                addXPToPlayer(member, skill, xpAmount, currentXP, currentLevel);
+                
+                // Show party XP notification
+                member.sendActionBar(
+                    "§d+" + xpAmount + " " + skill.substring(0, 1).toUpperCase() + skill.substring(1) + 
+                    " XP §7(from " + source.getName() + ")"
+                );
+            }
+        }
     }
 
     /**
@@ -214,6 +331,10 @@ public class XPManager {
         
         System.out.println("XP value found: " + xpValue);
         return xpValue;
+    }
+
+    public int getXPForExcavationMaterial(Material material) {
+        return excavationXPValues.getOrDefault(material, 0);
     }
 
     // Initialize XP value maps
@@ -349,5 +470,40 @@ public class XPManager {
         xpValues.put("NAUTILUS_SHELL", 30);
         xpValues.put("SADDLE", 15);
         return xpValues;
+    }
+
+    private Map<Material, Integer> initializeExcavationXP() {
+        Map<Material, Integer> excavationXP = new HashMap<>();
+        
+        // Basic dirt blocks
+        excavationXP.put(Material.DIRT, 10);
+        excavationXP.put(Material.COARSE_DIRT, 10);
+        excavationXP.put(Material.FARMLAND, 10);
+        excavationXP.put(Material.GRASS_BLOCK, 10);
+        excavationXP.put(Material.DIRT_PATH, 10);
+        
+        // Sand materials
+        excavationXP.put(Material.SAND, 15);
+        excavationXP.put(Material.RED_SAND, 15);
+        
+        // Gravel
+        excavationXP.put(Material.GRAVEL, 20);
+        
+        // Clay
+        excavationXP.put(Material.CLAY, 25);
+        
+        // Soul materials
+        excavationXP.put(Material.SOUL_SAND, 30);
+        excavationXP.put(Material.SOUL_SOIL, 30);
+        
+        // Special dirt types
+        excavationXP.put(Material.MYCELIUM, 40);
+        excavationXP.put(Material.PODZOL, 40);
+        
+        // Snow
+        excavationXP.put(Material.SNOW_BLOCK, 15);
+        excavationXP.put(Material.SNOW, 15);
+        
+        return excavationXP;
     }
 }

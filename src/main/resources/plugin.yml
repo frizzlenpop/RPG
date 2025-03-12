@@ -56,3 +56,7 @@ commands:
     description: Display all XP boosts from skills and skill tree systems
     usage: /rstat
     permission: rpgskills.rstat
+  rparty:
+    description: Create and manage parties for XP sharing
+    usage: /rparty [create|invite|accept|leave|disband|kick|list|share]
+    permission: rpgskills.party

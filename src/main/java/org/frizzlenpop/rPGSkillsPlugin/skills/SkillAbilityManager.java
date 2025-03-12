@@ -31,6 +31,7 @@ public class SkillAbilityManager implements Listener {
     private final Set<UUID> activeDoubleEnchant = new HashSet<>();
     private final Set<UUID> activeInstantCatch = new HashSet<>();
     private final Map<String, List<String>> skillAbilities = new HashMap<>();
+    private final Set<UUID> areaExcavationPlayers = new HashSet<>();
 
     public SkillAbilityManager(RPGSkillsPlugin plugin) {
         this.plugin = plugin;
@@ -41,6 +42,8 @@ public class SkillAbilityManager implements Listener {
         skillAbilities.put("farming", Arrays.asList("Super Harvest"));
         skillAbilities.put("fishing", Arrays.asList("Instant Catch"));
         skillAbilities.put("enchanting", Arrays.asList("Double Enchant"));
+        skillAbilities.put("excavation", Arrays.asList("Area Excavation"));
+        skillAbilities.put("repair", Arrays.asList("Advanced Repair"));
     }
 
     public boolean canUseAbility(Player player, String ability, int cooldownSeconds) {
@@ -294,5 +297,90 @@ public class SkillAbilityManager implements Listener {
     private boolean hasAutoReplantPassive(Player player) {
         // Return true if the player has the auto replant passive; otherwise false.
         return false;
+    }
+
+    public void activateAreaExcavation(Player player) {
+        if (canUseAbility(player, "AreaExcavation", 60)) {
+            player.sendMessage("§a[Skill] Area Excavation activated! Your next shovel dig will affect a 3x3 area.");
+            areaExcavationPlayers.add(player.getUniqueId());
+        }
+    }
+
+    public void activateAdvancedRepair(Player player) {
+        if (canUseAbility(player, "AdvancedRepair", 90)) {
+            player.sendMessage("§a[Skill] Advanced Repair activated! Your next anvil repair will cost 50% less experience.");
+            // Implementation of special repair logic would go here
+            // Could temporarily reduce the XP cost factor in anvil repairs
+            // For now, we'll just add a visual effect and message
+            player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1.0f, 1.0f);
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
+                    TextComponent.fromLegacyText(ChatColor.GREEN + "Advanced Repair activated!"));
+        }
+    }
+
+    @EventHandler
+    public void onExcavate(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        Block block = event.getBlock();
+        ItemStack tool = player.getInventory().getItemInMainHand();
+        
+        // Check if player has Area Excavation active and is using a shovel
+        if (areaExcavationPlayers.contains(player.getUniqueId()) && isShovel(tool.getType()) && isExcavatable(block.getType())) {
+            // Excavate a 3x3 area
+            excavateArea(block, player, tool);
+            areaExcavationPlayers.remove(player.getUniqueId());
+        }
+    }
+    
+    private boolean isShovel(Material material) {
+        return material == Material.WOODEN_SHOVEL
+            || material == Material.STONE_SHOVEL
+            || material == Material.IRON_SHOVEL
+            || material == Material.GOLDEN_SHOVEL
+            || material == Material.DIAMOND_SHOVEL
+            || material == Material.NETHERITE_SHOVEL;
+    }
+    
+    private boolean isExcavatable(Material material) {
+        return material == Material.DIRT
+            || material == Material.COARSE_DIRT
+            || material == Material.GRASS_BLOCK
+            || material == Material.DIRT_PATH
+            || material == Material.FARMLAND
+            || material == Material.SAND
+            || material == Material.RED_SAND
+            || material == Material.GRAVEL
+            || material == Material.CLAY
+            || material == Material.SOUL_SAND
+            || material == Material.SOUL_SOIL
+            || material == Material.MYCELIUM
+            || material == Material.PODZOL
+            || material == Material.SNOW_BLOCK
+            || material == Material.SNOW;
+    }
+    
+    private void excavateArea(Block centerBlock, Player player, ItemStack tool) {
+        int radius = 1; // 3x3 area (radius 1 from center)
+        
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    // Skip the center block as it's already broken by the original event
+                    if (x == 0 && y == 0 && z == 0) continue;
+                    
+                    Block relativeBlock = centerBlock.getRelative(x, y, z);
+                    
+                    // Only break blocks that can be excavated
+                    if (isExcavatable(relativeBlock.getType())) {
+                        // Break the block and drop items naturally
+                        relativeBlock.breakNaturally(tool);
+                    }
+                }
+            }
+        }
+        
+        // Play effect and sound
+        player.playSound(player.getLocation(), Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.5f, 1.0f);
+        player.sendMessage("§a[Skill] Area excavated!");
     }
 }

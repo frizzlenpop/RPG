@@ -15,6 +15,10 @@ import org.frizzlenpop.rPGSkillsPlugin.skills.SkillAbilityManager;
 import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillTreeManager;
 import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillTreeGUI;
 import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillXPListener;
+import org.frizzlenpop.rPGSkillsPlugin.listeners.ExcavationListener;
+import org.frizzlenpop.rPGSkillsPlugin.listeners.RepairListener;
+import org.frizzlenpop.rPGSkillsPlugin.data.PartyManager;
+import org.frizzlenpop.rPGSkillsPlugin.commands.PartyCommand;
 
 public class RPGSkillsPlugin extends JavaPlugin {
     private PlayerDataManager playerDataManager;
@@ -26,6 +30,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private SkillTreeManager skillTreeManager;
     private SkillTreeGUI skillTreeGUI;
     private SkillXPListener skillXPListener;
+    private PartyManager partyManager;
     private FileConfiguration config;
 
     @Override
@@ -46,6 +51,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
         this.skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
         this.customEnchantScroll = new CustomEnchantScroll(this);
         
+        // Initialize party manager for XP sharing
+        this.partyManager = new PartyManager(this);
+        
         // Initialize skill tree system
         this.skillTreeManager = new SkillTreeManager(this, playerDataManager, xpManager);
         this.skillTreeGUI = new SkillTreeGUI(this, skillTreeManager);
@@ -53,6 +61,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
 
         // Set the passive skill manager after initialization
         xpManager.setPassiveSkillManager(passiveSkillManager);
+        
+        // Set the party manager for XP sharing
+        xpManager.setPartyManager(partyManager);
 
         // Register commands
         getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
@@ -62,6 +73,11 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getCommand("passives").setExecutor(new PassivesCommand(passiveSkillManager));
         getCommand("skilltree").setExecutor(new SkillTreeCommand(this, skillTreeGUI, skillTreeManager));
         getCommand("rstat").setExecutor(new RStatCommand(this));
+        
+        // Register party command
+        PartyCommand partyCommand = new PartyCommand(this, partyManager);
+        getCommand("rparty").setExecutor(partyCommand);
+        getCommand("rparty").setTabCompleter(partyCommand);
 
         // Register all listeners
         registerListeners();
@@ -79,6 +95,8 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new FarmingListener(xpManager), this);
         getServer().getPluginManager().registerEvents(new FightingListener(xpManager, this, passiveSkillManager), this);
         getServer().getPluginManager().registerEvents(abilityManager, this);
+        getServer().getPluginManager().registerEvents(new ExcavationListener(xpManager, this, passiveSkillManager), this);
+        getServer().getPluginManager().registerEvents(new RepairListener(xpManager), this);
         
         // Skill tree listeners are registered in their respective classes
     }
@@ -107,6 +125,30 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Enchanting passives
         addDefaultPassiveIfNotExists("enchanting", "doubleEnchantChance", "chance", 0.1);
         addDefaultPassiveIfNotExists("enchanting", "doubleEnchantChance", "enabled", true);
+        
+        // Excavation passives
+        addDefaultPassiveIfNotExists("excavation", "doubleDrops", "chance", 0.15);
+        addDefaultPassiveIfNotExists("excavation", "doubleDrops", "enabled", true);
+        addDefaultPassiveIfNotExists("excavation", "archaeologyBasics", "chance", 0.12);
+        addDefaultPassiveIfNotExists("excavation", "archaeologyBasics", "enabled", true);
+        addDefaultPassiveIfNotExists("excavation", "treasureFinder", "chance", 0.1);
+        addDefaultPassiveIfNotExists("excavation", "treasureFinder", "enabled", true);
+        addDefaultPassiveIfNotExists("excavation", "rareFind", "chance", 0.05);
+        addDefaultPassiveIfNotExists("excavation", "rareFind", "enabled", true);
+        addDefaultPassiveIfNotExists("excavation", "multiBlock", "chance", 0.08);
+        addDefaultPassiveIfNotExists("excavation", "multiBlock", "enabled", true);
+        addDefaultPassiveIfNotExists("excavation", "ancientArtifacts", "chance", 0.02);
+        addDefaultPassiveIfNotExists("excavation", "ancientArtifacts", "enabled", true);
+        
+        // Repair passives
+        addDefaultPassiveIfNotExists("repair", "materialSaver", "chance", 0.10);
+        addDefaultPassiveIfNotExists("repair", "materialSaver", "enabled", true);
+        addDefaultPassiveIfNotExists("repair", "experienceSaver", "reduction", 0.15);
+        addDefaultPassiveIfNotExists("repair", "experienceSaver", "enabled", true);
+        addDefaultPassiveIfNotExists("repair", "qualityRepair", "bonusDurability", 0.10);
+        addDefaultPassiveIfNotExists("repair", "qualityRepair", "enabled", true);
+        addDefaultPassiveIfNotExists("repair", "masterSmith", "efficiency", 0.20);
+        addDefaultPassiveIfNotExists("repair", "masterSmith", "enabled", true);
     }
 
     private void addDefaultPassiveIfNotExists(String skill, String passive, String property, Object value) {
@@ -175,6 +217,13 @@ public class RPGSkillsPlugin extends JavaPlugin {
      */
     public SkillTreeGUI getSkillTreeGUI() {
         return skillTreeGUI;
+    }
+
+    /**
+     * Get the party manager for XP sharing
+     */
+    public PartyManager getPartyManager() {
+        return partyManager;
     }
 
     /**

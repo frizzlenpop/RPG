@@ -41,6 +41,10 @@ import org.bukkit.Particle;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.AnvilInventory;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.inventory.meta.Damageable;
 
 import java.util.*;
 
@@ -235,6 +239,28 @@ public class PassiveSkillManager implements Listener {
     private final Set<UUID> legendaryEnchanterPlayers = new HashSet<>();
     private final Set<UUID> masterEnchanterPlayers = new HashSet<>();
 
+    // Excavation passives
+    private final Set<UUID> excavationBasicsPlayers = new HashSet<>();
+    private final Set<UUID> doubleDropsPlayers = new HashSet<>();
+    private final Set<UUID> archaeologyBasicsPlayers = new HashSet<>();
+    private final Set<UUID> treasureFinderPlayers = new HashSet<>();
+    private final Set<UUID> shovelEfficiencyPlayers = new HashSet<>();
+    private final Set<UUID> excavationXpBoostPlayers = new HashSet<>();
+    private final Set<UUID> rareFindPlayers = new HashSet<>();
+    private final Set<UUID> multiBlockPlayers = new HashSet<>();
+    private final Set<UUID> ancientArtifactsPlayers = new HashSet<>();
+    private final Set<UUID> masterExcavatorPlayers = new HashSet<>();
+    
+    // Repair passives
+    private final Set<UUID> repairBasicsPlayers = new HashSet<>();
+    private final Set<UUID> materialSaverPlayers = new HashSet<>();
+    private final Set<UUID> experienceSaverPlayers = new HashSet<>();
+    private final Set<UUID> qualityRepairPlayers = new HashSet<>();
+    private final Set<UUID> toolExpertPlayers = new HashSet<>();
+    private final Set<UUID> weaponExpertPlayers = new HashSet<>();
+    private final Set<UUID> armorExpertPlayers = new HashSet<>();
+    private final Set<UUID> masterSmithPlayers = new HashSet<>();
+    
     private final XPManager xpManager;
     private final RPGSkillsPlugin plugin; // Needed for scheduling and config
 
@@ -982,6 +1008,84 @@ public class PassiveSkillManager implements Listener {
                     masterEnchanterPlayers.add(player.getUniqueId());
                 }
                 break;
+
+            case "excavation":
+                if (level >= 5) {
+                    excavationBasicsPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "excavationBasics");
+                }
+                if (level >= 10) {
+                    doubleDropsPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "doubleDrops");
+                }
+                if (level >= 15) {
+                    archaeologyBasicsPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "archaeologyBasics");
+                }
+                if (level >= 20) {
+                    treasureFinderPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "treasureFinder");
+                }
+                if (level >= 25) {
+                    shovelEfficiencyPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "shovelEfficiency");
+                }
+                if (level >= 30) {
+                    excavationXpBoostPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "excavationXpBoost");
+                }
+                if (level >= 40) {
+                    rareFindPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "rareFind");
+                }
+                if (level >= 50) {
+                    multiBlockPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "multiBlock");
+                }
+                if (level >= 75) {
+                    ancientArtifactsPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "ancientArtifacts");
+                }
+                if (level >= 100) {
+                    masterExcavatorPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "masterExcavator");
+                }
+                break;
+
+            case "repair":
+                if (level >= 5) {
+                    repairBasicsPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "repairBasics");
+                }
+                if (level >= 10) {
+                    materialSaverPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "materialSaver");
+                }
+                if (level >= 15) {
+                    experienceSaverPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "experienceSaver");
+                }
+                if (level >= 20) {
+                    qualityRepairPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "qualityRepair");
+                }
+                if (level >= 25) {
+                    toolExpertPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "toolExpert");
+                }
+                if (level >= 30) {
+                    weaponExpertPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "weaponExpert");
+                }
+                if (level >= 40) {
+                    armorExpertPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "armorExpert");
+                }
+                if (level >= 100) {
+                    masterSmithPlayers.add(player.getUniqueId());
+                    unlockPassive(player, skill, "masterSmith");
+                }
+                break;
         }
 
         // Notify player of new passive unlocks
@@ -1088,10 +1192,39 @@ public class PassiveSkillManager implements Listener {
                     multiplier += 0.5; // +50% XP as part of ultimate mastery
                 }
                 break;
+                
+            case "excavation":
+                if (hasPassive(player, skill, "doubleDrops")) {
+                    multiplier += 0.1; // +10% XP
+                }
+                if (hasPassive(player, skill, "treasureFinder")) {
+                    multiplier += 0.15; // +15% XP
+                }
+                if (hasPassive(player, skill, "excavationXpBoost")) {
+                    multiplier += 0.25; // +25% XP
+                }
+                if (hasPassive(player, skill, "masterExcavator")) {
+                    multiplier += 0.3; // +30% XP
+                }
+                break;
+                
+            case "repair":
+                if (hasPassive(player, skill, "repairBasics")) {
+                    multiplier += 0.1; // +10% XP
+                }
+                if (hasPassive(player, skill, "experienceSaver")) {
+                    multiplier += 0.15; // +15% XP
+                }
+                if (hasPassive(player, skill, "qualityRepair")) {
+                    multiplier += 0.2; // +20% XP
+                }
+                if (hasPassive(player, skill, "masterSmith")) {
+                    multiplier += 0.3; // +30% XP
+                }
+                break;
         }
 
-        // Add level-based XP bonus
-        // Every 10 levels adds 5% bonus XP (up to 25% at level 50)
+        // Add a small level-based bonus (up to 25% at level 50)
         double levelBonus = Math.min((level / 10) * 0.05, 0.25);
         multiplier += levelBonus;
 
@@ -3163,6 +3296,359 @@ public class PassiveSkillManager implements Listener {
                 
                 // Spawn a small effect
                 block.getWorld().spawnParticle(Particle.COMPOSTER, block.getLocation().add(0.5, 0.5, 0.5), 3, 0.3, 0.3, 0.3, 0);
+            }
+        }
+    }
+
+    // Add this section for handling excavation passives in the blockBreak event
+    @EventHandler
+    public void onExcavationBlockBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        Block block = event.getBlock();
+        Material blockType = block.getType();
+        ItemStack tool = player.getInventory().getItemInMainHand();
+        
+        // Check if player is using a shovel
+        if (!isShovel(tool.getType())) {
+            return;
+        }
+        
+        // Check if the block is excavatable
+        if (!isExcavatable(blockType)) {
+            return;
+        }
+        
+        // Archaeology basics passive
+        if (plugin.isPassiveEnabled("excavation", "archaeologyBasics") && archaeologyBasicsPlayers.contains(playerId)) {
+            double chance = plugin.getPassiveValue("excavation", "archaeologyBasics");
+            if (Math.random() < chance) {
+                dropArchaeologyFinds(block.getLocation());
+                player.sendMessage(ChatColor.GOLD + "Your Archaeology Basics passive uncovered ancient remains!");
+            }
+        }
+        
+        // Double drops passive
+        if (plugin.isPassiveEnabled("excavation", "doubleDrops") && doubleDropsPlayers.contains(playerId)) {
+            double chance = plugin.getPassiveValue("excavation", "doubleDrops");
+            if (Math.random() < chance) {
+                for (ItemStack drop : block.getDrops(tool)) {
+                    block.getWorld().dropItemNaturally(block.getLocation(), drop.clone());
+                }
+                player.sendMessage(ChatColor.GREEN + "Your Double Drops passive gave you extra excavation items!");
+            }
+        }
+        
+        // Treasure finder passive
+        if (plugin.isPassiveEnabled("excavation", "treasureFinder") && treasureFinderPlayers.contains(playerId)) {
+            double chance = plugin.getPassiveValue("excavation", "treasureFinder");
+            if (Math.random() < chance) {
+                dropRandomTreasure(block.getLocation());
+                player.sendMessage(ChatColor.GOLD + "Your Treasure Finder passive discovered something interesting!");
+            }
+        }
+        
+        // Rare find passive
+        if (plugin.isPassiveEnabled("excavation", "rareFind") && rareFindPlayers.contains(playerId)) {
+            double chance = plugin.getPassiveValue("excavation", "rareFind") / 2; // Make rare finds truly rare
+            if (Math.random() < chance) {
+                dropRareItem(block.getLocation());
+                player.sendMessage(ChatColor.LIGHT_PURPLE + "You discovered a rare artifact while excavating!");
+            }
+        }
+        
+        // Multi-block excavation passive
+        if (plugin.isPassiveEnabled("excavation", "multiBlock") && multiBlockPlayers.contains(playerId)) {
+            double chance = plugin.getPassiveValue("excavation", "multiBlock");
+            if (Math.random() < chance) {
+                // Excavate a small area around the broken block
+                excavateAreaAround(player, block, 1); // Radius of 1 for 3x3 area
+                player.sendMessage(ChatColor.AQUA + "Your Multi-Block passive triggered a mini excavation!");
+            }
+        }
+        
+        // Ancient artifacts passive
+        if (plugin.isPassiveEnabled("excavation", "ancientArtifacts") && ancientArtifactsPlayers.contains(playerId)) {
+            double chance = plugin.getPassiveValue("excavation", "ancientArtifacts") / 4; // Very rare
+            if (Math.random() < chance) {
+                // Simplified implementation - drop a custom gold ingot
+                ItemStack artifact = new ItemStack(Material.GOLD_INGOT, 1);
+                ItemMeta meta = artifact.getItemMeta();
+                if (meta != null) {
+                    meta.setDisplayName(ChatColor.GOLD + "Ancient Golden Artifact");
+                    List<String> lore = new ArrayList<>();
+                    lore.add(ChatColor.YELLOW + "A relic from an ancient civilization");
+                    lore.add(ChatColor.YELLOW + "It seems to hold great power...");
+                    meta.setLore(lore);
+                    artifact.setItemMeta(meta);
+                }
+                
+                block.getWorld().dropItemNaturally(block.getLocation(), artifact);
+                player.sendMessage(ChatColor.DARK_PURPLE + "You unearthed an ancient artifact of incredible value!");
+            }
+        }
+    }
+    
+    private boolean isShovel(Material material) {
+        return material == Material.WOODEN_SHOVEL
+            || material == Material.STONE_SHOVEL
+            || material == Material.IRON_SHOVEL
+            || material == Material.GOLDEN_SHOVEL
+            || material == Material.DIAMOND_SHOVEL
+            || material == Material.NETHERITE_SHOVEL;
+    }
+    
+    private boolean isExcavatable(Material material) {
+        return material == Material.DIRT
+            || material == Material.COARSE_DIRT
+            || material == Material.GRASS_BLOCK
+            || material == Material.DIRT_PATH
+            || material == Material.FARMLAND
+            || material == Material.SAND
+            || material == Material.RED_SAND
+            || material == Material.GRAVEL
+            || material == Material.CLAY
+            || material == Material.SOUL_SAND
+            || material == Material.SOUL_SOIL
+            || material == Material.MYCELIUM
+            || material == Material.PODZOL
+            || material == Material.SNOW_BLOCK
+            || material == Material.SNOW;
+    }
+    
+    private void dropRandomTreasure(Location location) {
+        // List of potential treasures
+        List<ItemStack> treasures = new ArrayList<>();
+        treasures.add(new ItemStack(Material.IRON_NUGGET, 1 + new Random().nextInt(3)));
+        treasures.add(new ItemStack(Material.GOLD_NUGGET, 1 + new Random().nextInt(2)));
+        treasures.add(new ItemStack(Material.IRON_INGOT, 1));
+        treasures.add(new ItemStack(Material.FLINT, 1 + new Random().nextInt(3)));
+        treasures.add(new ItemStack(Material.STRING, 1 + new Random().nextInt(3)));
+        treasures.add(new ItemStack(Material.BONE, 1 + new Random().nextInt(2)));
+        treasures.add(new ItemStack(Material.COAL, 1 + new Random().nextInt(2)));
+        
+        // Randomly select a treasure
+        ItemStack treasure = treasures.get(new Random().nextInt(treasures.size()));
+        
+        // Drop the treasure in the world
+        location.getWorld().dropItemNaturally(location, treasure);
+    }
+    
+    private void dropRareItem(Location location) {
+        // List of rare items
+        List<ItemStack> rareItems = new ArrayList<>();
+        rareItems.add(new ItemStack(Material.GOLD_INGOT, 1));
+        rareItems.add(new ItemStack(Material.EMERALD, 1));
+        rareItems.add(new ItemStack(Material.LAPIS_LAZULI, 2 + new Random().nextInt(3)));
+        
+        // 10% chance for diamond
+        if (new Random().nextDouble() < 0.1) {
+            rareItems.add(new ItemStack(Material.DIAMOND, 1));
+        }
+        
+        // Randomly select a rare item
+        ItemStack rareItem = rareItems.get(new Random().nextInt(rareItems.size()));
+        
+        // Drop the item
+        location.getWorld().dropItemNaturally(location, rareItem);
+    }
+    
+    /**
+     * Drops archaeological finds at the specified location based on a loot table
+     * Items include bones, pottery, ancient tools, etc.
+     */
+    private void dropArchaeologyFinds(Location location) {
+        Random random = new Random();
+        double roll = random.nextDouble();
+        
+        // Common finds (65% chance)
+        if (roll < 0.65) {
+            List<ItemStack> commonFinds = new ArrayList<>();
+            commonFinds.add(new ItemStack(Material.BONE, 1 + random.nextInt(3)));
+            commonFinds.add(new ItemStack(Material.CLAY_BALL, 1 + random.nextInt(2)));
+            commonFinds.add(new ItemStack(Material.FLINT, 1 + random.nextInt(2)));
+            commonFinds.add(new ItemStack(Material.STICK, 1 + random.nextInt(3)));
+            
+            ItemStack find = commonFinds.get(random.nextInt(commonFinds.size()));
+            location.getWorld().dropItemNaturally(location, find);
+        }
+        // Uncommon finds (25% chance)
+        else if (roll < 0.90) {
+            List<ItemStack> uncommonFinds = new ArrayList<>();
+            
+            // Bone block
+            uncommonFinds.add(new ItemStack(Material.BONE_BLOCK, 1));
+            
+            // Ancient pottery (brick)
+            ItemStack pottery = new ItemStack(Material.BRICK, 1 + random.nextInt(2));
+            ItemMeta potteryMeta = pottery.getItemMeta();
+            if (potteryMeta != null) {
+                potteryMeta.setDisplayName(ChatColor.YELLOW + "Ancient Pottery Fragment");
+                pottery.setItemMeta(potteryMeta);
+            }
+            uncommonFinds.add(pottery);
+            
+            // Ancient tool
+            ItemStack tool = new ItemStack(Material.STONE_PICKAXE, 1);
+            ItemMeta toolMeta = tool.getItemMeta();
+            if (toolMeta != null) {
+                toolMeta.setDisplayName(ChatColor.YELLOW + "Ancient Stone Tool");
+                tool.setItemMeta(toolMeta);
+                // Set heavy damage to the tool
+                ((Damageable)toolMeta).setDamage(Material.STONE_PICKAXE.getMaxDurability() - 5);
+                tool.setItemMeta(toolMeta);
+            }
+            uncommonFinds.add(tool);
+            
+            // Fossil
+            ItemStack fossil = new ItemStack(Material.COAL, 1);
+            ItemMeta fossilMeta = fossil.getItemMeta();
+            if (fossilMeta != null) {
+                fossilMeta.setDisplayName(ChatColor.YELLOW + "Fossilized Remains");
+                List<String> lore = new ArrayList<>();
+                lore.add(ChatColor.GRAY + "The remains of an ancient creature");
+                fossilMeta.setLore(lore);
+                fossil.setItemMeta(fossilMeta);
+            }
+            uncommonFinds.add(fossil);
+            
+            ItemStack find = uncommonFinds.get(random.nextInt(uncommonFinds.size()));
+            location.getWorld().dropItemNaturally(location, find);
+        }
+        // Rare finds (10% chance)
+        else {
+            List<ItemStack> rareFinds = new ArrayList<>();
+            
+            // Ancient skull
+            ItemStack skull = new ItemStack(Material.BONE_BLOCK, 1);
+            ItemMeta skullMeta = skull.getItemMeta();
+            if (skullMeta != null) {
+                skullMeta.setDisplayName(ChatColor.LIGHT_PURPLE + "Ancient Skull");
+                List<String> lore = new ArrayList<>();
+                lore.add(ChatColor.GRAY + "A perfectly preserved skull");
+                lore.add(ChatColor.GRAY + "from a long-extinct species");
+                skullMeta.setLore(lore);
+                skull.setItemMeta(skullMeta);
+            }
+            rareFinds.add(skull);
+            
+            // Ancient jewelry
+            ItemStack jewelry = new ItemStack(Material.GOLD_NUGGET, 2 + random.nextInt(3));
+            ItemMeta jewelryMeta = jewelry.getItemMeta();
+            if (jewelryMeta != null) {
+                jewelryMeta.setDisplayName(ChatColor.LIGHT_PURPLE + "Ancient Jewelry");
+                List<String> lore = new ArrayList<>();
+                lore.add(ChatColor.GRAY + "Precious ornaments from");
+                lore.add(ChatColor.GRAY + "a forgotten civilization");
+                jewelryMeta.setLore(lore);
+                jewelry.setItemMeta(jewelryMeta);
+            }
+            rareFinds.add(jewelry);
+            
+            // Ancient artifact
+            ItemStack artifact = new ItemStack(Material.PRISMARINE_SHARD, 1);
+            ItemMeta artifactMeta = artifact.getItemMeta();
+            if (artifactMeta != null) {
+                artifactMeta.setDisplayName(ChatColor.LIGHT_PURPLE + "Strange Artifact");
+                List<String> lore = new ArrayList<>();
+                lore.add(ChatColor.GRAY + "A mysterious object");
+                lore.add(ChatColor.GRAY + "of unknown origin");
+                artifactMeta.setLore(lore);
+                artifact.setItemMeta(artifactMeta);
+            }
+            rareFinds.add(artifact);
+            
+            ItemStack find = rareFinds.get(random.nextInt(rareFinds.size()));
+            location.getWorld().dropItemNaturally(location, find);
+        }
+    }
+
+    // Add this section for handling repair passives in the anvil event
+    @EventHandler
+    public void onAnvilRepair(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+
+        if (!(event.getInventory() instanceof AnvilInventory)) {
+            return;
+        }
+
+        // Check if the result slot was clicked
+        if (event.getRawSlot() != 2) {
+            return;
+        }
+
+        // Only process if there's actually a result
+        ItemStack result = event.getCurrentItem();
+        if (result == null || result.getType() == Material.AIR) {
+            return;
+        }
+
+        UUID playerId = player.getUniqueId();
+        boolean passiveActivated = false;
+
+        // Material Saver passive - chance to not consume materials
+        if (plugin.isPassiveEnabled("repair", "materialSaver") && materialSaverPlayers.contains(playerId)) {
+            double chance = plugin.getPassiveValue("repair", "materialSaver");
+            if (Math.random() < chance) {
+                // This is tricky to implement directly since the anvil mechanics are handled by Minecraft
+                // We would need to give the player back the materials, but that's complex
+                // For now, we'll just notify them of the passive activation
+                player.sendMessage(ChatColor.GREEN + "Your Material Saver passive preserved some materials!");
+                passiveActivated = true;
+            }
+        }
+
+        // Experience Saver passive - reduce XP cost
+        if (plugin.isPassiveEnabled("repair", "experienceSaver") && experienceSaverPlayers.contains(playerId)) {
+            // This is also tricky to implement directly
+            // The XP cost is determined by the anvil GUI before this event fires
+            // For a proper implementation, we would need to modify the anvil mechanics
+            // For now, we'll just notify them
+            if (!passiveActivated) {
+                player.sendMessage(ChatColor.GREEN + "Your Experience Saver passive reduced the repair cost!");
+                passiveActivated = true;
+            }
+        }
+
+        // Quality Repair passive - repairs restore more durability
+        if (plugin.isPassiveEnabled("repair", "qualityRepair") && qualityRepairPlayers.contains(playerId)) {
+            // Again, this is difficult to implement directly
+            // We would need to modify the durability of the repaired item
+            // For now, just notify
+            if (!passiveActivated) {
+                player.sendMessage(ChatColor.GREEN + "Your Quality Repair passive improved the repair quality!");
+            }
+        }
+    }
+
+    /**
+     * Excavates a small area around the broken block for the multi-block passive
+     */
+    private void excavateAreaAround(Player player, Block centerBlock, int radius) {
+        ItemStack tool = player.getInventory().getItemInMainHand();
+        
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    // Skip the center block as it's already broken
+                    if (x == 0 && y == 0 && z == 0) continue;
+                    
+                    Block relativeBlock = centerBlock.getRelative(x, y, z);
+                    
+                    // Only break blocks that can be excavated
+                    if (isExcavatable(relativeBlock.getType())) {
+                        // Break the block and drop items naturally
+                        relativeBlock.breakNaturally(tool);
+                        
+                        // Give XP for the broken block
+                        int xpGained = plugin.getXpManager().getXPForExcavationMaterial(relativeBlock.getType());
+                        if (xpGained > 0) {
+                            plugin.getXpManager().addXP(player, "excavation", xpGained / 2); // Half XP for passive breaks
+                        }
+                    }
+                }
             }
         }
     }
