@@ -59,12 +59,12 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new PlayerDataListener(playerDataManager), this);
         getServer().getPluginManager().registerEvents(new MiningListener(xpManager), this);
-        getServer().getPluginManager().registerEvents(new FishingListener(xpManager), this);
+        getServer().getPluginManager().registerEvents(new FishingListener(xpManager, this, passiveSkillManager), this);
         getServer().getPluginManager().registerEvents(new EnchantingListener(xpManager, this), this);
         getServer().getPluginManager().registerEvents(skillsGUI, this);
         getServer().getPluginManager().registerEvents(new LoggingListener(xpManager, this, passiveSkillManager), this);
         getServer().getPluginManager().registerEvents(new FarmingListener(xpManager), this);
-        getServer().getPluginManager().registerEvents(new FightingListener(xpManager), this);
+        getServer().getPluginManager().registerEvents(new FightingListener(xpManager, this, passiveSkillManager), this);
 
         getServer().getPluginManager().registerEvents(abilityManager, this);
     }

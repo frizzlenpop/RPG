@@ -97,6 +97,49 @@ public class PassiveSkillManager implements Listener {
     private final Set<UUID> lifestealPlayers = new HashSet<>();
     private final Set<UUID> damageReductionPlayers = new HashSet<>();
 
+    // Fishing passives
+    private final Set<UUID> fishingBasicsPlayers = new HashSet<>();
+    private final Set<UUID> baitSaverPlayers = new HashSet<>();
+    private final Set<UUID> fishingXpBoostIPlayers = new HashSet<>();
+    private final Set<UUID> fishingXpBoostIIPlayers = new HashSet<>();
+    private final Set<UUID> fishingXpBoostIIIPlayers = new HashSet<>();
+    private final Set<UUID> fishingXpBoostIVPlayers = new HashSet<>();
+    private final Set<UUID> fishingXpBoostVPlayers = new HashSet<>();
+    private final Set<UUID> fishingXpBoostVIPlayers = new HashSet<>();
+    private final Set<UUID> fishFinderPlayers = new HashSet<>();
+    private final Set<UUID> treasureHunterIPlayers = new HashSet<>();
+    private final Set<UUID> treasureHunterIIPlayers = new HashSet<>();
+    private final Set<UUID> treasureHunterIIIPlayers = new HashSet<>();
+    private final Set<UUID> treasureHunterIVPlayers = new HashSet<>();
+    private final Set<UUID> treasureHunterVPlayers = new HashSet<>();
+    private final Set<UUID> salmonSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> rareFishMasterIPlayers = new HashSet<>();
+    private final Set<UUID> rareFishMasterIIPlayers = new HashSet<>();
+    private final Set<UUID> tropicalFishSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> quickHookIPlayers = new HashSet<>();
+    private final Set<UUID> quickHookIIPlayers = new HashSet<>();
+    private final Set<UUID> quickHookIIIPlayers = new HashSet<>();
+    private final Set<UUID> quickHookIVPlayers = new HashSet<>();
+    private final Set<UUID> junkReducerIPlayers = new HashSet<>();
+    private final Set<UUID> junkReducerIIPlayers = new HashSet<>();
+    private final Set<UUID> junkReducerIIIPlayers = new HashSet<>();
+    private final Set<UUID> junkReducerIVPlayers = new HashSet<>();
+    private final Set<UUID> waterBreathingPlayers = new HashSet<>();
+    private final Set<UUID> doubleCatchIPlayers = new HashSet<>();
+    private final Set<UUID> doubleCatchIIPlayers = new HashSet<>();
+    private final Set<UUID> doubleCatchIIIPlayers = new HashSet<>();
+    private final Set<UUID> enchantedBookFisherIPlayers = new HashSet<>();
+    private final Set<UUID> enchantedBookFisherIIPlayers = new HashSet<>();
+    private final Set<UUID> enchantedBookFisherIIIPlayers = new HashSet<>();
+    private final Set<UUID> nightFisherPlayers = new HashSet<>();
+    private final Set<UUID> rainFisherPlayers = new HashSet<>();
+    private final Set<UUID> masterAnglerPlayers = new HashSet<>();
+    private final Set<UUID> oceanExplorerPlayers = new HashSet<>();
+    private final Set<UUID> tripleCatchPlayers = new HashSet<>();
+    private final Set<UUID> legendaryFisherPlayers = new HashSet<>();
+    private final Set<UUID> ancientTreasuresPlayers = new HashSet<>();
+    private final Set<UUID> masterFisherPlayers = new HashSet<>();
+
     private final XPManager xpManager;
     private final RPGSkillsPlugin plugin; // Needed for scheduling and config
 
@@ -388,6 +431,132 @@ public class PassiveSkillManager implements Listener {
                     unlockPassive(player, skill, "damageReduction");
                 }
                 break;
+                
+            case "fishing":
+                if (level >= 1) {
+                    unlockPassive(player, skill, "Fishing Basics");
+                }
+                if (level >= 3) {
+                    unlockPassive(player, skill, "Bait Saver");
+                }
+                if (level >= 5) {
+                    unlockPassive(player, skill, "XP Boost I");
+                }
+                if (level >= 7) {
+                    unlockPassive(player, skill, "Fish Finder");
+                }
+                if (level >= 10) {
+                    unlockPassive(player, skill, "Treasure Hunter I");
+                }
+                if (level >= 12) {
+                    unlockPassive(player, skill, "Salmon Specialist");
+                }
+                if (level >= 15) {
+                    unlockPassive(player, skill, "Rare Fish Master I");
+                }
+                if (level >= 17) {
+                    unlockPassive(player, skill, "Tropical Fish Specialist");
+                }
+                if (level >= 20) {
+                    unlockPassive(player, skill, "Quick Hook I");
+                }
+                if (level >= 22) {
+                    unlockPassive(player, skill, "XP Boost II");
+                }
+                if (level >= 25) {
+                    unlockPassive(player, skill, "Junk Reducer I");
+                }
+                if (level >= 27) {
+                    unlockPassive(player, skill, "Treasure Hunter II");
+                }
+                if (level >= 30) {
+                    unlockPassive(player, skill, "Water Breathing");
+                }
+                if (level >= 32) {
+                    unlockPassive(player, skill, "Double Catch I");
+                }
+                if (level >= 35) {
+                    unlockPassive(player, skill, "Enchanted Book Fisher I");
+                }
+                if (level >= 37) {
+                    unlockPassive(player, skill, "Quick Hook II");
+                }
+                if (level >= 40) {
+                    unlockPassive(player, skill, "Rare Fish Master II");
+                }
+                if (level >= 42) {
+                    unlockPassive(player, skill, "XP Boost III");
+                }
+                if (level >= 45) {
+                    unlockPassive(player, skill, "Junk Reducer II");
+                }
+                if (level >= 47) {
+                    unlockPassive(player, skill, "Treasure Hunter III");
+                }
+                if (level >= 50) {
+                    unlockPassive(player, skill, "Night Fisher");
+                }
+                if (level >= 52) {
+                    unlockPassive(player, skill, "Double Catch II");
+                }
+                if (level >= 55) {
+                    unlockPassive(player, skill, "Enchanted Book Fisher II");
+                }
+                if (level >= 57) {
+                    unlockPassive(player, skill, "Quick Hook III");
+                }
+                if (level >= 60) {
+                    unlockPassive(player, skill, "XP Boost IV");
+                }
+                if (level >= 62) {
+                    unlockPassive(player, skill, "Junk Reducer III");
+                }
+                if (level >= 65) {
+                    unlockPassive(player, skill, "Treasure Hunter IV");
+                }
+                if (level >= 67) {
+                    unlockPassive(player, skill, "Rain Fisher");
+                }
+                if (level >= 70) {
+                    unlockPassive(player, skill, "Master Angler");
+                }
+                if (level >= 72) {
+                    unlockPassive(player, skill, "XP Boost V");
+                }
+                if (level >= 75) {
+                    unlockPassive(player, skill, "Double Catch III");
+                }
+                if (level >= 77) {
+                    unlockPassive(player, skill, "Enchanted Book Fisher III");
+                }
+                if (level >= 80) {
+                    unlockPassive(player, skill, "Ocean Explorer");
+                }
+                if (level >= 82) {
+                    unlockPassive(player, skill, "Junk Reducer IV");
+                }
+                if (level >= 85) {
+                    unlockPassive(player, skill, "Treasure Hunter V");
+                }
+                if (level >= 87) {
+                    unlockPassive(player, skill, "Quick Hook IV");
+                }
+                if (level >= 90) {
+                    unlockPassive(player, skill, "Triple Catch");
+                }
+                if (level >= 92) {
+                    unlockPassive(player, skill, "XP Boost VI");
+                }
+                if (level >= 95) {
+                    unlockPassive(player, skill, "Legendary Fisher");
+                }
+                if (level >= 97) {
+                    unlockPassive(player, skill, "Ancient Treasures");
+                }
+                if (level >= 100) {
+                    unlockPassive(player, skill, "Master Fisher");
+                }
+                break;
         }
 
         // Notify player of new passive unlocks
@@ -450,6 +619,48 @@ public class PassiveSkillManager implements Listener {
                 }
                 if (hasPassive(player, skill, "damageReduction")) {
                     multiplier += 0.25;
+                }
+                break;
+                
+            case "fishing":
+                // XP Boost I - Level 5 (+10% XP)
+                if (hasPassive(player, skill, "XP Boost I")) {
+                    multiplier += 0.1;
+                }
+                // XP Boost II - Level 22 (+15% XP)
+                else if (hasPassive(player, skill, "XP Boost II")) {
+                    multiplier += 0.15;
+                }
+                // XP Boost III - Level 42 (+20% XP)
+                else if (hasPassive(player, skill, "XP Boost III")) {
+                    multiplier += 0.2;
+                }
+                // XP Boost IV - Level 60 (+25% XP)
+                else if (hasPassive(player, skill, "XP Boost IV")) {
+                    multiplier += 0.25;
+                }
+                // XP Boost V - Level 72 (+30% XP)
+                else if (hasPassive(player, skill, "XP Boost V")) {
+                    multiplier += 0.3;
+                }
+                // XP Boost VI - Level 92 (+40% XP)
+                else if (hasPassive(player, skill, "XP Boost VI")) {
+                    multiplier += 0.4;
+                }
+                
+                // Master Angler - Level 70 (All fishing stats improved by 10%)
+                if (hasPassive(player, skill, "Master Angler")) {
+                    multiplier += 0.1;
+                }
+                
+                // Legendary Fisher - Level 95 (All fishing yields increased by 25%)
+                if (hasPassive(player, skill, "Legendary Fisher")) {
+                    multiplier += 0.25;
+                }
+                
+                // Master Fisher - Level 100 (Ultimate fishing mastery)
+                if (hasPassive(player, skill, "Master Fisher")) {
+                    multiplier += 0.5; // +50% XP as part of ultimate mastery
                 }
                 break;
         }
@@ -646,69 +857,271 @@ public class PassiveSkillManager implements Listener {
         UUID playerId = player.getUniqueId();
         int level = xpManager.getPlayerLevel(player, "fishing");
 
-        // XP Boost (Level 5) implementation
-        if (hasPassive(player, "fishing", "XP Boost")) {
-            // The XP boost is handled in the XPManager via getXPMultiplier
-            // Let the player know their boost is active
-            if (event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
-                player.sendActionBar("§a+10% Fishing XP Boost Applied!");
+        // Fishing Basics (Level 1) - just a starting passive, no effect
+
+        // Bait Saver (Level 3) - 10% chance to not consume bait when fishing
+        if (hasPassive(player, "fishing", "Bait Saver") && event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
+            if (Math.random() < 0.10) {
+                // We can't directly prevent bait consumption, but we can give them an extra bait item
+                Material baitType = Material.STRING; // Default bait
+                ItemStack bait = new ItemStack(baitType);
+                player.getInventory().addItem(bait);
+                player.sendActionBar("§a⚓ Bait Saver: Bait preserved!");
             }
         }
 
-        // Treasure Hunter (Level 10)
-        if (hasPassive(player, "fishing", "Treasure Hunter") && event.getCaught() instanceof Item) {
-            if (Math.random() < 0.15) { // 15% increased treasure rate
+        // XP Boost passives (Levels 5, 22, 42, 60, 72, 92)
+        // These are handled in getXPMultiplier method
+        if (hasPassive(player, "fishing", "XP Boost I") && event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
+            player.sendActionBar("§a+10% Fishing XP Boost Applied!");
+        } else if (hasPassive(player, "fishing", "XP Boost II") && event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
+            player.sendActionBar("§a+15% Fishing XP Boost Applied!");
+        } else if (hasPassive(player, "fishing", "XP Boost III") && event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
+            player.sendActionBar("§a+20% Fishing XP Boost Applied!");
+        } else if (hasPassive(player, "fishing", "XP Boost IV") && event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
+            player.sendActionBar("§a+25% Fishing XP Boost Applied!");
+        } else if (hasPassive(player, "fishing", "XP Boost V") && event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
+            player.sendActionBar("§a+30% Fishing XP Boost Applied!");
+        } else if (hasPassive(player, "fishing", "XP Boost VI") && event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
+            player.sendActionBar("§a+40% Fishing XP Boost Applied!");
+        }
+
+        // Fish Finder (Level 7) - 5% increased fish catch rate
+        if (hasPassive(player, "fishing", "Fish Finder") && event.getCaught() instanceof Item) {
+            Item item = (Item) event.getCaught();
+            ItemStack itemStack = item.getItemStack();
+            
+            // If not already a fish, there's a chance to convert to fish
+            if (!isFish(itemStack.getType()) && Math.random() < 0.05) {
+                itemStack.setType(Material.COD);
+                player.sendActionBar("§b🐟 Fish Finder found you a fish!");
+            }
+        }
+
+        // Treasure Hunter I-V (Levels 10, 27, 47, 65, 85)
+        if (event.getCaught() instanceof Item) {
+            double treasureChance = 0.0;
+            String message = "";
+            
+            if (hasPassive(player, "fishing", "Treasure Hunter I")) {
+                treasureChance = 0.10;
+                message = "§6Your Treasure Hunter I passive found something special!";
+            } else if (hasPassive(player, "fishing", "Treasure Hunter II")) {
+                treasureChance = 0.15;
+                message = "§6Your Treasure Hunter II passive found something special!";
+            } else if (hasPassive(player, "fishing", "Treasure Hunter III")) {
+                treasureChance = 0.20;
+                message = "§6Your Treasure Hunter III passive found something special!";
+            } else if (hasPassive(player, "fishing", "Treasure Hunter IV")) {
+                treasureChance = 0.25;
+                message = "§6Your Treasure Hunter IV passive found something special!";
+            } else if (hasPassive(player, "fishing", "Treasure Hunter V")) {
+                treasureChance = 0.30;
+                message = "§6Your Treasure Hunter V passive found something special!";
+            }
+            
+            if (treasureChance > 0 && Math.random() < treasureChance) {
                 Item item = (Item) event.getCaught();
                 ItemStack currentItem = item.getItemStack();
                 
-                // Replace with a better item depending on what was caught
-                if (isFish(currentItem.getType())) {
+                // Replace with a better item if it's a fish or junk
+                if (isFish(currentItem.getType()) || !isValuedItem(currentItem.getType())) {
                     // Instead of fish, give treasure
                     ItemStack treasureItem = getTreasureItem();
                     item.setItemStack(treasureItem);
-                    player.sendMessage("§6Your Treasure Hunter passive found something special!");
+                    player.sendMessage(message);
                 }
             }
         }
 
-        // Rare Fish (Level 15)
-        if (hasPassive(player, "fishing", "Rare Fish Master") && event.getCaught() instanceof Item) {
-            if (Math.random() < 0.1) { // 10% chance for rare fish
+        // Salmon Specialist (Level 12) - Implemented in FishingListener.handleFishTypeSpecialization
+
+        // Rare Fish Master I & II (Levels 15, 40) - Implemented in FishingListener.handleFishTypeSpecialization 
+
+        // Tropical Fish Specialist (Level 17) - Implemented in FishingListener.handleFishTypeSpecialization
+
+        // Quick Hook I-IV (Levels 20, 37, 57, 87) - Implemented in FishingListener
+
+        // Junk Reducer I-IV (Levels 25, 45, 62, 82) - Implemented in FishingListener.handleJunkReducer
+
+        // Water Breathing (Level 30) - Implemented in FishingListener.checkWaterBreathingPassive
+
+        // Double Catch I-III (Levels 32, 52, 75) - Implemented in FishingListener.handleExtraCatchChance
+
+        // Enchanted Book Fisher I-III (Levels 35, 55, 77)
+        if (event.getCaught() instanceof Item) {
+            double enchantedBookChance = 0.0;
+            String message = "";
+            
+            if (hasPassive(player, "fishing", "Enchanted Book Fisher I")) {
+                enchantedBookChance = 0.05;
+                message = "§dYour Enchanted Book Fisher I passive found a special book!";
+            } else if (hasPassive(player, "fishing", "Enchanted Book Fisher II")) {
+                enchantedBookChance = 0.10;
+                message = "§dYour Enchanted Book Fisher II passive found a special book!";
+            } else if (hasPassive(player, "fishing", "Enchanted Book Fisher III")) {
+                enchantedBookChance = 0.15;
+                message = "§dYour Enchanted Book Fisher III passive found a special book!";
+            }
+            
+            if (enchantedBookChance > 0 && Math.random() < enchantedBookChance) {
                 Item item = (Item) event.getCaught();
-                item.setItemStack(new ItemStack(Material.PUFFERFISH));
-                player.sendMessage("§6You caught a rare fish with your Rare Fish Master passive!");
+                
+                // Create enchanted book
+                ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+                
+                // Get random enchantment
+                Enchantment[] enchantments = Enchantment.values();
+                Enchantment randomEnchant = enchantments[new Random().nextInt(enchantments.length)];
+                
+                // Higher levels have a chance for higher enchantment levels
+                int maxLevel = 1;
+                if (hasPassive(player, "fishing", "Enchanted Book Fisher II")) {
+                    maxLevel = 2;
+                } else if (hasPassive(player, "fishing", "Enchanted Book Fisher III")) {
+                    maxLevel = 3;
+                }
+                
+                // Random level between 1 and max
+                int enchantLevel = new Random().nextInt(maxLevel) + 1;
+                
+                // Add the enchantment
+                book.addUnsafeEnchantment(randomEnchant, enchantLevel);
+                
+                // Replace caught item
+                item.setItemStack(book);
+                player.sendMessage(message);
             }
         }
 
-        // Quick Hook (Level 20)
-        if (hasPassive(player, "fishing", "Quick Hook")) {
-            // This passive reduces the time to catch fish
-            if (event.getState() == PlayerFishEvent.State.FISHING) {
-                // Schedule a task to potentially reduce fishing time
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    // Check that player is still fishing and the hook is still there
-                    if (player.getInventory().getItemInMainHand().getType() == Material.FISHING_ROD &&
-                        event.getHook() != null && !event.getHook().isDead()) {
-                        
-                        // 20% chance to trigger quick hook
-                        if (Math.random() < 0.20) {
-                            player.sendActionBar("§b⚡ Quick Hook is helping you catch fish faster!");
-                            
-                            // Modify the hook properties to catch fish faster
-                            // This approach is safer than trying to force a bite directly
-                            
-                            // Instead of trying to manipulate the hook directly (which can be risky),
-                            // we'll drop a fish near the player to simulate a catch
-                            ItemStack fishItem = new ItemStack(Material.COD);
-                            
-                            // Drop the item near the player, which is a safe approach
-                            player.getWorld().dropItemNaturally(player.getLocation(), fishItem);
-                            
-                            // Try to cancel the current fishing
-                            event.getHook().remove();
-                        }
+        // Night Fisher (Level 50) - Implemented in FishingListener.checkNightFisherPassive
+
+        // Rain Fisher (Level 67) - Implemented in FishingListener.checkRainFisherPassive
+
+        // Master Angler (Level 70) - All fishing stats improved by 10%
+        // This is applied in various places including XP multiplier
+
+        // Ocean Explorer (Level 80) - Chance to find rare ocean treasures
+        if (hasPassive(player, "fishing", "Ocean Explorer") && event.getCaught() instanceof Item) {
+            if (Math.random() < 0.05) { // 5% chance
+                Item item = (Item) event.getCaught();
+                
+                // List of rare ocean items
+                Material[] oceanTreasures = {
+                    Material.HEART_OF_THE_SEA,
+                    Material.NAUTILUS_SHELL,
+                    Material.PRISMARINE_CRYSTALS,
+                    Material.PRISMARINE_SHARD,
+                    Material.SEA_LANTERN,
+                    Material.TURTLE_EGG, // Changed from SCUTE to TURTLE_EGG
+                    Material.TURTLE_HELMET
+                };
+                
+                // Select random treasure
+                Material treasure = oceanTreasures[new Random().nextInt(oceanTreasures.length)];
+                ItemStack treasureItem = new ItemStack(treasure);
+                
+                // Replace the caught item
+                item.setItemStack(treasureItem);
+                player.sendMessage("§b✧ Ocean Explorer: You discovered a rare ocean treasure!");
+            }
+        }
+
+        // Triple Catch (Level 90) - Implemented in FishingListener.handleExtraCatchChance
+
+        // Legendary Fisher (Level 95) - All fishing yields increased by 25%
+        // This is applied in various places including XP multiplier
+        
+        // Ancient Treasures (Level 97) - Chance to find ancient artifacts
+        if (hasPassive(player, "fishing", "Ancient Treasures") && event.getCaught() instanceof Item) {
+            if (Math.random() < 0.03) { // 3% chance
+                Item item = (Item) event.getCaught();
+                
+                // List of ancient artifact items
+                Material[] ancientArtifacts = {
+                    Material.GOLDEN_APPLE,
+                    Material.ENCHANTED_GOLDEN_APPLE,
+                    Material.TOTEM_OF_UNDYING,
+                    Material.TRIDENT,
+                    Material.MUSIC_DISC_WAIT, // Random music disc
+                    Material.NETHER_STAR,
+                    Material.DRAGON_EGG,
+                    Material.ELYTRA
+                };
+                
+                // Select random artifact (weighted toward the less powerful ones)
+                int index = 0;
+                double roll = Math.random();
+                if (roll < 0.6) {
+                    // 60% chance for common artifacts (indices 0-3)
+                    index = new Random().nextInt(4);
+                } else if (roll < 0.9) {
+                    // 30% chance for uncommon artifacts (indices 4-6)
+                    index = 4 + new Random().nextInt(3);
+                } else {
+                    // 10% chance for very rare artifact (index 7)
+                    index = 7;
+                }
+                
+                Material artifact = ancientArtifacts[index];
+                ItemStack artifactItem = new ItemStack(artifact);
+                
+                // Replace the caught item
+                item.setItemStack(artifactItem);
+                player.sendMessage("§5✦ Ancient Treasures: You discovered a legendary artifact!");
+            }
+        }
+
+        // Master Fisher (Level 100) - Ultimate fishing mastery
+        if (hasPassive(player, "fishing", "Master Fisher") && event.getCaught() instanceof Item) {
+            Item item = (Item) event.getCaught();
+            ItemStack currentItem = item.getItemStack();
+            
+            // 25% chance to upgrade any catch
+            if (Math.random() < 0.25) {
+                // If it's a fish, increase amount and quality
+                if (isFish(currentItem.getType())) {
+                    // Double the amount
+                    currentItem.setAmount(currentItem.getAmount() * 2);
+                    
+                    // Chance to upgrade to better fish
+                    if (currentItem.getType() == Material.COD && Math.random() < 0.5) {
+                        currentItem.setType(Material.SALMON);
+                    } else if (currentItem.getType() == Material.SALMON && Math.random() < 0.3) {
+                        currentItem.setType(Material.TROPICAL_FISH);
                     }
-                }, 40L); // Check after 2 seconds
+                    
+                    player.sendMessage("§b★ Master Fisher: Enhanced your fish catch!");
+                } 
+                // If it's treasure, enhance it
+                else if (isValuedItem(currentItem.getType())) {
+                    // If it's already enchanted, increase enchantment level
+                    if (currentItem.hasItemMeta() && currentItem.getItemMeta().hasEnchants()) {
+                        for (Enchantment enchant : currentItem.getEnchantments().keySet()) {
+                            int currentLevel = currentItem.getEnchantmentLevel(enchant);
+                            if (currentLevel < enchant.getMaxLevel()) {
+                                currentItem.addUnsafeEnchantment(enchant, currentLevel + 1);
+                            }
+                        }
+                    } 
+                    // Otherwise add a random enchantment
+                    else if (currentItem.getType() != Material.NAUTILUS_SHELL && 
+                             currentItem.getType() != Material.HEART_OF_THE_SEA) {
+                        Enchantment[] enchantments = Enchantment.values();
+                        Enchantment randomEnchant = enchantments[new Random().nextInt(enchantments.length)];
+                        currentItem.addUnsafeEnchantment(randomEnchant, 1);
+                    }
+                    
+                    player.sendMessage("§b★ Master Fisher: Enhanced your treasure!");
+                }
+                // For junk, convert to fish
+                else {
+                    Material[] fishTypes = {Material.COD, Material.SALMON, Material.PUFFERFISH, Material.TROPICAL_FISH};
+                    Material randomFish = fishTypes[new Random().nextInt(fishTypes.length)];
+                    currentItem.setType(randomFish);
+                    currentItem.setAmount(2); // Give 2 fish
+                    player.sendMessage("§b★ Master Fisher: Converted junk to fish!");
+                }
             }
         }
     }
@@ -719,6 +1132,17 @@ public class PassiveSkillManager implements Listener {
                material == Material.SALMON || 
                material == Material.TROPICAL_FISH || 
                material == Material.PUFFERFISH;
+    }
+    
+    private boolean isValuedItem(Material material) {
+        return material == Material.NAME_TAG || 
+               material == Material.SADDLE || 
+               material == Material.NAUTILUS_SHELL || 
+               material == Material.ENCHANTED_BOOK || 
+               material == Material.BOW || 
+               material == Material.FISHING_ROD || 
+               material == Material.HEART_OF_THE_SEA || 
+               material == Material.TRIDENT;
     }
     
     private ItemStack getTreasureItem() {
