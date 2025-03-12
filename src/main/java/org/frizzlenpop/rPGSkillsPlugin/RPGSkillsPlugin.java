@@ -61,6 +61,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getCommand("toggleskillmessages").setExecutor(new ToggleSkillMessagesCommand(playerDataManager));
         getCommand("passives").setExecutor(new PassivesCommand(passiveSkillManager));
         getCommand("skilltree").setExecutor(new SkillTreeCommand(this, skillTreeGUI, skillTreeManager));
+        getCommand("rstat").setExecutor(new RStatCommand(this));
 
         // Register all listeners
         registerListeners();

@@ -52,3 +52,7 @@ commands:
   abilities:
     description: Activate skill abilities
     usage: /abilities <skill>
+  rstat:
+    description: Display all XP boosts from skills and skill tree systems
+    usage: /rstat
+    permission: rpgskills.rstat

@@ -1678,7 +1678,7 @@ public class PassiveSkillManager implements Listener {
         // Apply XP multiplier if it's greater than 1.0
         if (xpMultiplier > 1.0) {
             int baseXP = event.getExpLevelCost() * 5; // Base XP from enchanting
-            int bonusXP = (int)(baseXP * (xpMultiplier - 1.0));
+            int bonusXP = (int)Math.round(baseXP * (xpMultiplier - 1.0));
             
             if (bonusXP > 0) {
                 // Award the bonus XP directly

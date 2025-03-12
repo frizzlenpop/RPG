@@ -13,7 +13,7 @@ import java.util.UUID;
 public class PlayerLevel {
     private final PlayerDataManager dataManager;
     private final XPManager xpManager;
-    private static final String[] SKILL_TYPES = {"mining", "logging", "farming", "fighting", "fishing"};
+    private static final String[] SKILL_TYPES = {"mining", "logging", "farming", "fighting", "fishing", "enchanting"};
     
     // Base XP required for each level
     private static final int BASE_XP_REQUIRED = 100;

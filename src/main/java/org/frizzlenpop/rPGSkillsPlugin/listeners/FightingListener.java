@@ -63,30 +63,48 @@ public class FightingListener implements Listener {
         String entityName = entity.getType().toString();
         
         // Get XP for the killed mob
-        int xpGained = xpManager.getXPForMob(entityName);
+        int baseXP = xpManager.getXPForMob(entityName);
+        int bonusXP = 0;
+        int totalXP = baseXP;
+        
+        // Calculate XP multiplier
+        double multiplier = 1.0;
         
         // Apply Combat XP boosts
         if (passiveManager.hasPassive(playerId, "combatXpBoost5")) {
-            xpGained *= 1.3; // +30% XP
+            multiplier = 1.3; // +30% XP
         } else if (passiveManager.hasPassive(playerId, "combatXpBoost4")) {
-            xpGained *= 1.25; // +25% XP
+            multiplier = 1.25; // +25% XP
         } else if (passiveManager.hasPassive(playerId, "combatXpBoost3")) {
-            xpGained *= 1.2; // +20% XP
+            multiplier = 1.2; // +20% XP
         } else if (passiveManager.hasPassive(playerId, "combatXpBoost2")) {
-            xpGained *= 1.15; // +15% XP
+            multiplier = 1.15; // +15% XP
         } else if (passiveManager.hasPassive(playerId, "combatXpBoost1")) {
-            xpGained *= 1.1; // +10% XP
+            multiplier = 1.1; // +10% XP
         }
         
         // Apply Combat Basics passive - small chance for extra XP
         if (passiveManager.hasPassive(playerId, "combatBasics") && random.nextDouble() < 0.15) {
-            xpGained = (int)(xpGained * 1.05); // 5% more XP with 15% chance
+            multiplier += 0.05; // Additional 5% from combat basics
             killer.sendActionBar("§4Your combat basics gave you bonus XP!");
         }
         
-        if (xpGained > 0) {
-            xpManager.addXP(killer, "fighting", xpGained);
-            killer.sendMessage("§c+" + xpGained + " Fighting XP");
+        // Apply multiplier to calculate bonus XP
+        if (multiplier > 1.0) {
+            bonusXP = (int)Math.round(baseXP * (multiplier - 1.0));
+            totalXP = baseXP + bonusXP;
+        }
+        
+        if (baseXP > 0) {
+            // Use the XPManager to add XP, which will also handle displaying a message in the action bar
+            xpManager.addXP(killer, "fighting", totalXP);
+            
+            // Show detailed message in chat
+            if (bonusXP > 0) {
+                killer.sendMessage("§c+" + baseXP + " Fighting XP §6(+" + bonusXP + " Bonus XP)");
+            } else {
+                killer.sendMessage("§c+" + baseXP + " Fighting XP");
+            }
         }
         
         // Apply Heal on Kill passives

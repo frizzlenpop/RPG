@@ -54,14 +54,23 @@ public class XPManager {
         int currentXP = dataManager.getSkillXP(playerUUID, skill);
         int currentLevel = dataManager.getSkillLevel(playerUUID, skill);
 
+        // Store the base XP before multipliers
+        int baseXP = xpGained;
+        int bonusXP = 0;
+        
         // Apply XP multipliers if PassiveSkillManager is available
         if (passiveSkillManager != null) {
-            xpGained = (int)(xpGained * passiveSkillManager.getXPMultiplier(player, skill));
+            double multiplier = passiveSkillManager.getXPMultiplier(player, skill);
+            if (multiplier > 1.0) {
+                // Calculate bonus XP correctly - multiply base XP by the percentage boost
+                bonusXP = (int)Math.round(baseXP * (multiplier - 1.0));
+                xpGained = baseXP + bonusXP;
+            }
         }
         
         // Display XP gain popup message if there's XP to add
         if (xpGained > 0) {
-            showXPGainMessage(player, skill, xpGained);
+            showXPGainMessage(player, skill, baseXP, bonusXP);
         }
 
         int newXP = currentXP + xpGained;
@@ -89,9 +98,10 @@ public class XPManager {
      * 
      * @param player The player who gained XP
      * @param skill The skill for which XP was gained
-     * @param xpGained The amount of XP gained
+     * @param baseXP The base amount of XP gained before multipliers
+     * @param bonusXP The bonus XP from multipliers
      */
-    private void showXPGainMessage(Player player, String skill, int xpGained) {
+    private void showXPGainMessage(Player player, String skill, int baseXP, int bonusXP) {
         // Format the skill name nicely (capitalize first letter)
         String formattedSkill = skill.substring(0, 1).toUpperCase() + skill.substring(1).toLowerCase();
         
@@ -99,7 +109,14 @@ public class XPManager {
         String color = getSkillColor(skill);
         
         // Show action bar message
-        String message = String.format("%s+%d %s XP", color, xpGained, formattedSkill);
+        String message;
+        if (bonusXP > 0) {
+            message = String.format("%s+%d %s XP %s(+%d Bonus XP)", 
+                color, baseXP, formattedSkill, "§6", bonusXP);
+        } else {
+            message = String.format("%s+%d %s XP", color, baseXP, formattedSkill);
+        }
+        
         player.sendActionBar(message);
     }
     

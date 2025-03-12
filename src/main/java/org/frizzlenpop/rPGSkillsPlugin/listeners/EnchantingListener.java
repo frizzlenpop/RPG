@@ -115,7 +115,13 @@ public class EnchantingListener implements Listener {
             // Award the enchanting XP
             xpManager.addXP(player, "enchanting", totalXp);
             plugin.getLogger().info("[RPGSkills] Successfully added " + totalXp + " enchanting XP to " + player.getName());
-            player.sendMessage("§6+" + totalXp + " Enchanting XP");
+            
+            // Display XP gained with separated bonus
+            if (bonusXp > 0) {
+                player.sendMessage("§6+" + baseXp + " Enchanting XP §e(+" + bonusXp + " Bonus XP)");
+            } else {
+                player.sendMessage("§6+" + totalXp + " Enchanting XP");
+            }
         } catch (Exception e) {
             plugin.getLogger().log(Level.SEVERE, "[RPGSkills] Error adding XP: " + e.getMessage(), e);
         }
