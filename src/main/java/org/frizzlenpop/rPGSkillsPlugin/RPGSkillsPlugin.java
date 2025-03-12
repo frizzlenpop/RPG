@@ -18,8 +18,10 @@ import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillXPListener;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.ExcavationListener;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.RepairListener;
 import org.frizzlenpop.rPGSkillsPlugin.data.PartyManager;
+import org.frizzlenpop.rPGSkillsPlugin.data.EconomyManager;
 import org.frizzlenpop.rPGSkillsPlugin.commands.PartyCommand;
 import org.frizzlenpop.rPGSkillsPlugin.gui.RPGScoreboardManager;
+import org.frizzlenpop.rPGSkillsPlugin.gui.PartyPerksGUI;
 
 public class RPGSkillsPlugin extends JavaPlugin {
     private PlayerDataManager playerDataManager;
@@ -32,12 +34,19 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private SkillTreeGUI skillTreeGUI;
     private SkillXPListener skillXPListener;
     private PartyManager partyManager;
+    private EconomyManager economyManager;
+    private PartyPerksGUI partyPerksGUI;
     private RPGScoreboardManager scoreboardManager;
     private FileConfiguration config;
 
     @Override
     public void onEnable() {
-        // Save default config
+        // Create plugin folder if it doesn't exist
+        if (!getDataFolder().exists()) {
+            getDataFolder().mkdirs();
+        }
+
+        // Set up configuration
         saveDefaultConfig();
         this.config = getConfig();
 
@@ -53,8 +62,21 @@ public class RPGSkillsPlugin extends JavaPlugin {
         this.skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
         this.customEnchantScroll = new CustomEnchantScroll(this);
         
+        // Initialize economy manager
+        this.economyManager = new EconomyManager(this);
+        
         // Initialize party manager for XP sharing
         this.partyManager = new PartyManager(this);
+        
+        // Set up dependencies
+        this.xpManager.setPartyManager(partyManager);
+        this.xpManager.setPassiveSkillManager(passiveSkillManager);
+        
+        // Initialize party perks GUI with necessary dependencies
+        this.partyPerksGUI = new PartyPerksGUI(this, partyManager, economyManager);
+        
+        // Connect PartyPerksGUI with PartyManager
+        partyManager.setPartyPerksGUI(partyPerksGUI);
         
         // Initialize skill tree system
         this.skillTreeManager = new SkillTreeManager(this, playerDataManager, xpManager);
@@ -63,12 +85,6 @@ public class RPGSkillsPlugin extends JavaPlugin {
         
         // Initialize scoreboard manager
         this.scoreboardManager = new RPGScoreboardManager(this);
-
-        // Set the passive skill manager after initialization
-        xpManager.setPassiveSkillManager(passiveSkillManager);
-        
-        // Set the party manager for XP sharing
-        xpManager.setPartyManager(partyManager);
 
         // Register commands
         getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
@@ -79,8 +95,8 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getCommand("skilltree").setExecutor(new SkillTreeCommand(this, skillTreeGUI, skillTreeManager));
         getCommand("rstat").setExecutor(new RStatCommand(this));
         
-        // Register party command
-        PartyCommand partyCommand = new PartyCommand(this, partyManager);
+        // Register party commands
+        PartyCommand partyCommand = new PartyCommand(this, partyManager, partyPerksGUI);
         getCommand("rparty").setExecutor(partyCommand);
         getCommand("rparty").setTabCompleter(partyCommand);
         
@@ -186,6 +202,11 @@ public class RPGSkillsPlugin extends JavaPlugin {
             }
         }
         
+        // Save party perks
+        if (partyPerksGUI != null) {
+            partyPerksGUI.savePurchasedPerks();
+        }
+        
         // Clean up scoreboard
         if (scoreboardManager != null) {
             scoreboardManager.cleanup();
@@ -237,6 +258,20 @@ public class RPGSkillsPlugin extends JavaPlugin {
      */
     public PartyManager getPartyManager() {
         return partyManager;
+    }
+    
+    /**
+     * Get the economy manager
+     */
+    public EconomyManager getEconomyManager() {
+        return economyManager;
+    }
+    
+    /**
+     * Get the party perks GUI
+     */
+    public PartyPerksGUI getPartyPerksGUI() {
+        return partyPerksGUI;
     }
     
     /**

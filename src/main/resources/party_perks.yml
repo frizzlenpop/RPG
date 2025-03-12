@@ -1,0 +1,22 @@
+# RPG Skills Party Perks
+# This file stores information about purchased party perks
+# Do not modify this file manually
+
+purchased_perks:
+  # Format: perk_id:
+  #   - party_leader_uuid
+  
+  # XP boost perks
+  xp_boost_1: []
+  xp_boost_2: []
+  xp_boost_3: []
+  
+  # Party size perks
+  party_size_1: []
+  party_size_2: []
+  
+  # Special perks
+  party_glow: []
+  party_teleport: []
+  party_chat: []
+  offline_xp: [] 

@@ -2,9 +2,15 @@ package org.frizzlenpop.rPGSkillsPlugin.data;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.gui.PartyPerksGUI;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -27,14 +33,157 @@ public class PartyManager {
     // Party XP sharing settings - key is party leader UUID
     private final Map<UUID, Double> partyXpSharePercent = new ConcurrentHashMap<>();
     
+    // Party total shared XP - key is party leader UUID
+    private final Map<UUID, Long> partyTotalSharedXp = new ConcurrentHashMap<>();
+    
+    // Party levels - key is party leader UUID
+    private final Map<UUID, Integer> partyLevels = new ConcurrentHashMap<>();
+    
+    // Party configuration file
+    private File partyConfigFile;
+    private FileConfiguration partyConfig;
+    
     // Default XP share percentage (30%)
     private static final double DEFAULT_XP_SHARE_PERCENT = 0.30;
     
     // Maximum party size
     private static final int MAX_PARTY_SIZE = 6;
     
+    // XP required for party level up - base value
+    private static final int BASE_LEVEL_XP = 5000;
+    
+    // XP multiplier per level
+    private static final double LEVEL_XP_MULTIPLIER = 1.5;
+    
+    // Maximum party level
+    private static final int MAX_PARTY_LEVEL = 50;
+    
+    // Party bonus XP per level (1%)
+    private static final double PARTY_BONUS_PER_LEVEL = 0.01;
+    
+    private PartyPerksGUI partyPerksGUI;
+    
     public PartyManager(RPGSkillsPlugin plugin) {
         this.plugin = plugin;
+        loadPartyData();
+    }
+    
+    /**
+     * Load party data from configuration file
+     */
+    private void loadPartyData() {
+        // Clear existing data
+        parties.clear();
+        playerParties.clear();
+        partyXpSharePercent.clear();
+        partyTotalSharedXp.clear();
+        partyLevels.clear();
+        
+        partyConfigFile = new File(plugin.getDataFolder(), "party_data.yml");
+        
+        if (!partyConfigFile.exists()) {
+            try {
+                partyConfigFile.createNewFile();
+                partyConfig = YamlConfiguration.loadConfiguration(partyConfigFile);
+                partyConfig.createSection("parties");
+                partyConfig.save(partyConfigFile);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to create party data file: " + e.getMessage());
+                return;
+            }
+        } else {
+            partyConfig = YamlConfiguration.loadConfiguration(partyConfigFile);
+        }
+        
+        ConfigurationSection partiesSection = partyConfig.getConfigurationSection("parties");
+        
+        if (partiesSection == null) {
+            return;
+        }
+        
+        for (String leaderUUIDString : partiesSection.getKeys(false)) {
+            try {
+                UUID leaderUUID = UUID.fromString(leaderUUIDString);
+                ConfigurationSection partySection = partiesSection.getConfigurationSection(leaderUUIDString);
+                
+                if (partySection == null) {
+                    continue;
+                }
+                
+                // Load party members
+                List<String> memberUUIDStrings = partySection.getStringList("members");
+                Set<UUID> memberUUIDs = new HashSet<>();
+                
+                for (String memberUUIDString : memberUUIDStrings) {
+                    try {
+                        UUID memberUUID = UUID.fromString(memberUUIDString);
+                        memberUUIDs.add(memberUUID);
+                        playerParties.put(memberUUID, leaderUUID);
+                    } catch (IllegalArgumentException e) {
+                        plugin.getLogger().warning("Invalid UUID in party members: " + memberUUIDString);
+                    }
+                }
+                
+                // Add the party to the parties map
+                parties.put(leaderUUID, memberUUIDs);
+                
+                // Load XP sharing percentage
+                double xpSharePercent = partySection.getDouble("xp_share_percent", DEFAULT_XP_SHARE_PERCENT);
+                partyXpSharePercent.put(leaderUUID, xpSharePercent);
+                
+                // Load party level
+                int level = partySection.getInt("level", 1);
+                partyLevels.put(leaderUUID, level);
+                
+                // Load total shared XP
+                long totalSharedXp = partySection.getLong("total_shared_xp", 0L);
+                partyTotalSharedXp.put(leaderUUID, totalSharedXp);
+                
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("Invalid party leader UUID: " + leaderUUIDString);
+            }
+        }
+        
+        plugin.getLogger().info("Loaded " + parties.size() + " parties from storage.");
+    }
+    
+    /**
+     * Saves party data to configuration file
+     */
+    public void savePartyData() {
+        partyConfig.set("parties", null);
+        
+        ConfigurationSection partiesSection = partyConfig.createSection("parties");
+        
+        for (Map.Entry<UUID, Set<UUID>> entry : parties.entrySet()) {
+            UUID leaderUUID = entry.getKey();
+            Set<UUID> members = entry.getValue();
+            
+            String leaderKey = leaderUUID.toString();
+            ConfigurationSection partySection = partiesSection.createSection(leaderKey);
+            
+            // Save party members
+            List<String> memberUUIDs = members.stream()
+                    .map(UUID::toString)
+                    .collect(Collectors.toList());
+            partySection.set("members", memberUUIDs);
+            
+            // Save XP sharing percentage
+            partySection.set("xp_share_percent", 
+                    partyXpSharePercent.getOrDefault(leaderUUID, DEFAULT_XP_SHARE_PERCENT));
+            
+            // Save party level
+            partySection.set("level", partyLevels.getOrDefault(leaderUUID, 1));
+            
+            // Save total shared XP
+            partySection.set("total_shared_xp", partyTotalSharedXp.getOrDefault(leaderUUID, 0L));
+        }
+        
+        try {
+            partyConfig.save(partyConfigFile);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to save party data: " + e.getMessage());
+        }
     }
     
     /**
@@ -61,7 +210,30 @@ public class PartyManager {
         // Set default XP share percentage
         partyXpSharePercent.put(leaderUUID, DEFAULT_XP_SHARE_PERCENT);
         
+        // Initialize party XP and level
+        partyTotalSharedXp.put(leaderUUID, 0L);
+        partyLevels.put(leaderUUID, 1);
+        
+        // Save party data
+        savePartyData();
+        
         return true;
+    }
+    
+    /**
+     * Get the maximum party size for a specific party, considering perks
+     * @param leaderUUID The UUID of the party leader
+     * @return The maximum party size
+     */
+    public int getMaxPartySize(UUID leaderUUID) {
+        int baseSize = MAX_PARTY_SIZE;
+        
+        // Apply party size perk if available
+        if (partyPerksGUI != null) {
+            baseSize += partyPerksGUI.getExtraPartySize(leaderUUID);
+        }
+        
+        return baseSize;
     }
     
     /**
@@ -85,7 +257,8 @@ public class PartyManager {
         }
         
         // Check if party is full
-        if (getPartyMembers(inviterUUID).size() >= MAX_PARTY_SIZE) {
+        if (getPartyMembers(inviterUUID).size() >= getMaxPartySize(inviterUUID)) {
+            inviter.sendMessage(ChatColor.RED + "Your party is full. Consider upgrading your party size perk.");
             return false;
         }
         
@@ -123,8 +296,9 @@ public class PartyManager {
         }
         
         // Check if party is full
-        if (getPartyMembers(leaderUUID).size() >= MAX_PARTY_SIZE) {
+        if (getPartyMembers(leaderUUID).size() >= getMaxPartySize(leaderUUID)) {
             pendingInvites.remove(playerUUID);
+            player.sendMessage(ChatColor.RED + "This party is now full and cannot accept new members.");
             return false;
         }
         
@@ -135,34 +309,159 @@ public class PartyManager {
         // Remove invitation
         pendingInvites.remove(playerUUID);
         
+        // Save party data
+        savePartyData();
+        
         return true;
     }
     
     /**
-     * Leave the current party
-     * @param player The player leaving the party
-     * @return true if left successfully, false if player isn't in a party
+     * Makes a player leave their party
+     * @param playerUUID The UUID of the player to leave the party
      */
-    public boolean leaveParty(Player player) {
-        UUID playerUUID = player.getUniqueId();
-        
-        // Check if player is in a party
+    public void leaveParty(UUID playerUUID) {
         if (!isInParty(playerUUID)) {
-            return false;
+            return;
         }
         
-        UUID leaderUUID = playerParties.get(playerUUID);
-        
-        // If player is the leader, disband the party
+        UUID leaderUUID = getPartyLeader(playerUUID);
+        Player player = Bukkit.getPlayer(playerUUID);
+
+        // If this player is the party leader
         if (playerUUID.equals(leaderUUID)) {
-            return disbandParty(player);
+            Set<UUID> partyMembers = getPartyMembers(leaderUUID);
+            
+            // Remove the leaving player
+            partyMembers.remove(playerUUID);
+            
+            // If there are no other members, disband the party
+            if (partyMembers.isEmpty()) {
+                parties.remove(leaderUUID);
+                partyLevels.remove(leaderUUID);
+                partyXpSharePercent.remove(leaderUUID);
+                partyTotalSharedXp.remove(leaderUUID);
+                
+                if (player != null) {
+                    player.sendMessage(ChatColor.RED + "Your party has been disbanded because you left and there were no other members.");
+                }
+                return;
+            }
+            
+            // Choose a new leader from remaining members
+            UUID newLeaderUUID = findNewLeader(partyMembers);
+            Player newLeader = Bukkit.getPlayer(newLeaderUUID);
+            
+            // Transfer party to new leader
+            Set<UUID> members = new HashSet<>(partyMembers); // copy to avoid concurrent modification
+            parties.remove(leaderUUID);
+            parties.put(newLeaderUUID, members);
+            
+            // Transfer party level data
+            if (partyLevels.containsKey(leaderUUID)) {
+                int level = partyLevels.getOrDefault(leaderUUID, 1);
+                partyLevels.put(newLeaderUUID, level);
+                partyLevels.remove(leaderUUID);
+            }
+            
+            // Transfer party XP data
+            if (partyXpSharePercent.containsKey(leaderUUID)) {
+                double xpSharePercent = partyXpSharePercent.getOrDefault(leaderUUID, DEFAULT_XP_SHARE_PERCENT);
+                partyXpSharePercent.put(newLeaderUUID, xpSharePercent);
+                partyXpSharePercent.remove(leaderUUID);
+            }
+            
+            // Transfer party total shared XP data
+            if (partyTotalSharedXp.containsKey(leaderUUID)) {
+                long totalSharedXp = partyTotalSharedXp.getOrDefault(leaderUUID, 0L);
+                partyTotalSharedXp.put(newLeaderUUID, totalSharedXp);
+                partyTotalSharedXp.remove(leaderUUID);
+            }
+            
+            // Update all members about the leadership change
+            for (UUID memberUUID : members) {
+                Player member = Bukkit.getPlayer(memberUUID);
+                if (member != null) {
+                    member.sendMessage(ChatColor.GOLD + "Party leadership has been transferred to " + 
+                            (newLeader != null ? newLeader.getName() : "another player") + 
+                            " because the previous leader left.");
+                }
+            }
+            
+            if (player != null) {
+                player.sendMessage(ChatColor.YELLOW + "You have left the party. Leadership has been transferred to " + 
+                        (newLeader != null ? newLeader.getName() : "another player") + ".");
+            }
+        } else {
+            // If player is not the leader, just remove them from the party
+            Set<UUID> partyMembers = parties.get(leaderUUID);
+            partyMembers.remove(playerUUID);
+            
+            if (player != null) {
+                player.sendMessage(ChatColor.YELLOW + "You have left the party.");
+            }
+            
+            // Notify other party members
+            for (UUID memberUUID : partyMembers) {
+                Player member = Bukkit.getPlayer(memberUUID);
+                if (member != null) {
+                    if (player != null) {
+                        member.sendMessage(ChatColor.YELLOW + player.getName() + " has left the party.");
+                    } else {
+                        member.sendMessage(ChatColor.YELLOW + "A player has left the party.");
+                    }
+                }
+            }
         }
         
-        // Remove player from party
-        parties.get(leaderUUID).remove(playerUUID);
-        playerParties.remove(playerUUID);
+        savePartyData();
+    }
+    
+    /**
+     * Find a suitable new leader from the party members
+     * @param members The set of party members
+     * @return The UUID of the new leader
+     */
+    private UUID findNewLeader(Set<UUID> members) {
+        // First, try to find an online player
+        for (UUID memberUUID : members) {
+            Player member = Bukkit.getPlayer(memberUUID);
+            if (member != null && member.isOnline()) {
+                return memberUUID;
+            }
+        }
         
-        return true;
+        // If no online players, just pick the first member
+        return members.iterator().next();
+    }
+    
+    /**
+     * Transfer party leadership to another player
+     * @param oldLeaderUUID The current leader's UUID
+     * @param newLeaderUUID The new leader's UUID
+     */
+    private void transferPartyLeadership(UUID oldLeaderUUID, UUID newLeaderUUID) {
+        // Get current party data
+        Set<UUID> members = parties.get(oldLeaderUUID);
+        double xpSharePercent = partyXpSharePercent.getOrDefault(oldLeaderUUID, DEFAULT_XP_SHARE_PERCENT);
+        long totalSharedXp = partyTotalSharedXp.getOrDefault(oldLeaderUUID, 0L);
+        int partyLevel = partyLevels.getOrDefault(oldLeaderUUID, 1);
+        
+        // Create new party entry for the new leader
+        parties.put(newLeaderUUID, members);
+        partyXpSharePercent.put(newLeaderUUID, xpSharePercent);
+        partyTotalSharedXp.put(newLeaderUUID, totalSharedXp);
+        partyLevels.put(newLeaderUUID, partyLevel);
+        
+        // Update all members to point to the new leader
+        for (UUID memberUUID : members) {
+            playerParties.put(memberUUID, newLeaderUUID);
+        }
+        
+        // Remove old leader's party data
+        parties.remove(oldLeaderUUID);
+        partyXpSharePercent.remove(oldLeaderUUID);
+        partyTotalSharedXp.remove(oldLeaderUUID);
+        partyLevels.remove(oldLeaderUUID);
     }
     
     /**
@@ -186,9 +485,14 @@ public class PartyManager {
             playerParties.remove(memberUUID);
         }
         
-        // Remove party
+        // Remove party data
         parties.remove(leaderUUID);
         partyXpSharePercent.remove(leaderUUID);
+        partyTotalSharedXp.remove(leaderUUID);
+        partyLevels.remove(leaderUUID);
+        
+        // Save party data
+        savePartyData();
         
         return true;
     }
@@ -217,6 +521,9 @@ public class PartyManager {
         parties.get(leaderUUID).remove(targetUUID);
         playerParties.remove(targetUUID);
         
+        // Save party data
+        savePartyData();
+        
         return true;
     }
     
@@ -242,6 +549,9 @@ public class PartyManager {
         // Set XP share percentage
         partyXpSharePercent.put(leaderUUID, percent);
         
+        // Save party data
+        savePartyData();
+        
         return true;
     }
     
@@ -252,6 +562,143 @@ public class PartyManager {
      */
     public double getXpSharePercent(UUID partyLeaderUUID) {
         return partyXpSharePercent.getOrDefault(partyLeaderUUID, DEFAULT_XP_SHARE_PERCENT);
+    }
+    
+    /**
+     * Add shared XP to the party's total
+     * @param partyLeaderUUID The party leader's UUID
+     * @param xpAmount The amount of XP to add
+     * @return true if added successfully, false otherwise
+     */
+    public boolean addSharedXp(UUID partyLeaderUUID, int xpAmount) {
+        if (!parties.containsKey(partyLeaderUUID)) {
+            return false;
+        }
+        
+        // Add XP to total
+        long currentXp = partyTotalSharedXp.getOrDefault(partyLeaderUUID, 0L);
+        long newXp = currentXp + xpAmount;
+        partyTotalSharedXp.put(partyLeaderUUID, newXp);
+        
+        // Check for level up
+        checkPartyLevelUp(partyLeaderUUID, currentXp, newXp);
+        
+        // Save party data
+        savePartyData();
+        
+        return true;
+    }
+    
+    /**
+     * Check if the party has leveled up and handle level up if necessary
+     * @param partyLeaderUUID The party leader's UUID
+     * @param oldXp The old XP total
+     * @param newXp The new XP total
+     */
+    private void checkPartyLevelUp(UUID partyLeaderUUID, long oldXp, long newXp) {
+        int currentLevel = partyLevels.getOrDefault(partyLeaderUUID, 1);
+        
+        // Don't process if already at max level
+        if (currentLevel >= MAX_PARTY_LEVEL) {
+            return;
+        }
+        
+        // Check if the party has leveled up
+        long xpForNextLevel = getXpForLevel(currentLevel + 1);
+        
+        while (newXp >= xpForNextLevel && currentLevel < MAX_PARTY_LEVEL) {
+            // Level up party
+            currentLevel++;
+            
+            // Notify online party members
+            notifyPartyLevelUp(partyLeaderUUID, currentLevel);
+            
+            // Check if party has reached max level
+            if (currentLevel >= MAX_PARTY_LEVEL) {
+                break;
+            }
+            
+            // Calculate XP for next level
+            xpForNextLevel = getXpForLevel(currentLevel + 1);
+        }
+        
+        // Update party level
+        partyLevels.put(partyLeaderUUID, currentLevel);
+    }
+    
+    /**
+     * Notify party members about a level up
+     * @param partyLeaderUUID The party leader's UUID
+     * @param newLevel The new party level
+     */
+    private void notifyPartyLevelUp(UUID partyLeaderUUID, int newLevel) {
+        Set<UUID> members = getPartyMembers(partyLeaderUUID);
+        
+        for (UUID memberUUID : members) {
+            Player member = Bukkit.getPlayer(memberUUID);
+            if (member != null) {
+                member.sendMessage(ChatColor.GOLD + "★ " + ChatColor.GREEN + "Your party has reached level " + 
+                                  newLevel + "! " + ChatColor.YELLOW + "The party now gets a " + 
+                                  String.format("%.0f%%", newLevel * PARTY_BONUS_PER_LEVEL * 100) + 
+                                  " XP bonus.");
+            }
+        }
+    }
+    
+    /**
+     * Calculate the XP required for a specific party level
+     * @param level The party level
+     * @return The XP required for that level
+     */
+    private long getXpForLevel(int level) {
+        // Level 1 is 0 XP
+        if (level <= 1) return 0;
+        
+        // Use a formula that increases XP requirements for each level
+        return (long)(BASE_LEVEL_XP * Math.pow(LEVEL_XP_MULTIPLIER, level - 2));
+    }
+    
+    /**
+     * Get the party level
+     * @param partyLeaderUUID The party leader's UUID
+     * @return The party level
+     */
+    public int getPartyLevel(UUID partyLeaderUUID) {
+        return partyLevels.getOrDefault(partyLeaderUUID, 1);
+    }
+    
+    /**
+     * Get the party's total accumulated shared XP
+     * @param partyLeaderUUID The party leader's UUID
+     * @return The total shared XP
+     */
+    public long getPartyTotalSharedXp(UUID partyLeaderUUID) {
+        return partyTotalSharedXp.getOrDefault(partyLeaderUUID, 0L);
+    }
+    
+    /**
+     * Get the XP required for the next party level
+     * @param partyLeaderUUID The party leader's UUID
+     * @return The XP required for the next level, or -1 if at max level
+     */
+    public long getXpForNextLevel(UUID partyLeaderUUID) {
+        int currentLevel = getPartyLevel(partyLeaderUUID);
+        
+        if (currentLevel >= MAX_PARTY_LEVEL) {
+            return -1; // Max level reached
+        }
+        
+        return getXpForLevel(currentLevel + 1);
+    }
+    
+    /**
+     * Get the party's bonus XP percentage based on level
+     * @param partyLeaderUUID The party leader's UUID
+     * @return The bonus XP percentage (0-1)
+     */
+    public double getPartyBonusPercent(UUID partyLeaderUUID) {
+        int level = getPartyLevel(partyLeaderUUID);
+        return level * PARTY_BONUS_PER_LEVEL;
     }
     
     /**
@@ -322,29 +769,45 @@ public class PartyManager {
         // Get all party members
         Set<UUID> members = getPartyMembers(leaderUUID);
         
-        // Get online party members (excluding the source player)
-        List<UUID> onlineMembers = members.stream()
-                .filter(uuid -> !uuid.equals(sourcePlayerUUID))
-                .filter(uuid -> Bukkit.getPlayer(uuid) != null)
-                .collect(Collectors.toList());
+        // Apply party level bonus to the XP to share
+        double bonusPercent = getPartyBonusPercent(leaderUUID);
         
-        // If no other online members, return empty map
-        if (onlineMembers.isEmpty()) {
+        // Apply XP bonus from party perks if available
+        if (partyPerksGUI != null) {
+            bonusPercent += partyPerksGUI.getXpBoostPercent(leaderUUID);
+        }
+        
+        int bonusXp = (int) Math.ceil(xpToShare * bonusPercent);
+        int totalXpToShare = xpToShare + bonusXp;
+        
+        // Get party members (excluding the source player)
+        List<UUID> otherMembers = new ArrayList<>();
+        
+        boolean includeOffline = partyPerksGUI != null && partyPerksGUI.hasPerk(leaderUUID, "offline_xp");
+        
+        for (UUID memberUUID : members) {
+            if (!memberUUID.equals(sourcePlayerUUID)) {
+                Player member = Bukkit.getPlayer(memberUUID);
+                
+                // Add the member if they're online, or if the offline_xp perk is active
+                if (member != null || includeOffline) {
+                    otherMembers.add(memberUUID);
+                }
+            }
+        }
+        
+        // If no eligible members, return empty map
+        if (otherMembers.isEmpty()) {
             return sharedXp;
         }
         
-        // Calculate XP per member
-        int xpPerMember = xpToShare / onlineMembers.size();
-        
-        // If XP per member is too small, don't share
-        if (xpPerMember <= 0) {
-            return sharedXp;
+        // Distribute XP to each member - each gets the full share amount
+        for (UUID memberUUID : otherMembers) {
+            sharedXp.put(memberUUID, totalXpToShare);
         }
         
-        // Distribute XP to each member
-        for (UUID memberUUID : onlineMembers) {
-            sharedXp.put(memberUUID, xpPerMember);
-        }
+        // Track the total XP shared for party levels
+        addSharedXp(leaderUUID, totalXpToShare * otherMembers.size());
         
         return sharedXp;
     }
@@ -358,7 +821,27 @@ public class PartyManager {
         Set<UUID> members = getPartyMembers(partyLeaderUUID);
         StringBuilder partyList = new StringBuilder();
         
-        partyList.append(ChatColor.GOLD).append("Party Members (").append(members.size()).append("/").append(MAX_PARTY_SIZE).append("):\n");
+        int partyLevel = getPartyLevel(partyLeaderUUID);
+        long totalXp = getPartyTotalSharedXp(partyLeaderUUID);
+        long nextLevelXp = getXpForNextLevel(partyLeaderUUID);
+        double bonusPercent = getPartyBonusPercent(partyLeaderUUID);
+        
+        partyList.append(ChatColor.GOLD).append("Party Level: ").append(ChatColor.GREEN).append(partyLevel)
+                .append(ChatColor.GOLD).append(" (").append(ChatColor.YELLOW).append("+")
+                .append(String.format("%.0f%%", bonusPercent * 100)).append(" XP Bonus").append(ChatColor.GOLD).append(")");
+        
+        if (nextLevelXp > 0) {
+            double progress = (double) totalXp / nextLevelXp;
+            partyList.append("\n").append(ChatColor.GRAY).append("Progress: ").append(ChatColor.YELLOW)
+                    .append(totalXp).append("/").append(nextLevelXp).append(" XP ")
+                    .append(ChatColor.GOLD).append("(").append(String.format("%.1f%%", progress * 100)).append(")");
+        } else {
+            partyList.append("\n").append(ChatColor.GRAY).append("Max Level Reached! Total XP: ")
+                    .append(ChatColor.YELLOW).append(totalXp);
+        }
+        
+        partyList.append("\n").append(ChatColor.GOLD).append("Party Members (").append(members.size())
+                .append("/").append(getMaxPartySize(partyLeaderUUID)).append("):\n");
         
         for (UUID memberUUID : members) {
             Player member = Bukkit.getPlayer(memberUUID);
@@ -379,7 +862,8 @@ public class PartyManager {
         
         double sharePercent = getXpSharePercent(partyLeaderUUID) * 100;
         partyList.append(ChatColor.GRAY).append("XP Sharing: ").append(ChatColor.GREEN).append(String.format("%.0f%%", sharePercent));
-        partyList.append("\n").append(ChatColor.GRAY).append("(Each member receives a share of XP deducted from what you earn)");
+        partyList.append("\n").append(ChatColor.GRAY).append("Each member receives ").append(ChatColor.GREEN)
+                .append(String.format("%.0f%%", sharePercent)).append(ChatColor.GRAY).append(" of XP earned by other members");
         
         return partyList.toString();
     }
@@ -400,5 +884,43 @@ public class PartyManager {
      */
     public UUID getInviter(UUID inviteeUUID) {
         return pendingInvites.get(inviteeUUID);
+    }
+    
+    /**
+     * Sets the party perks GUI
+     * 
+     * @param partyPerksGUI The party perks GUI
+     */
+    public void setPartyPerksGUI(PartyPerksGUI partyPerksGUI) {
+        this.partyPerksGUI = partyPerksGUI;
+    }
+    
+    /**
+     * Get party information as a formatted string
+     * @param player The player to get information for
+     * @return Party information string
+     */
+    public String getPartyInfo(Player player) {
+        UUID playerUUID = player.getUniqueId();
+        
+        // Check if player is in a party
+        if (!isInParty(playerUUID)) {
+            return ChatColor.RED + "You are not in a party.";
+        }
+        
+        UUID leaderUUID = getPartyLeader(playerUUID);
+        Set<UUID> members = getPartyMembers(leaderUUID);
+        Player leader = Bukkit.getPlayer(leaderUUID);
+        
+        StringBuilder info = new StringBuilder();
+        info.append(ChatColor.GOLD).append("===== Party Information =====\n")
+            .append(ChatColor.YELLOW).append("Leader: ").append(ChatColor.WHITE)
+            .append(leader != null ? leader.getName() : "Offline Player").append("\n")
+            .append(ChatColor.YELLOW).append("Members (").append(members.size())
+            .append("/").append(getMaxPartySize(leaderUUID)).append("):\n");
+        
+        // ... rest of existing code ...
+        
+        return info.toString();
     }
 } 

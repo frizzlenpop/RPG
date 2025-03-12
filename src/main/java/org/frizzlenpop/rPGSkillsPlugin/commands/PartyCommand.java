@@ -9,6 +9,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.data.PartyManager;
+import org.frizzlenpop.rPGSkillsPlugin.gui.PartyPerksGUI;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,15 +24,17 @@ import java.util.stream.Collectors;
 public class PartyCommand implements CommandExecutor, TabCompleter {
     private final RPGSkillsPlugin plugin;
     private final PartyManager partyManager;
+    private final PartyPerksGUI partyPerksGUI;
     
     // List of subcommands
     private static final List<String> SUBCOMMANDS = Arrays.asList(
-        "create", "invite", "accept", "leave", "disband", "kick", "list", "info", "share"
+        "create", "invite", "accept", "leave", "disband", "kick", "list", "info", "share", "perks"
     );
     
-    public PartyCommand(RPGSkillsPlugin plugin, PartyManager partyManager) {
+    public PartyCommand(RPGSkillsPlugin plugin, PartyManager partyManager, PartyPerksGUI partyPerksGUI) {
         this.plugin = plugin;
         this.partyManager = partyManager;
+        this.partyPerksGUI = partyPerksGUI;
     }
     
     @Override
@@ -94,6 +97,10 @@ public class PartyCommand implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 handleShare(player, args[1]);
+                break;
+                
+            case "perks":
+                handlePerks(player);
                 break;
                 
             default:
@@ -214,32 +221,12 @@ public class PartyCommand implements CommandExecutor, TabCompleter {
         UUID leaderUUID = partyManager.getPartyLeader(playerUUID);
         boolean isLeader = playerUUID.equals(leaderUUID);
         
-        if (partyManager.leaveParty(player)) {
-            if (isLeader) {
-                player.sendMessage(ChatColor.YELLOW + "As the leader, you disbanded the party.");
-                
-                // Notify former party members
-                for (UUID memberUUID : partyManager.getPartyMembers(leaderUUID)) {
-                    if (!memberUUID.equals(playerUUID)) {
-                        Player member = Bukkit.getPlayer(memberUUID);
-                        if (member != null) {
-                            member.sendMessage(ChatColor.YELLOW + "The party has been disbanded by the leader.");
-                        }
-                    }
-                }
-            } else {
-                player.sendMessage(ChatColor.YELLOW + "You left the party.");
-                
-                // Notify remaining party members
-                for (UUID memberUUID : partyManager.getPartyMembers(leaderUUID)) {
-                    Player member = Bukkit.getPlayer(memberUUID);
-                    if (member != null) {
-                        member.sendMessage(ChatColor.YELLOW + player.getName() + " left the party.");
-                    }
-                }
-            }
+        partyManager.leaveParty(playerUUID);
+        
+        if (isLeader) {
+            player.sendMessage(ChatColor.YELLOW + "You left the party and transferred leadership.");
         } else {
-            player.sendMessage(ChatColor.RED + "Failed to leave party.");
+            player.sendMessage(ChatColor.YELLOW + "You left the party.");
         }
     }
     
@@ -379,20 +366,33 @@ public class PartyCommand implements CommandExecutor, TabCompleter {
     }
     
     /**
+     * Handle the 'perks' subcommand
+     */
+    private void handlePerks(Player player) {
+        UUID playerUUID = player.getUniqueId();
+        
+        if (!partyManager.isInParty(playerUUID)) {
+            player.sendMessage(ChatColor.RED + "You must be in a party to use this command.");
+            return;
+        }
+        
+        // Open the perks GUI
+        partyPerksGUI.openPerksMenu(player);
+    }
+    
+    /**
      * Send help message to player
      */
     private void sendHelpMessage(Player player) {
-        player.sendMessage(ChatColor.GOLD + "===== RPG Skills Party Commands =====");
-        player.sendMessage(ChatColor.YELLOW + "/rparty create " + ChatColor.WHITE + "- Create a new party");
-        player.sendMessage(ChatColor.YELLOW + "/rparty invite <player> " + ChatColor.WHITE + "- Invite a player to your party");
-        player.sendMessage(ChatColor.YELLOW + "/rparty accept " + ChatColor.WHITE + "- Accept a party invitation");
-        player.sendMessage(ChatColor.YELLOW + "/rparty leave " + ChatColor.WHITE + "- Leave your current party");
-        player.sendMessage(ChatColor.YELLOW + "/rparty disband " + ChatColor.WHITE + "- Disband your party (leader only)");
-        player.sendMessage(ChatColor.YELLOW + "/rparty kick <player> " + ChatColor.WHITE + "- Kick a player from your party (leader only)");
-        player.sendMessage(ChatColor.YELLOW + "/rparty list " + ChatColor.WHITE + "- List all members in your party");
-        player.sendMessage(ChatColor.YELLOW + "/rparty share <percent> " + ChatColor.WHITE + "- Set XP sharing percentage (leader only)");
-        player.sendMessage(ChatColor.GRAY + "When in a party, a percentage of your earned XP is");
-        player.sendMessage(ChatColor.GRAY + "deducted and distributed among party members.");
+        player.sendMessage(ChatColor.GOLD + "===== Party Commands =====");
+        player.sendMessage(ChatColor.YELLOW + "/rparty create" + ChatColor.GRAY + " - Create a new party");
+        player.sendMessage(ChatColor.YELLOW + "/rparty invite <player>" + ChatColor.GRAY + " - Invite a player to your party");
+        player.sendMessage(ChatColor.YELLOW + "/rparty accept" + ChatColor.GRAY + " - Accept a party invitation");
+        player.sendMessage(ChatColor.YELLOW + "/rparty leave" + ChatColor.GRAY + " - Leave your current party");
+        player.sendMessage(ChatColor.YELLOW + "/rparty kick <player>" + ChatColor.GRAY + " - Kick a player from your party");
+        player.sendMessage(ChatColor.YELLOW + "/rparty list" + ChatColor.GRAY + " - List party members");
+        player.sendMessage(ChatColor.YELLOW + "/rparty share <percentage>" + ChatColor.GRAY + " - Set XP sharing percentage");
+        player.sendMessage(ChatColor.YELLOW + "/rparty perks" + ChatColor.GRAY + " - Open the party perks menu");
     }
     
     @Override
@@ -400,32 +400,26 @@ public class PartyCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         
         if (args.length == 1) {
-            // Tab complete subcommands
-            String partialSubcommand = args[0].toLowerCase();
-            for (String subcommand : SUBCOMMANDS) {
-                if (subcommand.startsWith(partialSubcommand)) {
-                    completions.add(subcommand);
+            // First argument - suggest subcommands
+            String partial = args[0].toLowerCase();
+            for (String subCmd : SUBCOMMANDS) {
+                if (subCmd.startsWith(partial)) {
+                    completions.add(subCmd);
                 }
             }
         } else if (args.length == 2) {
-            // Tab complete player names for invite and kick
-            String subcommand = args[0].toLowerCase();
-            if (subcommand.equals("invite") || subcommand.equals("kick")) {
-                String partialPlayerName = args[1].toLowerCase();
+            // Second argument - player names for invite/kick
+            String subCommand = args[0].toLowerCase();
+            if (subCommand.equals("invite") || subCommand.equals("kick")) {
+                String partial = args[1].toLowerCase();
                 List<String> playerNames = Bukkit.getOnlinePlayers().stream()
                         .map(Player::getName)
-                        .filter(name -> name.toLowerCase().startsWith(partialPlayerName))
+                        .filter(name -> name.toLowerCase().startsWith(partial))
                         .collect(Collectors.toList());
                 completions.addAll(playerNames);
-            } else if (subcommand.equals("share")) {
-                // Suggest common share percentages
-                String partialPercent = args[1].toLowerCase();
-                List<String> percentages = Arrays.asList("10", "20", "30", "40", "50");
-                for (String percent : percentages) {
-                    if (percent.startsWith(partialPercent)) {
-                        completions.add(percent);
-                    }
-                }
+            } else if (subCommand.equals("share")) {
+                // Suggest some common percentage values
+                completions.addAll(Arrays.asList("10", "20", "30", "40", "50"));
             }
         }
         

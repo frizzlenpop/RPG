@@ -187,6 +187,15 @@ public class XPManager {
      * Distribute shared XP to party members
      */
     private void distributeSharedXP(Player source, String skill, Map<UUID, Integer> sharedXp) {
+        UUID sourcePlayerUUID = source.getUniqueId();
+        
+        // Get party level info if available
+        double bonusPercent = 0;
+        if (partyManager != null && partyManager.isInParty(sourcePlayerUUID)) {
+            UUID leaderUUID = partyManager.getPartyLeader(sourcePlayerUUID);
+            bonusPercent = partyManager.getPartyBonusPercent(leaderUUID);
+        }
+        
         for (Map.Entry<UUID, Integer> entry : sharedXp.entrySet()) {
             UUID memberUUID = entry.getKey();
             int xpAmount = entry.getValue();
@@ -201,11 +210,22 @@ public class XPManager {
                 // Add the shared XP (without triggering further sharing)
                 addXPToPlayer(member, skill, xpAmount, currentXP, currentLevel);
                 
+                // Format skill name nicely
+                String formattedSkill = skill.substring(0, 1).toUpperCase() + skill.substring(1).toLowerCase();
+                
                 // Show party XP notification
-                member.sendActionBar(
-                    "§d+" + xpAmount + " " + skill.substring(0, 1).toUpperCase() + skill.substring(1) + 
-                    " XP §7(from " + source.getName() + ")"
-                );
+                if (bonusPercent > 0) {
+                    member.sendActionBar(
+                        "§d+" + xpAmount + " " + formattedSkill + 
+                        " XP §7(from " + source.getName() + ", includes §a+" +
+                        String.format("%.0f%%", bonusPercent * 100) + "§7 party bonus)"
+                    );
+                } else {
+                    member.sendActionBar(
+                        "§d+" + xpAmount + " " + formattedSkill + 
+                        " XP §7(from " + source.getName() + ")"
+                    );
+                }
             }
         }
     }

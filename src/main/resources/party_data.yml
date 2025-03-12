@@ -1,0 +1,11 @@
+# RPG Skills Party Data
+# This file stores information about player parties
+# Do not modify this file manually
+
+parties:
+  # Structure:
+  # UUID-of-party-leader:
+  #   members: [list of UUIDs of all party members including leader]
+  #   xpSharePercent: 0.30 (30%)
+  #   totalSharedXp: 0 (total XP the party has earned/shared)
+  #   level: 1 (party level) 
