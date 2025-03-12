@@ -9,10 +9,12 @@ import org.bukkit.entity.Player;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillTreeGUI;
 import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillTreeManager;
+import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillTreeNode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -79,6 +81,23 @@ public class SkillTreeCommand implements CommandExecutor, TabCompleter {
                 case "level":
                     // Show player level information
                     showLevelInfo(player);
+                    return true;
+                case "debug":
+                    // Debug command to list all available nodes
+                    if (!player.hasPermission("rpgskills.admin")) {
+                        player.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                        return true;
+                    }
+                    debugSkillTree(player);
+                    return true;
+                case "reload":
+                    // Reload command to refresh configuration
+                    if (!player.hasPermission("rpgskills.admin")) {
+                        player.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
+                        return true;
+                    }
+                    plugin.reloadConfig();
+                    player.sendMessage(ChatColor.GREEN + "Configuration reloaded. You may need to restart the server for changes to take effect.");
                     return true;
                 default:
                     player.sendMessage(ChatColor.RED + "Unknown subcommand. Use /skilltree for the skill tree GUI.");
@@ -161,6 +180,65 @@ public class SkillTreeCommand implements CommandExecutor, TabCompleter {
                               skillTreeManager.getAllNodes().get(nodeId).getName());
         } else {
             player.sendMessage(ChatColor.RED + "Failed to unlock node. Please try again.");
+        }
+    }
+    
+    /**
+     * Debug command to list all available nodes and diagnose issues
+     */
+    private void debugSkillTree(Player player) {
+        Map<String, SkillTreeNode> allNodes = skillTreeManager.getAllNodes();
+        
+        if (allNodes.isEmpty()) {
+            player.sendMessage(ChatColor.RED + "ERROR: No skill tree nodes found in configuration!");
+            return;
+        }
+        
+        player.sendMessage(ChatColor.GOLD + "=== Skill Tree Debug ===");
+        player.sendMessage(ChatColor.YELLOW + "Total nodes in configuration: " + ChatColor.WHITE + allNodes.size());
+        
+        // List all node IDs
+        player.sendMessage(ChatColor.YELLOW + "All node IDs:");
+        StringBuilder nodeList = new StringBuilder();
+        for (String nodeId : allNodes.keySet()) {
+            nodeList.append(nodeId).append(", ");
+        }
+        if (nodeList.length() > 2) {
+            nodeList.setLength(nodeList.length() - 2); // Remove the trailing comma and space
+        }
+        player.sendMessage(ChatColor.WHITE + nodeList.toString());
+        
+        // Check if warrior_strength exists (since it's the base node)
+        if (allNodes.containsKey("warrior_strength")) {
+            player.sendMessage(ChatColor.GREEN + "Base node 'warrior_strength' exists");
+        } else {
+            player.sendMessage(ChatColor.RED + "ERROR: Base node 'warrior_strength' not found!");
+        }
+        
+        // Check GUI layout
+        player.sendMessage(ChatColor.YELLOW + "Checking GUI layout...");
+        for (int pageNum = 0; pageNum < 6; pageNum++) {
+            Map<Integer, String> pageLayout = skillTreeGUI.getPageLayout(pageNum);
+            if (pageLayout == null) {
+                player.sendMessage(ChatColor.RED + "  Page " + pageNum + ": Layout not found!");
+                continue;
+            }
+            
+            int validNodes = 0;
+            int missingNodes = 0;
+            
+            for (String nodeId : pageLayout.values()) {
+                if (allNodes.containsKey(nodeId)) {
+                    validNodes++;
+                } else {
+                    missingNodes++;
+                    player.sendMessage(ChatColor.RED + "  Missing node on page " + pageNum + ": " + nodeId);
+                }
+            }
+            
+            player.sendMessage(ChatColor.YELLOW + "  Page " + pageNum + ": " + 
+                              ChatColor.GREEN + validNodes + " valid nodes, " +
+                              (missingNodes > 0 ? ChatColor.RED : ChatColor.GREEN) + missingNodes + " missing nodes");
         }
     }
     

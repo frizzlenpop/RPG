@@ -217,6 +217,13 @@ public class SkillTreeGUI implements Listener {
     }
     
     /**
+     * Get the layout for a specific page - used for debugging
+     */
+    public Map<Integer, String> getPageLayout(int page) {
+        return pageLayouts.get(page);
+    }
+    
+    /**
      * Create a progress bar string
      */
     private String createProgressBar(double progress, int length) {
