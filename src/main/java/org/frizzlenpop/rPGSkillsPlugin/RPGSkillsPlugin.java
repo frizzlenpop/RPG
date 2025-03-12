@@ -62,6 +62,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(skillsGUI, this);
         getServer().getPluginManager().registerEvents(new LoggingListener(xpManager), this);
         getServer().getPluginManager().registerEvents(new FarmingListener(xpManager), this);
+        getServer().getPluginManager().registerEvents(new FightingListener(xpManager), this);
 
         getServer().getPluginManager().registerEvents(abilityManager, this);
     }
