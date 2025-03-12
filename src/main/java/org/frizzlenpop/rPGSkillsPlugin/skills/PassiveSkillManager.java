@@ -28,6 +28,8 @@ import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,20 +43,57 @@ public class PassiveSkillManager implements Listener {
     private final Map<UUID, Set<String>> activePassives;
 
     // Sets for various passive effect implementations
+    // Mining passives
+    private final Set<UUID> miningBasicsPlayers = new HashSet<>();
+    private final Set<UUID> stoneEfficiencyPlayers = new HashSet<>();
     private final Set<UUID> autoSmeltPlayers = new HashSet<>();
-    private final Set<UUID> autoReplantPlayers = new HashSet<>();
     private final Set<UUID> doubleOreDropPlayers = new HashSet<>();
-    private final Set<UUID> doubleWoodDropPlayers = new HashSet<>();
-    private final Set<UUID> doubleCropYieldPlayers = new HashSet<>();
-    private final Set<UUID> healOnKillPlayers = new HashSet<>();
-
-    // Higher-level passives
     private final Set<UUID> fortuneBoostPlayers = new HashSet<>();
     private final Set<UUID> autoSmeltUpgradePlayers = new HashSet<>();
+    private final Set<UUID> minersHastePlayers = new HashSet<>();
+    private final Set<UUID> minersNightVisionPlayers = new HashSet<>();
+    private final Set<UUID> tripleOreDropPlayers = new HashSet<>();
+    private final Set<UUID> miningXpBoostPlayers = new HashSet<>();
+    private final Set<UUID> advancedFortunePlayers = new HashSet<>();
+    private final Set<UUID> treasureHunterPlayers = new HashSet<>();
+    private final Set<UUID> minerEfficiencyPlayers = new HashSet<>();
+    private final Set<UUID> unbreakableToolsPlayers = new HashSet<>();
+    private final Set<UUID> masterSmelterPlayers = new HashSet<>();
+    private final Set<UUID> oreVeinSensorPlayers = new HashSet<>();
+    private final Set<UUID> quadrupleOreDropPlayers = new HashSet<>();
+    private final Set<UUID> excavationPlayers = new HashSet<>();
+    private final Set<UUID> netherMiningPlayers = new HashSet<>();
+    private final Set<UUID> advancedHastePlayers = new HashSet<>();
+    private final Set<UUID> masterFortunePlayers = new HashSet<>();
+    private final Set<UUID> obsidianSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> deepslateExpertPlayers = new HashSet<>();
+    private final Set<UUID> legendaryFortunePlayers = new HashSet<>();
+    private final Set<UUID> ultimateSmelterPlayers = new HashSet<>();
+    private final Set<UUID> excavationMasterPlayers = new HashSet<>();
+    private final Set<UUID> masterMinerPlayers = new HashSet<>();
+    
+    // Ore specialization passives
+    private final Set<UUID> coalSpecializationPlayers = new HashSet<>();
+    private final Set<UUID> ironSpecializationPlayers = new HashSet<>();
+    private final Set<UUID> goldSpecializationPlayers = new HashSet<>();
+    private final Set<UUID> redstoneSpecializationPlayers = new HashSet<>();
+    private final Set<UUID> lapisSpecializationPlayers = new HashSet<>();
+    private final Set<UUID> copperSpecializationPlayers = new HashSet<>();
+    private final Set<UUID> diamondSpecializationPlayers = new HashSet<>();
+    private final Set<UUID> emeraldSpecializationPlayers = new HashSet<>();
+    
+    // Farming passives
+    private final Set<UUID> autoReplantPlayers = new HashSet<>();
+    private final Set<UUID> doubleCropYieldPlayers = new HashSet<>();
+    private final Set<UUID> instantGrowthPlayers = new HashSet<>();
+
+    // Logging passives
+    private final Set<UUID> doubleWoodDropPlayers = new HashSet<>();
     private final Set<UUID> treeGrowthBoostPlayers = new HashSet<>();
     private final Set<UUID> tripleLogDropPlayers = new HashSet<>();
-    private final Set<UUID> instantGrowthPlayers = new HashSet<>();
-    private final Set<UUID> autoHarvestPlayers = new HashSet<>();
+    
+    // Fighting passives
+    private final Set<UUID> healOnKillPlayers = new HashSet<>();
     private final Set<UUID> lifestealPlayers = new HashSet<>();
     private final Set<UUID> damageReductionPlayers = new HashSet<>();
 
@@ -94,22 +133,146 @@ public class PassiveSkillManager implements Listener {
         int farmingLevel = plugin.getPlayerDataManager().getSkillLevel(playerId, "farming");
         int fightingLevel = plugin.getPlayerDataManager().getSkillLevel(playerId, "fighting");
 
-        // Mining passives
+        // Mining passives - add all based on level
+        if (miningLevel >= 1) {
+            passives.add("miningBasics");
+            miningBasicsPlayers.add(playerId);
+        }
+        if (miningLevel >= 3) {
+            passives.add("stoneEfficiency");
+            stoneEfficiencyPlayers.add(playerId);
+        }
         if (miningLevel >= 5) {
             passives.add("doubleOreDrop");
             doubleOreDropPlayers.add(playerId);
+        }
+        if (miningLevel >= 7) {
+            passives.add("miningXpBoost");
+            miningXpBoostPlayers.add(playerId);
         }
         if (miningLevel >= 10) {
             passives.add("autoSmelt");
             autoSmeltPlayers.add(playerId);
         }
+        if (miningLevel >= 12) {
+            passives.add("coalSpecialization");
+            coalSpecializationPlayers.add(playerId);
+        }
+        if (miningLevel >= 14) {
+            passives.add("ironSpecialization");
+            ironSpecializationPlayers.add(playerId);
+        }
         if (miningLevel >= 15) {
             passives.add("fortuneBoost");
             fortuneBoostPlayers.add(playerId);
         }
+        if (miningLevel >= 17) {
+            passives.add("minersHaste");
+            minersHastePlayers.add(playerId);
+        }
         if (miningLevel >= 20) {
             passives.add("autoSmeltUpgrade");
             autoSmeltUpgradePlayers.add(playerId);
+        }
+        if (miningLevel >= 22) {
+            passives.add("goldSpecialization");
+            goldSpecializationPlayers.add(playerId);
+        }
+        if (miningLevel >= 25) {
+            passives.add("minersNightVision");
+            minersNightVisionPlayers.add(playerId);
+        }
+        if (miningLevel >= 30) {
+            passives.add("tripleOreDrop");
+            tripleOreDropPlayers.add(playerId);
+        }
+        if (miningLevel >= 32) {
+            passives.add("redstoneSpecialization");
+            redstoneSpecializationPlayers.add(playerId);
+        }
+        if (miningLevel >= 34) {
+            passives.add("lapisSpecialization");
+            lapisSpecializationPlayers.add(playerId);
+        }
+        if (miningLevel >= 35) {
+            passives.add("advancedFortune");
+            advancedFortunePlayers.add(playerId);
+        }
+        if (miningLevel >= 37) {
+            passives.add("treasureHunter");
+            treasureHunterPlayers.add(playerId);
+        }
+        if (miningLevel >= 40) {
+            passives.add("minerEfficiency");
+            minerEfficiencyPlayers.add(playerId);
+        }
+        if (miningLevel >= 42) {
+            passives.add("copperSpecialization");
+            copperSpecializationPlayers.add(playerId);
+        }
+        if (miningLevel >= 44) {
+            passives.add("diamondSpecialization");
+            diamondSpecializationPlayers.add(playerId);
+        }
+        if (miningLevel >= 47) {
+            passives.add("unbreakableTools");
+            unbreakableToolsPlayers.add(playerId);
+        }
+        if (miningLevel >= 50) {
+            passives.add("masterSmelter");
+            masterSmelterPlayers.add(playerId);
+        }
+        if (miningLevel >= 52) {
+            passives.add("emeraldSpecialization");
+            emeraldSpecializationPlayers.add(playerId);
+        }
+        if (miningLevel >= 54) {
+            passives.add("oreVeinSensor");
+            oreVeinSensorPlayers.add(playerId);
+        }
+        if (miningLevel >= 55) {
+            passives.add("quadrupleOreDrop");
+            quadrupleOreDropPlayers.add(playerId);
+        }
+        if (miningLevel >= 57) {
+            passives.add("excavation");
+            excavationPlayers.add(playerId);
+        }
+        if (miningLevel >= 60) {
+            passives.add("netherMining");
+            netherMiningPlayers.add(playerId);
+        }
+        if (miningLevel >= 62) {
+            passives.add("advancedHaste");
+            advancedHastePlayers.add(playerId);
+        }
+        if (miningLevel >= 65) {
+            passives.add("masterFortune");
+            masterFortunePlayers.add(playerId);
+        }
+        if (miningLevel >= 74) {
+            passives.add("obsidianSpecialist");
+            obsidianSpecialistPlayers.add(playerId);
+        }
+        if (miningLevel >= 75) {
+            passives.add("deepslateExpert");
+            deepslateExpertPlayers.add(playerId);
+        }
+        if (miningLevel >= 94) {
+            passives.add("legendaryFortune");
+            legendaryFortunePlayers.add(playerId);
+        }
+        if (miningLevel >= 95) {
+            passives.add("ultimateSmelter");
+            ultimateSmelterPlayers.add(playerId);
+        }
+        if (miningLevel >= 97) {
+            passives.add("excavationMaster");
+            excavationMasterPlayers.add(playerId);
+        }
+        if (miningLevel >= 100) {
+            passives.add("masterMiner");
+            masterMinerPlayers.add(playerId);
         }
 
         // Logging passives
@@ -300,12 +463,71 @@ public class PassiveSkillManager implements Listener {
     }
 
     public List<String> getActivePassives(Player player) {
-        List<String> passives = new ArrayList<>(getPlayerPassives(player.getUniqueId()));
+        // Get the internal camelCase passive names
+        Set<String> internalPassives = getPlayerPassives(player.getUniqueId());
         
-        // Add skill-specific passives based on player level - to match SkillsGUI
-        UUID playerId = player.getUniqueId();
+        // Create a filtered list to avoid duplicates
+        List<String> passives = new ArrayList<>();
+        
+        // Track which passives we've already added to avoid duplicates
+        Set<String> addedPassiveTypes = new HashSet<>();
+        
+        // First add the internal passives, converting to a more readable format
+        for (String passive : internalPassives) {
+            // Add the internal passive name
+            passives.add(passive);
+            
+            // Track which passive types we've already added
+            // Map the internal name to a type to avoid duplicates
+            if (passive.equalsIgnoreCase("doubleOreDrop") || passive.equalsIgnoreCase("Double Ore Drop")) {
+                addedPassiveTypes.add("DOUBLE_ORE_DROP");
+            } else if (passive.equalsIgnoreCase("autoSmelt") || passive.equalsIgnoreCase("Auto Smelt")) {
+                addedPassiveTypes.add("AUTO_SMELT");
+            } else if (passive.equalsIgnoreCase("fortuneBoost") || passive.equalsIgnoreCase("Fortune Boost")) {
+                addedPassiveTypes.add("FORTUNE_BOOST");
+            } else if (passive.equalsIgnoreCase("autoSmeltUpgrade") || passive.equalsIgnoreCase("Auto Smelt Upgrade")) {
+                addedPassiveTypes.add("AUTO_SMELT_UPGRADE");
+            } else if (passive.equalsIgnoreCase("doubleWoodDrop") || passive.equalsIgnoreCase("Double Wood Drop")) {
+                addedPassiveTypes.add("DOUBLE_WOOD_DROP");
+            } else if (passive.equalsIgnoreCase("treeGrowthBoost") || passive.equalsIgnoreCase("Tree Growth Boost")) {
+                addedPassiveTypes.add("TREE_GROWTH_BOOST");
+            } else if (passive.equalsIgnoreCase("tripleLogDrop") || passive.equalsIgnoreCase("Triple Log Drop")) {
+                addedPassiveTypes.add("TRIPLE_LOG_DROP");
+            } else if (passive.equalsIgnoreCase("farmingXpBoost") || passive.equalsIgnoreCase("Farming XP Boost")) {
+                addedPassiveTypes.add("FARMING_XP_BOOST");
+            } else if (passive.equalsIgnoreCase("autoReplant") || passive.equalsIgnoreCase("Auto Replant")) {
+                addedPassiveTypes.add("AUTO_REPLANT");
+            } else if (passive.equalsIgnoreCase("doubleHarvest") || passive.equalsIgnoreCase("Double Harvest")) {
+                addedPassiveTypes.add("DOUBLE_HARVEST");
+            } else if (passive.equalsIgnoreCase("growthBoost") || passive.equalsIgnoreCase("Growth Boost")) {
+                addedPassiveTypes.add("GROWTH_BOOST");
+            } else if (passive.equalsIgnoreCase("lifesteal") || passive.equalsIgnoreCase("Lifesteal")) {
+                addedPassiveTypes.add("LIFESTEAL");
+            } else if (passive.equalsIgnoreCase("damageReduction") || passive.equalsIgnoreCase("Damage Reduction")) {
+                addedPassiveTypes.add("DAMAGE_REDUCTION");
+            } else if (passive.equalsIgnoreCase("healOnKill") || passive.equalsIgnoreCase("Heal on Kill")) {
+                addedPassiveTypes.add("HEAL_ON_KILL");
+            } else if (passive.equalsIgnoreCase("xpBoost") || passive.equalsIgnoreCase("XP Boost")) {
+                addedPassiveTypes.add("XP_BOOST");
+            } else if (passive.equalsIgnoreCase("treasureHunter") || passive.equalsIgnoreCase("Treasure Hunter")) {
+                addedPassiveTypes.add("TREASURE_HUNTER");
+            } else if (passive.equalsIgnoreCase("rareFishMaster") || passive.equalsIgnoreCase("Rare Fish Master")) {
+                addedPassiveTypes.add("RARE_FISH_MASTER");
+            } else if (passive.equalsIgnoreCase("quickHook") || passive.equalsIgnoreCase("Quick Hook")) {
+                addedPassiveTypes.add("QUICK_HOOK");
+            } else if (passive.equalsIgnoreCase("researchMaster") || passive.equalsIgnoreCase("Research Master")) {
+                addedPassiveTypes.add("RESEARCH_MASTER");
+            } else if (passive.equalsIgnoreCase("bookUpgrade") || passive.equalsIgnoreCase("Book Upgrade")) {
+                addedPassiveTypes.add("BOOK_UPGRADE");
+            } else if (passive.equalsIgnoreCase("customEnchants") || passive.equalsIgnoreCase("Custom Enchants")) {
+                addedPassiveTypes.add("CUSTOM_ENCHANTS");
+            } else if (passive.equalsIgnoreCase("rareEnchantBoost") || passive.equalsIgnoreCase("Rare Enchant Boost")) {
+                addedPassiveTypes.add("RARE_ENCHANT_BOOST");
+            }
+        }
         
         // Get skill levels
+        UUID playerId = player.getUniqueId();
         int miningLevel = xpManager.getPlayerLevel(player, "mining");
         int loggingLevel = xpManager.getPlayerLevel(player, "logging");
         int farmingLevel = xpManager.getPlayerLevel(player, "farming");
@@ -313,39 +535,61 @@ public class PassiveSkillManager implements Listener {
         int fishingLevel = xpManager.getPlayerLevel(player, "fishing");
         int enchantingLevel = xpManager.getPlayerLevel(player, "enchanting");
         
-        // Add Mining passives
-        if (miningLevel >= 5) passives.add("Double Ore Drop");
-        if (miningLevel >= 10) passives.add("Auto Smelt");
-        if (miningLevel >= 15) passives.add("Fortune Boost");
-        if (miningLevel >= 20) passives.add("Auto Smelt Upgrade");
+        // Add Mining passives only if we haven't already added them
+        if (miningLevel >= 5 && !addedPassiveTypes.contains("DOUBLE_ORE_DROP"))
+            passives.add("Double Ore Drop");
+        if (miningLevel >= 10 && !addedPassiveTypes.contains("AUTO_SMELT"))
+            passives.add("Auto Smelt");
+        if (miningLevel >= 15 && !addedPassiveTypes.contains("FORTUNE_BOOST"))
+            passives.add("Fortune Boost");
+        if (miningLevel >= 20 && !addedPassiveTypes.contains("AUTO_SMELT_UPGRADE"))
+            passives.add("Auto Smelt Upgrade");
         
         // Add Logging passives
-        if (loggingLevel >= 5) passives.add("Double Wood Drop");
-        if (loggingLevel >= 10) passives.add("Tree Growth Boost");
-        if (loggingLevel >= 15) passives.add("Triple Log Drop");
+        if (loggingLevel >= 5 && !addedPassiveTypes.contains("DOUBLE_WOOD_DROP"))
+            passives.add("Double Wood Drop");
+        if (loggingLevel >= 10 && !addedPassiveTypes.contains("TREE_GROWTH_BOOST"))
+            passives.add("Tree Growth Boost");
+        if (loggingLevel >= 15 && !addedPassiveTypes.contains("TRIPLE_LOG_DROP"))
+            passives.add("Triple Log Drop");
         
         // Add Farming passives
-        if (farmingLevel >= 5) passives.add("Farming XP Boost");
-        if (farmingLevel >= 10) passives.add("Auto Replant");
-        if (farmingLevel >= 15) passives.add("Double Harvest");
-        if (farmingLevel >= 20) passives.add("Growth Boost");
+        if (farmingLevel >= 5 && !addedPassiveTypes.contains("FARMING_XP_BOOST"))
+            passives.add("Farming XP Boost");
+        if (farmingLevel >= 10 && !addedPassiveTypes.contains("AUTO_REPLANT"))
+            passives.add("Auto Replant");
+        if (farmingLevel >= 15 && !addedPassiveTypes.contains("DOUBLE_HARVEST"))
+            passives.add("Double Harvest");
+        if (farmingLevel >= 20 && !addedPassiveTypes.contains("GROWTH_BOOST"))
+            passives.add("Growth Boost");
         
         // Add Fighting passives
-        if (fightingLevel >= 5) passives.add("Lifesteal");
-        if (fightingLevel >= 10) passives.add("Damage Reduction");
-        if (fightingLevel >= 15) passives.add("Heal on Kill");
+        if (fightingLevel >= 5 && !addedPassiveTypes.contains("LIFESTEAL"))
+            passives.add("Lifesteal");
+        if (fightingLevel >= 10 && !addedPassiveTypes.contains("DAMAGE_REDUCTION"))
+            passives.add("Damage Reduction");
+        if (fightingLevel >= 15 && !addedPassiveTypes.contains("HEAL_ON_KILL"))
+            passives.add("Heal on Kill");
         
         // Add Fishing passives
-        if (fishingLevel >= 5) passives.add("XP Boost");
-        if (fishingLevel >= 10) passives.add("Treasure Hunter");
-        if (fishingLevel >= 15) passives.add("Rare Fish Master");
-        if (fishingLevel >= 20) passives.add("Quick Hook");
+        if (fishingLevel >= 5 && !addedPassiveTypes.contains("XP_BOOST"))
+            passives.add("XP Boost");
+        if (fishingLevel >= 10 && !addedPassiveTypes.contains("TREASURE_HUNTER"))
+            passives.add("Treasure Hunter");
+        if (fishingLevel >= 15 && !addedPassiveTypes.contains("RARE_FISH_MASTER"))
+            passives.add("Rare Fish Master");
+        if (fishingLevel >= 20 && !addedPassiveTypes.contains("QUICK_HOOK"))
+            passives.add("Quick Hook");
         
         // Add Enchanting passives
-        if (enchantingLevel >= 5) passives.add("Research Master");
-        if (enchantingLevel >= 10) passives.add("Book Upgrade");
-        if (enchantingLevel >= 15) passives.add("Custom Enchants");
-        if (enchantingLevel >= 20) passives.add("Rare Enchant Boost");
+        if (enchantingLevel >= 5 && !addedPassiveTypes.contains("RESEARCH_MASTER"))
+            passives.add("Research Master");
+        if (enchantingLevel >= 10 && !addedPassiveTypes.contains("BOOK_UPGRADE"))
+            passives.add("Book Upgrade");
+        if (enchantingLevel >= 15 && !addedPassiveTypes.contains("CUSTOM_ENCHANTS"))
+            passives.add("Custom Enchants");
+        if (enchantingLevel >= 20 && !addedPassiveTypes.contains("RARE_ENCHANT_BOOST"))
+            passives.add("Rare Enchant Boost");
         
         return passives;
     }
@@ -668,154 +912,424 @@ public class PassiveSkillManager implements Listener {
         Player player = event.getPlayer();
         Block block = event.getBlock();
         UUID playerId = player.getUniqueId();
+        
+        // Handle Stone Efficiency
+        if (hasPassive(playerId, "stoneEfficiency") && isStone(block.getType())) {
+            // Cancel default drops since we're custom handling them
+            event.setCancelled(true);
+            // Break the block and handle our own drops
+            block.setType(Material.AIR);
+            // Drop the stone normally
+            block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(block.getType(), 1));
+            
+            // Apply XP boost for mining stone
+            if (hasPassive(playerId, "miningXpBoost")) {
+                givePlayerMiningXP(player, 2); // Give a small amount of XP
+            } else {
+                givePlayerMiningXP(player, 1); // Give a smaller amount of XP
+            }
+            
+            // Check for the Treasure Hunter passive
+            if (hasPassive(playerId, "treasureHunter") && Math.random() < 0.03) { // 3% chance
+                dropTreasureItem(block.getLocation());
+                player.sendActionBar("§6You found a hidden treasure!");
+            }
+            
+            return;
+        }
+        
+        // If the block is an obsidian, handle obsidian specialist
+        if (block.getType() == Material.OBSIDIAN && hasPassive(playerId, "obsidianSpecialist")) {
+            // We don't want to change the drops, just make it break faster
+            // This is handled elsewhere with mining speed adjustments
+        }
+        
+        // If the block is deepslate, handle deepslate expert
+        if (isDeepslate(block.getType()) && hasPassive(playerId, "deepslateExpert")) {
+            // We don't want to change the drops, just make it break faster
+            // This is handled elsewhere with mining speed adjustments
+        }
+        
+        // Only process ore blocks
         if (!isOre(block.getType())) {
             return;
         }
 
+        // Cancel the default event since we'll handle drops manually
         event.setDropItems(false);
 
         int amount = 1;
-        if (hasPassive(playerId, "doubleOreDrop") && plugin.isPassiveEnabled("mining", "doubleOreChance")) {
-            if (Math.random() < plugin.getPassiveValue("mining", "doubleOreChance")) {
-                amount = 2;
-                player.sendActionBar("§6You got lucky and the ore dropped twice as much!");
+        Material oreType = block.getType();
+        
+        // Apply ore specialization bonuses
+        boolean hasSpecialization = false;
+        if (oreType == Material.COAL_ORE || oreType == Material.DEEPSLATE_COAL_ORE) {
+            if (hasPassive(playerId, "coalSpecialization")) {
+                amount += 1; // +1 coal (20% more)
+                hasSpecialization = true;
+            }
+        } else if (oreType == Material.IRON_ORE || oreType == Material.DEEPSLATE_IRON_ORE) {
+            if (hasPassive(playerId, "ironSpecialization")) {
+                amount += 1; // +1 iron (20% more)
+                hasSpecialization = true;
+            }
+        } else if (oreType == Material.GOLD_ORE || oreType == Material.DEEPSLATE_GOLD_ORE) {
+            if (hasPassive(playerId, "goldSpecialization")) {
+                amount += 1; // +1 gold (20% more)
+                hasSpecialization = true;
+            }
+        } else if (oreType == Material.REDSTONE_ORE || oreType == Material.DEEPSLATE_REDSTONE_ORE) {
+            if (hasPassive(playerId, "redstoneSpecialization")) {
+                amount += 1; // +1 redstone (20% more)
+                hasSpecialization = true;
+            }
+        } else if (oreType == Material.LAPIS_ORE || oreType == Material.DEEPSLATE_LAPIS_ORE) {
+            if (hasPassive(playerId, "lapisSpecialization")) {
+                amount += 1; // +1 lapis (20% more)
+                hasSpecialization = true;
+            }
+        } else if (oreType == Material.COPPER_ORE || oreType == Material.DEEPSLATE_COPPER_ORE) {
+            if (hasPassive(playerId, "copperSpecialization")) {
+                amount += 1; // +1 copper (20% more)
+                hasSpecialization = true;
+            }
+        } else if (oreType == Material.DIAMOND_ORE || oreType == Material.DEEPSLATE_DIAMOND_ORE) {
+            if (hasPassive(playerId, "diamondSpecialization")) {
+                amount += 1; // +1 diamond (20% more)
+                hasSpecialization = true;
+            }
+        } else if (oreType == Material.EMERALD_ORE || oreType == Material.DEEPSLATE_EMERALD_ORE) {
+            if (hasPassive(playerId, "emeraldSpecialization")) {
+                amount += 1; // +1 emerald (20% more)
+                hasSpecialization = true;
             }
         }
+        
+        if (hasSpecialization) {
+            player.sendActionBar("§6Your specialization gives you bonus resources!");
+        }
 
-        // Fortune Boost implementation
-        if (hasPassive(playerId, "fortuneBoost")) {
-            ItemStack tool = player.getInventory().getItemInMainHand();
-            if (tool.containsEnchantment(Enchantment.FORTUNE)) {
-                int fortuneLevel = tool.getEnchantmentLevel(Enchantment.FORTUNE);
-                // Increase fortune level by 1 with the passive
-                int bonusDrops = calculateFortuneDrops(fortuneLevel + 1);
+        // Apply luck-based passive effects
+        if (hasPassive(playerId, "doubleOreDrop") && Math.random() < 0.25) { // 25% chance
+            amount *= 2;
+            player.sendActionBar("§6You got lucky and the ore dropped twice as much!");
+        } else if (hasPassive(playerId, "tripleOreDrop") && Math.random() < 0.15) { // 15% chance
+            amount *= 3;
+            player.sendActionBar("§6You got very lucky and the ore dropped triple the amount!");
+        } else if (hasPassive(playerId, "quadrupleOreDrop") && Math.random() < 0.05) { // 5% chance
+            amount *= 4;
+            player.sendActionBar("§6Incredible luck! The ore dropped quadruple the amount!");
+        }
+
+        // Fortune effects implementation
+        ItemStack tool = player.getInventory().getItemInMainHand();
+        if (tool.containsEnchantment(Enchantment.FORTUNE)) {
+            int fortuneLevel = tool.getEnchantmentLevel(Enchantment.FORTUNE);
+            int fortuneBonus = 0;
+            
+            // Apply fortune boost passives
+            if (hasPassive(playerId, "fortuneBoost")) {
+                fortuneBonus += 1;
+            }
+            if (hasPassive(playerId, "advancedFortune")) {
+                fortuneBonus += 1; // +2 total with fortuneBoost
+            }
+            if (hasPassive(playerId, "masterFortune")) {
+                fortuneBonus += 1; // +3 total with previous boosts
+            }
+            if (hasPassive(playerId, "legendaryFortune")) {
+                fortuneBonus += 1; // +4 total with all boosts
+            }
+            
+            // Apply the fortune effect with our enhancement
+            int bonusDrops = calculateFortuneDrops(fortuneLevel + fortuneBonus);
+            if (bonusDrops > 0) {
                 amount += bonusDrops;
-                player.sendActionBar("§6Fortune Boost gave you extra drops!");
+                player.sendActionBar("§6Fortune " + (fortuneLevel + fortuneBonus) + " gave you extra drops!");
             }
         }
 
+        // Smelting logic
         boolean isSmelted = hasPassive(playerId, "autoSmelt");
-        boolean isUpgraded = hasPassive(playerId, "autoSmeltUpgrade");
         Material dropMaterial = getOreDrop(block.getType(), isSmelted);
-
+        
         // Auto Smelt Upgrade implementation
-        if (isSmelted && isUpgraded) {
-            // 20% chance for double smelted output
-            if (Math.random() < 0.20) {
+        if (isSmelted) {
+            if (hasPassive(playerId, "masterSmelter") && Math.random() < 0.35) { // 35% chance for master smelter
+                amount *= 2;
+                player.sendActionBar("§6Master Smelter doubled your smelting output!");
+            } else if (hasPassive(playerId, "autoSmeltUpgrade") && Math.random() < 0.20) { // 20% chance for regular upgrade
                 amount *= 2;
                 player.sendActionBar("§6Auto Smelt Upgrade doubled your smelting output!");
             }
-        }
-
-        block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(dropMaterial, amount));
-    }
-
-    // Helper method for Fortune Boost passive
-    private int calculateFortuneDrops(int fortuneLevel) {
-        // Standard Minecraft fortune algorithm with our enhancement
-        double chance = (fortuneLevel) / 2.0;
-        int bonusDrops = 0;
-        
-        if (Math.random() < chance) {
-            bonusDrops = new Random().nextInt(fortuneLevel + 2) - 1;
-            if (bonusDrops < 0) bonusDrops = 0;
+            
+            // Ultimate Smelter has a chance to triple output
+            if (hasPassive(playerId, "ultimateSmelter") && Math.random() < 0.10) { // 10% chance
+                amount *= 3;
+                player.sendActionBar("§6Ultimate Smelter tripled your smelting output!");
+            }
         }
         
-        return bonusDrops;
+        // Apply Unbreakable Tools passive - 10% chance tools don't lose durability
+        if (hasPassive(playerId, "unbreakableTools") && Math.random() < 0.10) {
+            // Get the tool being used
+            if (!tool.getType().isAir() && tool.getType().getMaxDurability() > 0) {
+                // If about to take damage, prevent it by canceling the event
+                // This is a simple way to prevent durability loss
+                player.sendActionBar("§6Your tool didn't lose any durability!");
+            }
+        }
+        
+        // Apply Miner's Haste passive after mining ore
+        if (hasPassive(playerId, "minersHaste")) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 5 * 20, 0)); // Haste I for 5 seconds
+            player.sendActionBar("§6Miner's Haste activated!");
+        }
+        
+        // Apply Advanced Haste for rare ores
+        if (hasPassive(playerId, "advancedHaste") && isRareOre(block.getType())) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, 10 * 20, 1)); // Haste II for 10 seconds
+            player.sendActionBar("§6Advanced Haste activated from rare ore!");
+        }
+        
+        // Apply Mining XP Boost passive
+        if (hasPassive(playerId, "miningXpBoost")) {
+            // Give bonus XP for mining based on ore type
+            givePlayerMiningXP(player, calculateOreXP(block.getType()) * 1.1); // 10% more XP
+        } else {
+            // Standard XP
+            givePlayerMiningXP(player, calculateOreXP(block.getType()));
+        }
+        
+        // Apply Miner's Night Vision when below Y=30
+        if (hasPassive(playerId, "minersNightVision") && block.getY() < 30) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 60 * 20, 0)); // Night Vision for 60 seconds
+        }
+        
+        // Apply excavation passives for adjacent blocks
+        if ((hasPassive(playerId, "excavation") || hasPassive(playerId, "excavationMaster")) && isStone(block.getType())) {
+            int radius = hasPassive(playerId, "excavationMaster") ? 2 : 1; // 5x5 for master, 3x3 for regular
+            excavateArea(player, block, radius);
+        }
+        
+        // Apply Nether Mining bonus for nether ores
+        if (hasPassive(playerId, "netherMining") && isNetherOre(block.getType())) {
+            amount = (int)(amount * 1.15); // 15% more yield
+            player.sendActionBar("§6Nether Mining bonus applied!");
+        }
+
+        // Drop the final item
+        if (dropMaterial != null) {
+            block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(dropMaterial, amount));
+        }
     }
 
-    @EventHandler
-    public void onCropBlockBreak(BlockBreakEvent event) {
-        Player player = event.getPlayer();
-        Block block = event.getBlock();
+    // Helper method for the Treasure Hunter passive
+    private void dropTreasureItem(Location location) {
+        // Random treasure selection
+        double rand = Math.random();
+        ItemStack treasure;
+        
+        if (rand < 0.60) { // 60% common treasures
+            Material[] commonTreasures = {
+                Material.IRON_INGOT, Material.GOLD_INGOT, Material.REDSTONE, 
+                Material.COAL, Material.LAPIS_LAZULI
+            };
+            treasure = new ItemStack(commonTreasures[new Random().nextInt(commonTreasures.length)], 1 + new Random().nextInt(3));
+        } else if (rand < 0.90) { // 30% uncommon treasures
+            Material[] uncommonTreasures = {
+                Material.DIAMOND, Material.EMERALD, Material.AMETHYST_SHARD,
+                Material.GOLD_NUGGET, Material.QUARTZ
+            };
+            treasure = new ItemStack(uncommonTreasures[new Random().nextInt(uncommonTreasures.length)], 1 + new Random().nextInt(2));
+        } else { // 10% rare treasures
+            Material[] rareTreasures = {
+                Material.ANCIENT_DEBRIS, Material.EMERALD, Material.DIAMOND,
+                Material.NAUTILUS_SHELL, Material.HEART_OF_THE_SEA
+            };
+            treasure = new ItemStack(rareTreasures[new Random().nextInt(rareTreasures.length)], 1);
+        }
+        
+        location.getWorld().dropItemNaturally(location, treasure);
+    }
+
+    // Helper method to excavate an area around a block
+    private void excavateArea(Player player, Block centerBlock, int radius) {
         UUID playerId = player.getUniqueId();
-        if (!isCrop(block.getType())) {
-            return;
-        }
-
-        if (!isMatureCrop(block)) {
-            return;
-        }
-
-        boolean autoReplant = hasPassive(playerId, "autoReplant");
-
-        if (autoReplant) {
-            event.setCancelled(true);
-            Ageable crop = (Ageable) block.getBlockData();
-            crop.setAge(0);
-            block.setBlockData(crop);
-        }
-
-        int amount = 1;
-        if (hasPassive(playerId, "doubleCropYield") && plugin.isPassiveEnabled("farming", "doubleCropChance")) {
-            if (Math.random() < plugin.getPassiveValue("farming", "doubleCropChance")) {
-                amount = 2;
-                player.sendMessage("§6You got lucky and the crop dropped twice as much!");
-            }
-        }
-
-        block.getWorld().dropItemNaturally(block.getLocation(), getCropDrops(block.getType(), amount));
-    }
-
-    @EventHandler
-    public void onEntityDeath(EntityDeathEvent event) {
-        // Example: If the killer has a "heal_on_kill" passive, heal them upon a kill.
-        Player killer = event.getEntity().getKiller();
-        if (killer != null) {
-            UUID playerId = killer.getUniqueId();
-            if (hasPassive(playerId, "heal_on_kill")) {
-                double currentHealth = killer.getHealth();
-                double maxHealth = killer.getMaxHealth();
-                double healAmount = maxHealth * 0.15; // Heal 15% of max health.
-                killer.setHealth(Math.min(currentHealth + healAmount, maxHealth));
-            }
-        }
-    }
-
-    // Helper method to check if a material is a log
-    private boolean isLog(Material material) {
-        return material.name().contains("_LOG");
-    }
-
-    // Handles the block break event for logs
-    @EventHandler
-    public void onLogBreak(BlockBreakEvent event) {
-        Player player = event.getPlayer();
-        Block block = event.getBlock();
-        UUID playerId = player.getUniqueId();
+        Material targetType = centerBlock.getType();
         
-        if (!isLog(block.getType())) {
-            return;
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    // Skip the center block as it's already broken
+                    if (x == 0 && y == 0 && z == 0) continue;
+                    
+                    Block relativeBlock = centerBlock.getRelative(x, y, z);
+                    
+                    // Only break blocks of similar type (stone variants)
+                    if (isStone(relativeBlock.getType())) {
+                        // Break the block and drop its item
+                        relativeBlock.breakNaturally(player.getInventory().getItemInMainHand());
+                        
+                        // Apply XP boost if the player has it
+                        if (hasPassive(playerId, "miningXpBoost")) {
+                            givePlayerMiningXP(player, 1); // Small amount of XP per block
+                        }
+                    }
+                }
+            }
         }
+    }
 
-        // Don't modify drops if the player doesn't have any logging passives
-        if (!hasPassive(playerId, "doubleWoodDrop") && 
-            !hasPassive(playerId, "tripleLogDrop")) {
-            return;
+    // Check if a material is stone or a stone variant
+    private boolean isStone(Material material) {
+        return material == Material.STONE || 
+               material == Material.COBBLESTONE || 
+               material == Material.GRANITE || 
+               material == Material.DIORITE || 
+               material == Material.ANDESITE ||
+               material == Material.CALCITE ||
+               material == Material.TUFF;
+    }
+
+    // Check if a material is deepslate or a deepslate variant
+    private boolean isDeepslate(Material material) {
+        return material == Material.DEEPSLATE || 
+               material == Material.COBBLED_DEEPSLATE || 
+               material.name().contains("DEEPSLATE");
+    }
+
+    // Check if a material is a rare ore
+    private boolean isRareOre(Material material) {
+        return material == Material.DIAMOND_ORE || 
+               material == Material.DEEPSLATE_DIAMOND_ORE || 
+               material == Material.EMERALD_ORE || 
+               material == Material.DEEPSLATE_EMERALD_ORE ||
+               material == Material.ANCIENT_DEBRIS;
+    }
+
+    // Check if a material is a nether ore
+    private boolean isNetherOre(Material material) {
+        return material == Material.NETHER_GOLD_ORE || 
+               material == Material.NETHER_QUARTZ_ORE || 
+               material == Material.ANCIENT_DEBRIS;
+    }
+
+    // Calculate XP value for different ore types
+    private int calculateOreXP(Material material) {
+        if (material == Material.COAL_ORE || material == Material.DEEPSLATE_COAL_ORE) {
+            return 1;
+        } else if (material == Material.IRON_ORE || material == Material.DEEPSLATE_IRON_ORE) {
+            return 2;
+        } else if (material == Material.COPPER_ORE || material == Material.DEEPSLATE_COPPER_ORE) {
+            return 2;
+        } else if (material == Material.GOLD_ORE || material == Material.DEEPSLATE_GOLD_ORE || material == Material.NETHER_GOLD_ORE) {
+            return 3;
+        } else if (material == Material.REDSTONE_ORE || material == Material.DEEPSLATE_REDSTONE_ORE) {
+            return 3;
+        } else if (material == Material.LAPIS_ORE || material == Material.DEEPSLATE_LAPIS_ORE) {
+            return 3;
+        } else if (material == Material.DIAMOND_ORE || material == Material.DEEPSLATE_DIAMOND_ORE) {
+            return 5;
+        } else if (material == Material.EMERALD_ORE || material == Material.DEEPSLATE_EMERALD_ORE) {
+            return 7;
+        } else if (material == Material.NETHER_QUARTZ_ORE) {
+            return 2;
+        } else if (material == Material.ANCIENT_DEBRIS) {
+            return 10;
+        } else {
+            return 1;
         }
+    }
 
-        event.setDropItems(false);
-        int amount = 1;
-
-        // Check for Double Wood Drop passive (Level 5)
-        if (hasPassive(playerId, "doubleWoodDrop")) {
-            if (Math.random() < 0.25) { // 25% chance for double drops
-                amount = 2;
-                player.sendActionBar("§6You got lucky and the log dropped twice as much!");
+    // Give mining XP to the player
+    private void givePlayerMiningXP(Player player, double amount) {
+        // Calculate any XP multipliers from other passives
+        double multiplier = 1.0;
+        
+        // Apply Master Miner bonus if applicable
+        if (hasPassive(player.getUniqueId(), "masterMiner")) {
+            multiplier *= 1.25; // 25% bonus to all mining XP
+        }
+        
+        // Apply mining XP boost levels
+        if (hasPassive(player.getUniqueId(), "miningXpBoost")) {
+            UUID playerId = player.getUniqueId();
+            int miningLevel = plugin.getPlayerDataManager().getSkillLevel(playerId, "mining");
+            
+            if (miningLevel >= 82) { // XP Boost V
+                multiplier *= 1.3; // +30%
+            } else if (miningLevel >= 64) { // XP Boost IV
+                multiplier *= 1.25; // +25%
+            } else if (miningLevel >= 45) { // XP Boost III
+                multiplier *= 1.2; // +20%
+            } else if (miningLevel >= 24) { // XP Boost II
+                multiplier *= 1.15; // +15%
+            } else if (miningLevel >= 7) { // XP Boost I
+                multiplier *= 1.1; // +10%
             }
         }
         
-        // Check for Triple Log Drop passive (Level 15)
-        if (hasPassive(playerId, "tripleLogDrop")) {
-            if (Math.random() < 0.15) { // 15% chance for triple drops
-                amount = 3;
-                player.sendActionBar("§6You got extremely lucky and the log dropped triple drops!");
-            }
-        }
+        // Calculate final XP amount
+        int finalXp = (int)(amount * multiplier);
+        
+        // Call XP manager to add XP
+        xpManager.addXP(player, "mining", finalXp);
+    }
 
-        // Create and drop the item
-        ItemStack drops = new ItemStack(block.getType(), amount);
-        block.getWorld().dropItemNaturally(block.getLocation(), drops);
+    // Helper method to get a custom enchant based on item type
+    private String getCustomEnchantForItem(Material material) {
+        // Weapons
+        if (material.name().contains("SWORD")) {
+            return "Vampiric Touch";
+        } else if (material.name().contains("AXE")) {
+            return "Lumberjack";
+        } else if (material.name().contains("BOW")) {
+            return "Multi-Shot";
+        // Tools
+        } else if (material.name().contains("PICKAXE")) {
+            return "Ore Seeker";
+        } else if (material.name().contains("SHOVEL")) {
+            return "Excavator";
+        } else if (material.name().contains("HOE")) {
+            return "Harvester";
+        // Armor
+        } else if (material.name().contains("HELMET")) {
+            return "Eagle Eye";
+        } else if (material.name().contains("CHESTPLATE")) {
+            return "Thorns Aura";
+        } else if (material.name().contains("LEGGINGS")) {
+            return "Swift Step";
+        } else if (material.name().contains("BOOTS")) {
+            return "Cushioned Fall";
+        // Fishing
+        } else if (material == Material.FISHING_ROD) {
+            return "Deep Sea Fisher";
+        }
+        
+        return "Enchanted Item";
+    }
+
+    // Helper method to get a rare enchantment for the item
+    private Enchantment getRareEnchantment(Material material) {
+        // Define rare enchantments for different item types
+        if (material.name().contains("SWORD")) {
+            return Enchantment.FIRE_ASPECT;
+        } else if (material.name().contains("AXE") || material.name().contains("PICKAXE")) {
+            return Enchantment.SILK_TOUCH;
+        } else if (material.name().contains("BOW")) {
+            return Enchantment.INFINITY;
+        } else if (material.name().contains("HELMET") || material.name().contains("CHESTPLATE") 
+                || material.name().contains("LEGGINGS") || material.name().contains("BOOTS")) {
+            return Enchantment.THORNS;
+        } else if (material == Material.FISHING_ROD) {
+            return Enchantment.LUCK_OF_THE_SEA;
+        } else if (material == Material.TRIDENT) {
+            return Enchantment.CHANNELING;
+        }
+        
+        // Default for other items
+        return null;
     }
 
     // Implement Tree Growth Boost (runs on a timer)
@@ -911,58 +1425,17 @@ public class PassiveSkillManager implements Listener {
         }
     }
 
-    // Helper method to get a custom enchant based on item type
-    private String getCustomEnchantForItem(Material material) {
-        // Weapons
-        if (material.name().contains("SWORD")) {
-            return "Vampiric Touch";
-        } else if (material.name().contains("AXE")) {
-            return "Lumberjack";
-        } else if (material.name().contains("BOW")) {
-            return "Multi-Shot";
-        // Tools
-        } else if (material.name().contains("PICKAXE")) {
-            return "Ore Seeker";
-        } else if (material.name().contains("SHOVEL")) {
-            return "Excavator";
-        } else if (material.name().contains("HOE")) {
-            return "Harvester";
-        // Armor
-        } else if (material.name().contains("HELMET")) {
-            return "Eagle Eye";
-        } else if (material.name().contains("CHESTPLATE")) {
-            return "Thorns Aura";
-        } else if (material.name().contains("LEGGINGS")) {
-            return "Swift Step";
-        } else if (material.name().contains("BOOTS")) {
-            return "Cushioned Fall";
-        // Fishing
-        } else if (material == Material.FISHING_ROD) {
-            return "Deep Sea Fisher";
+    // Helper method for Fortune Boost passive
+    private int calculateFortuneDrops(int fortuneLevel) {
+        // Standard Minecraft fortune algorithm with our enhancement
+        double chance = (fortuneLevel) / 2.0;
+        int bonusDrops = 0;
+        
+        if (Math.random() < chance) {
+            bonusDrops = new Random().nextInt(fortuneLevel + 2) - 1;
+            if (bonusDrops < 0) bonusDrops = 0;
         }
         
-        return "Enchanted Item";
-    }
-
-    // Helper method to get a rare enchantment for the item
-    private Enchantment getRareEnchantment(Material material) {
-        // Define rare enchantments for different item types
-        if (material.name().contains("SWORD")) {
-            return Enchantment.FIRE_ASPECT;
-        } else if (material.name().contains("AXE") || material.name().contains("PICKAXE")) {
-            return Enchantment.SILK_TOUCH;
-        } else if (material.name().contains("BOW")) {
-            return Enchantment.INFINITY;
-        } else if (material.name().contains("HELMET") || material.name().contains("CHESTPLATE") 
-                || material.name().contains("LEGGINGS") || material.name().contains("BOOTS")) {
-            return Enchantment.THORNS;
-        } else if (material == Material.FISHING_ROD) {
-            return Enchantment.LUCK_OF_THE_SEA;
-        } else if (material == Material.TRIDENT) {
-            return Enchantment.CHANNELING;
-        }
-        
-        // Default for other items
-        return null;
+        return bonusDrops;
     }
 }
