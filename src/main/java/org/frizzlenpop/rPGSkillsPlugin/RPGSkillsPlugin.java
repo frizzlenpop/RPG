@@ -19,6 +19,7 @@ import org.frizzlenpop.rPGSkillsPlugin.listeners.ExcavationListener;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.RepairListener;
 import org.frizzlenpop.rPGSkillsPlugin.data.PartyManager;
 import org.frizzlenpop.rPGSkillsPlugin.commands.PartyCommand;
+import org.frizzlenpop.rPGSkillsPlugin.gui.RPGScoreboardManager;
 
 public class RPGSkillsPlugin extends JavaPlugin {
     private PlayerDataManager playerDataManager;
@@ -31,6 +32,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private SkillTreeGUI skillTreeGUI;
     private SkillXPListener skillXPListener;
     private PartyManager partyManager;
+    private RPGScoreboardManager scoreboardManager;
     private FileConfiguration config;
 
     @Override
@@ -58,6 +60,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
         this.skillTreeManager = new SkillTreeManager(this, playerDataManager, xpManager);
         this.skillTreeGUI = new SkillTreeGUI(this, skillTreeManager);
         this.skillXPListener = new SkillXPListener(this, skillTreeManager);
+        
+        // Initialize scoreboard manager
+        this.scoreboardManager = new RPGScoreboardManager(this);
 
         // Set the passive skill manager after initialization
         xpManager.setPassiveSkillManager(passiveSkillManager);
@@ -78,6 +83,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
         PartyCommand partyCommand = new PartyCommand(this, partyManager);
         getCommand("rparty").setExecutor(partyCommand);
         getCommand("rparty").setTabCompleter(partyCommand);
+        
+        // Register scoreboard command
+        getCommand("rscoreboard").setExecutor(new RScoreboardCommand(this, scoreboardManager));
 
         // Register all listeners
         registerListeners();
@@ -177,6 +185,11 @@ public class RPGSkillsPlugin extends JavaPlugin {
                 playerDataManager.savePlayerData(player.getUniqueId(), playerData);
             }
         }
+        
+        // Clean up scoreboard
+        if (scoreboardManager != null) {
+            scoreboardManager.cleanup();
+        }
 
         // Save configuration
         saveConfig();
@@ -224,6 +237,13 @@ public class RPGSkillsPlugin extends JavaPlugin {
      */
     public PartyManager getPartyManager() {
         return partyManager;
+    }
+    
+    /**
+     * Get the scoreboard manager
+     */
+    public RPGScoreboardManager getScoreboardManager() {
+        return scoreboardManager;
     }
 
     /**

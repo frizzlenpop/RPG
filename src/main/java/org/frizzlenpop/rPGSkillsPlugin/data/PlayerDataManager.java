@@ -56,7 +56,7 @@ public class PlayerDataManager {
             FileConfiguration config = YamlConfiguration.loadConfiguration(playerFile);
 
             // Initialize all skills to level 1 with 0 XP
-            String[] skills = {"mining", "logging", "farming", "fighting", "fishing", "enchanting"};
+            String[] skills = {"mining", "logging", "farming", "fighting", "fishing", "enchanting", "excavation", "repair"};
             for (String skill : skills) {
                 config.set("skills." + skill + ".level", 1);
                 config.set("skills." + skill + ".xp", 0);
@@ -67,6 +67,9 @@ public class PlayerDataManager {
 
             // Create an empty section for passive abilities
             config.createSection("passiveAbilities");
+            
+            // Set default preferences
+            config.set("preferences.scoreboard", true);
 
             config.save(playerFile);
         } catch (IOException e) {
@@ -99,6 +102,27 @@ public class PlayerDataManager {
     public boolean hasUnlockedActiveSkill(UUID playerUUID, String skill) {
         int level = getSkillLevel(playerUUID, skill);
         return level >= 15;
+    }
+
+    /**
+     * Get whether the scoreboard is enabled for a player
+     * @param playerUUID The player's UUID
+     * @return true if the scoreboard is enabled, false otherwise
+     */
+    public boolean getScoreboardEnabled(UUID playerUUID) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        return config.getBoolean("preferences.scoreboard", true); // Default to enabled
+    }
+
+    /**
+     * Set whether the scoreboard is enabled for a player
+     * @param playerUUID The player's UUID
+     * @param enabled Whether the scoreboard should be enabled
+     */
+    public void setScoreboardEnabled(UUID playerUUID, boolean enabled) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        config.set("preferences.scoreboard", enabled);
+        savePlayerData(playerUUID, config);
     }
 
     public RPGSkillsPlugin getPlugin() {

@@ -60,3 +60,7 @@ commands:
     description: Create and manage parties for XP sharing
     usage: /rparty [create|invite|accept|leave|disband|kick|list|share]
     permission: rpgskills.party
+  rscoreboard:
+    description: Toggle the RPG skills scoreboard visibility
+    usage: /rscoreboard
+    permission: rpgskills.scoreboard
