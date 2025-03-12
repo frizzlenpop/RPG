@@ -2,14 +2,18 @@ package org.frizzlenpop.rPGSkillsPlugin.skills;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,9 +22,12 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,6 +73,9 @@ public class PassiveSkillManager implements Listener {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             loadPlayerPassives(player);
         }
+        
+        // Start the tree growth booster task
+        startTreeGrowthBooster();
     }
 
     // --- OLD SYSTEM: Loading player passives from PlayerDataManager ---
@@ -289,10 +299,55 @@ public class PassiveSkillManager implements Listener {
         return multiplier;
     }
 
-
-
     public List<String> getActivePassives(Player player) {
-        return new ArrayList<>(getPlayerPassives(player.getUniqueId()));
+        List<String> passives = new ArrayList<>(getPlayerPassives(player.getUniqueId()));
+        
+        // Add skill-specific passives based on player level - to match SkillsGUI
+        UUID playerId = player.getUniqueId();
+        
+        // Get skill levels
+        int miningLevel = xpManager.getPlayerLevel(player, "mining");
+        int loggingLevel = xpManager.getPlayerLevel(player, "logging");
+        int farmingLevel = xpManager.getPlayerLevel(player, "farming");
+        int fightingLevel = xpManager.getPlayerLevel(player, "fighting");
+        int fishingLevel = xpManager.getPlayerLevel(player, "fishing");
+        int enchantingLevel = xpManager.getPlayerLevel(player, "enchanting");
+        
+        // Add Mining passives
+        if (miningLevel >= 5) passives.add("Double Ore Drop");
+        if (miningLevel >= 10) passives.add("Auto Smelt");
+        if (miningLevel >= 15) passives.add("Fortune Boost");
+        if (miningLevel >= 20) passives.add("Auto Smelt Upgrade");
+        
+        // Add Logging passives
+        if (loggingLevel >= 5) passives.add("Double Wood Drop");
+        if (loggingLevel >= 10) passives.add("Tree Growth Boost");
+        if (loggingLevel >= 15) passives.add("Triple Log Drop");
+        
+        // Add Farming passives
+        if (farmingLevel >= 5) passives.add("Farming XP Boost");
+        if (farmingLevel >= 10) passives.add("Auto Replant");
+        if (farmingLevel >= 15) passives.add("Double Harvest");
+        if (farmingLevel >= 20) passives.add("Growth Boost");
+        
+        // Add Fighting passives
+        if (fightingLevel >= 5) passives.add("Lifesteal");
+        if (fightingLevel >= 10) passives.add("Damage Reduction");
+        if (fightingLevel >= 15) passives.add("Heal on Kill");
+        
+        // Add Fishing passives
+        if (fishingLevel >= 5) passives.add("XP Boost");
+        if (fishingLevel >= 10) passives.add("Treasure Hunter");
+        if (fishingLevel >= 15) passives.add("Rare Fish Master");
+        if (fishingLevel >= 20) passives.add("Quick Hook");
+        
+        // Add Enchanting passives
+        if (enchantingLevel >= 5) passives.add("Research Master");
+        if (enchantingLevel >= 10) passives.add("Book Upgrade");
+        if (enchantingLevel >= 15) passives.add("Custom Enchants");
+        if (enchantingLevel >= 20) passives.add("Rare Enchant Boost");
+        
+        return passives;
     }
 
     // --- NEW SYSTEM: Unlocking & Saving/Loading passives via config ---
@@ -344,17 +399,31 @@ public class PassiveSkillManager implements Listener {
     @EventHandler
     public void onFishing(PlayerFishEvent event) {
         Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
         int level = xpManager.getPlayerLevel(player, "fishing");
 
-        // XP Boost (Level 5) – handled in XPManager if player has "XP Boost"
+        // XP Boost (Level 5) implementation
         if (hasPassive(player, "fishing", "XP Boost")) {
-            // XP boost logic here (if needed)
+            // The XP boost is handled in the XPManager via getXPMultiplier
+            // Let the player know their boost is active
+            if (event.getState() == PlayerFishEvent.State.CAUGHT_FISH) {
+                player.sendActionBar("§a+10% Fishing XP Boost Applied!");
+            }
         }
 
         // Treasure Hunter (Level 10)
         if (hasPassive(player, "fishing", "Treasure Hunter") && event.getCaught() instanceof Item) {
             if (Math.random() < 0.15) { // 15% increased treasure rate
-                // Modify loot table for better items (implementation depends on your loot system)
+                Item item = (Item) event.getCaught();
+                ItemStack currentItem = item.getItemStack();
+                
+                // Replace with a better item depending on what was caught
+                if (isFish(currentItem.getType())) {
+                    // Instead of fish, give treasure
+                    ItemStack treasureItem = getTreasureItem();
+                    item.setItemStack(treasureItem);
+                    player.sendMessage("§6Your Treasure Hunter passive found something special!");
+                }
             }
         }
 
@@ -363,13 +432,84 @@ public class PassiveSkillManager implements Listener {
             if (Math.random() < 0.1) { // 10% chance for rare fish
                 Item item = (Item) event.getCaught();
                 item.setItemStack(new ItemStack(Material.PUFFERFISH));
+                player.sendMessage("§6You caught a rare fish with your Rare Fish Master passive!");
             }
         }
 
         // Quick Hook (Level 20)
         if (hasPassive(player, "fishing", "Quick Hook")) {
-            // Reduce fishing time by 10% (implementation depends on modifying fishing mechanics)
+            // This passive reduces the time to catch fish
+            if (event.getState() == PlayerFishEvent.State.FISHING) {
+                // Schedule a task to potentially reduce fishing time
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    // Check that player is still fishing and the hook is still there
+                    if (player.getInventory().getItemInMainHand().getType() == Material.FISHING_ROD &&
+                        event.getHook() != null && !event.getHook().isDead()) {
+                        
+                        // 20% chance to trigger quick hook
+                        if (Math.random() < 0.20) {
+                            player.sendActionBar("§b⚡ Quick Hook is helping you catch fish faster!");
+                            
+                            // Modify the hook properties to catch fish faster
+                            // This approach is safer than trying to force a bite directly
+                            
+                            // Instead of trying to manipulate the hook directly (which can be risky),
+                            // we'll drop a fish near the player to simulate a catch
+                            ItemStack fishItem = new ItemStack(Material.COD);
+                            
+                            // Drop the item near the player, which is a safe approach
+                            player.getWorld().dropItemNaturally(player.getLocation(), fishItem);
+                            
+                            // Try to cancel the current fishing
+                            event.getHook().remove();
+                        }
+                    }
+                }, 40L); // Check after 2 seconds
+            }
         }
+    }
+    
+    // Helper methods for fishing passives
+    private boolean isFish(Material material) {
+        return material == Material.COD || 
+               material == Material.SALMON || 
+               material == Material.TROPICAL_FISH || 
+               material == Material.PUFFERFISH;
+    }
+    
+    private ItemStack getTreasureItem() {
+        // Array of possible treasure items
+        Material[] treasures = {
+            Material.NAME_TAG,
+            Material.SADDLE,
+            Material.NAUTILUS_SHELL,
+            Material.BOOK,
+            Material.BOW,
+            Material.ENCHANTED_BOOK,
+            Material.FISHING_ROD
+        };
+        
+        // Random treasure selection
+        Material treasure = treasures[new Random().nextInt(treasures.length)];
+        ItemStack item = new ItemStack(treasure);
+        
+        // Add random enchantment to enchantable items
+        if (treasure == Material.BOW || 
+            treasure == Material.FISHING_ROD ||
+            treasure == Material.ENCHANTED_BOOK) {
+            
+            // Get random enchantment
+            Enchantment[] enchantments = Enchantment.values();
+            Enchantment randomEnchant = enchantments[new Random().nextInt(enchantments.length)];
+            
+            // Random level between 1 and max for that enchantment
+            int level = new Random().nextInt(randomEnchant.getMaxLevel()) + 1;
+            
+            // Add the enchantment
+            item.addUnsafeEnchantment(randomEnchant, level);
+        }
+        
+        return item;
     }
 
     @EventHandler
@@ -377,9 +517,17 @@ public class PassiveSkillManager implements Listener {
         Player player = event.getEnchanter();
         int level = xpManager.getPlayerLevel(player, "enchanting");
 
-        // Research Master (Level 5) – handled in XPManager
+        // Research Master (Level 5) – XP boost for enchanting
         if (hasPassive(player, "enchanting", "Research Master")) {
-            // XP boost logic here
+            // Add 25% more XP from enchanting
+            int baseXP = event.getExpLevelCost() * 5; // Base XP from enchanting
+            int bonusXP = (int)(baseXP * 0.25);
+            
+            if (bonusXP > 0) {
+                // Award the bonus XP directly
+                xpManager.addXP(player, "enchanting", bonusXP);
+                player.sendActionBar("§a+25% Enchanting XP from Research Master!");
+            }
         }
 
         // Book Upgrade (Level 10)
@@ -396,12 +544,46 @@ public class PassiveSkillManager implements Listener {
 
         // Custom Enchants (Level 15)
         if (hasPassive(player, "enchanting", "Custom Enchants")) {
-            // Custom enchantment logic here
+            // 10% chance to add a custom enchantment lore
+            if (Math.random() < 0.10) {
+                // Get the item being enchanted
+                ItemStack item = event.getItem();
+                ItemMeta meta = item.getItemMeta();
+                
+                if (meta != null) {
+                    // Add a custom lore "enchantment" based on the item type
+                    List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<>();
+                    
+                    // Add a different custom enchant based on item type
+                    String customEnchant = getCustomEnchantForItem(item.getType());
+                    if (customEnchant != null) {
+                        lore.add("§5" + customEnchant);
+                        meta.setLore(lore);
+                        item.setItemMeta(meta);
+                        
+                        // Notify the player
+                        player.sendMessage("§d✨ Your Custom Enchants passive added: " + customEnchant);
+                    }
+                }
+            }
         }
 
         // Rare Enchant Boost (Level 20)
         if (hasPassive(player, "enchanting", "Rare Enchant Boost")) {
-            // Increase chance of rare enchantments (implementation depends on your system)
+            // 20% chance to add a rare enchantment
+            if (Math.random() < 0.20) {
+                ItemStack item = event.getItem();
+                
+                // Get a rare enchantment appropriate for this item
+                Enchantment rareEnchant = getRareEnchantment(item.getType());
+                if (rareEnchant != null && !item.containsEnchantment(rareEnchant)) {
+                    // Add the rare enchantment to the existing enchants
+                    Map<Enchantment, Integer> enchants = event.getEnchantsToAdd();
+                    enchants.put(rareEnchant, 1); // Start with level 1
+                    
+                    player.sendMessage("§d✨ Your Rare Enchant Boost added a rare enchantment!");
+                }
+            }
         }
     }
 
@@ -500,11 +682,46 @@ public class PassiveSkillManager implements Listener {
             }
         }
 
+        // Fortune Boost implementation
+        if (hasPassive(playerId, "fortuneBoost")) {
+            ItemStack tool = player.getInventory().getItemInMainHand();
+            if (tool.containsEnchantment(Enchantment.FORTUNE)) {
+                int fortuneLevel = tool.getEnchantmentLevel(Enchantment.FORTUNE);
+                // Increase fortune level by 1 with the passive
+                int bonusDrops = calculateFortuneDrops(fortuneLevel + 1);
+                amount += bonusDrops;
+                player.sendActionBar("§6Fortune Boost gave you extra drops!");
+            }
+        }
+
         boolean isSmelted = hasPassive(playerId, "autoSmelt");
+        boolean isUpgraded = hasPassive(playerId, "autoSmeltUpgrade");
         Material dropMaterial = getOreDrop(block.getType(), isSmelted);
 
-        block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(dropMaterial, amount));
+        // Auto Smelt Upgrade implementation
+        if (isSmelted && isUpgraded) {
+            // 20% chance for double smelted output
+            if (Math.random() < 0.20) {
+                amount *= 2;
+                player.sendActionBar("§6Auto Smelt Upgrade doubled your smelting output!");
+            }
+        }
 
+        block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(dropMaterial, amount));
+    }
+
+    // Helper method for Fortune Boost passive
+    private int calculateFortuneDrops(int fortuneLevel) {
+        // Standard Minecraft fortune algorithm with our enhancement
+        double chance = (fortuneLevel) / 2.0;
+        int bonusDrops = 0;
+        
+        if (Math.random() < chance) {
+            bonusDrops = new Random().nextInt(fortuneLevel + 2) - 1;
+            if (bonusDrops < 0) bonusDrops = 0;
+        }
+        
+        return bonusDrops;
     }
 
     @EventHandler
@@ -553,5 +770,199 @@ public class PassiveSkillManager implements Listener {
                 killer.setHealth(Math.min(currentHealth + healAmount, maxHealth));
             }
         }
+    }
+
+    // Helper method to check if a material is a log
+    private boolean isLog(Material material) {
+        return material.name().contains("_LOG");
+    }
+
+    // Handles the block break event for logs
+    @EventHandler
+    public void onLogBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        Block block = event.getBlock();
+        UUID playerId = player.getUniqueId();
+        
+        if (!isLog(block.getType())) {
+            return;
+        }
+
+        // Don't modify drops if the player doesn't have any logging passives
+        if (!hasPassive(playerId, "doubleWoodDrop") && 
+            !hasPassive(playerId, "tripleLogDrop")) {
+            return;
+        }
+
+        event.setDropItems(false);
+        int amount = 1;
+
+        // Check for Double Wood Drop passive (Level 5)
+        if (hasPassive(playerId, "doubleWoodDrop")) {
+            if (Math.random() < 0.25) { // 25% chance for double drops
+                amount = 2;
+                player.sendActionBar("§6You got lucky and the log dropped twice as much!");
+            }
+        }
+        
+        // Check for Triple Log Drop passive (Level 15)
+        if (hasPassive(playerId, "tripleLogDrop")) {
+            if (Math.random() < 0.15) { // 15% chance for triple drops
+                amount = 3;
+                player.sendActionBar("§6You got extremely lucky and the log dropped triple drops!");
+            }
+        }
+
+        // Create and drop the item
+        ItemStack drops = new ItemStack(block.getType(), amount);
+        block.getWorld().dropItemNaturally(block.getLocation(), drops);
+    }
+
+    // Implement Tree Growth Boost (runs on a timer)
+    public void startTreeGrowthBooster() {
+        // Schedule a task that runs every 5 minutes (6000 ticks)
+        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            // For every online player with the Tree Growth Boost passive
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                if (hasPassive(player.getUniqueId(), "treeGrowthBoost")) {
+                    boostNearbySaplings(player);
+                }
+            }
+        }, 6000L, 6000L);
+    }
+
+    private void boostNearbySaplings(Player player) {
+        int radius = 10; // 10 block radius around player
+        World world = player.getWorld();
+        Location playerLoc = player.getLocation();
+        
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    Location blockLoc = playerLoc.clone().add(x, y, z);
+                    Block block = world.getBlockAt(blockLoc);
+                    
+                    // Check if the block is a sapling
+                    if (block.getType().name().contains("_SAPLING")) {
+                        // 30% chance to apply bonemeal effect
+                        if (Math.random() < 0.3) {
+                            // Apply bonemeal effect (simulate growth)
+                            block.applyBoneMeal(BlockFace.UP);
+                            player.sendActionBar("§6Your Tree Growth Boost passive is working!");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Lifesteal passive implementation
+    @EventHandler
+    public void onDamageEntity(EntityDamageByEntityEvent event) {
+        // Only applies if a player is dealing damage
+        if (!(event.getDamager() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getDamager();
+        UUID playerId = player.getUniqueId();
+        
+        // Check for Lifesteal passive
+        if (hasPassive(playerId, "lifesteal")) {
+            // Calculate lifesteal amount (10% of damage dealt)
+            double damage = event.getFinalDamage();
+            double healAmount = damage * 0.10;
+            
+            // Only apply lifesteal if player needs healing and there's a reasonable amount to heal
+            if (player.getHealth() < player.getMaxHealth() && healAmount > 0.5) {
+                // 25% chance to trigger lifesteal
+                if (Math.random() < 0.25) {
+                    double newHealth = Math.min(player.getHealth() + healAmount, player.getMaxHealth());
+                    player.setHealth(newHealth);
+                    player.sendActionBar("§c♥ Lifesteal restored " + String.format("%.1f", healAmount) + " health");
+                }
+            }
+        }
+    }
+    
+    // Damage Reduction passive implementation
+    @EventHandler
+    public void onPlayerDamaged(EntityDamageEvent event) {
+        // Only applies to players getting damaged
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getEntity();
+        UUID playerId = player.getUniqueId();
+        
+        // Check for Damage Reduction passive
+        if (hasPassive(playerId, "damageReduction")) {
+            // Reduce damage by 10%
+            double originalDamage = event.getDamage();
+            double reducedDamage = originalDamage * 0.9; // 10% reduction
+            event.setDamage(reducedDamage);
+            
+            // Only show message if reduction is significant
+            if (originalDamage - reducedDamage > 0.5) {
+                player.sendActionBar("§9🛡 Damage Reduction absorbed " + 
+                    String.format("%.1f", (originalDamage - reducedDamage)) + " damage");
+            }
+        }
+    }
+
+    // Helper method to get a custom enchant based on item type
+    private String getCustomEnchantForItem(Material material) {
+        // Weapons
+        if (material.name().contains("SWORD")) {
+            return "Vampiric Touch";
+        } else if (material.name().contains("AXE")) {
+            return "Lumberjack";
+        } else if (material.name().contains("BOW")) {
+            return "Multi-Shot";
+        // Tools
+        } else if (material.name().contains("PICKAXE")) {
+            return "Ore Seeker";
+        } else if (material.name().contains("SHOVEL")) {
+            return "Excavator";
+        } else if (material.name().contains("HOE")) {
+            return "Harvester";
+        // Armor
+        } else if (material.name().contains("HELMET")) {
+            return "Eagle Eye";
+        } else if (material.name().contains("CHESTPLATE")) {
+            return "Thorns Aura";
+        } else if (material.name().contains("LEGGINGS")) {
+            return "Swift Step";
+        } else if (material.name().contains("BOOTS")) {
+            return "Cushioned Fall";
+        // Fishing
+        } else if (material == Material.FISHING_ROD) {
+            return "Deep Sea Fisher";
+        }
+        
+        return "Enchanted Item";
+    }
+
+    // Helper method to get a rare enchantment for the item
+    private Enchantment getRareEnchantment(Material material) {
+        // Define rare enchantments for different item types
+        if (material.name().contains("SWORD")) {
+            return Enchantment.FIRE_ASPECT;
+        } else if (material.name().contains("AXE") || material.name().contains("PICKAXE")) {
+            return Enchantment.SILK_TOUCH;
+        } else if (material.name().contains("BOW")) {
+            return Enchantment.INFINITY;
+        } else if (material.name().contains("HELMET") || material.name().contains("CHESTPLATE") 
+                || material.name().contains("LEGGINGS") || material.name().contains("BOOTS")) {
+            return Enchantment.THORNS;
+        } else if (material == Material.FISHING_ROD) {
+            return Enchantment.LUCK_OF_THE_SEA;
+        } else if (material == Material.TRIDENT) {
+            return Enchantment.CHANNELING;
+        }
+        
+        // Default for other items
+        return null;
     }
 }

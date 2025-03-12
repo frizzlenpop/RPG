@@ -34,6 +34,9 @@ public class SkillDetailsGUI {
         List<String> activePassives = passiveSkillManager.getActivePassives(player);
         List<String> skillAbilities = skillAbilityManager.getAbilitiesForSkill(skill);
 
+        // Filter passives based on skill type
+        List<String> skillPassives = filterPassivesBySkill(activePassives, skill);
+
         // XP Progress
         ItemStack xpItem = new ItemStack(Material.EXPERIENCE_BOTTLE);
         ItemMeta xpMeta = xpItem.getItemMeta();
@@ -52,11 +55,11 @@ public class SkillDetailsGUI {
         passiveMeta.setDisplayName("§aPassive Abilities");
         List<String> passiveLore = new ArrayList<>();
         passiveLore.add("§7Unlocked:");
-        for (String passive : activePassives) {
+        for (String passive : skillPassives) {
             passiveLore.add("§e✔ " + passive);
         }
         passiveLore.add("§cLocked:");
-        passiveLore.add("§7(Level 5, 10, 15 unlocks)");
+        passiveLore.add("§7(Level 5, 10, 15, 20 unlocks)");
         passiveMeta.setLore(passiveLore);
         passiveItem.setItemMeta(passiveMeta);
         gui.setItem(12, passiveItem);
@@ -80,5 +83,64 @@ public class SkillDetailsGUI {
         int totalBars = 10;
         int filledBars = (int) ((double) current / max * totalBars);
         return "§a" + "█".repeat(filledBars) + "§7" + "█".repeat(totalBars - filledBars);
+    }
+
+    // Helper method to filter passives by skill
+    private List<String> filterPassivesBySkill(List<String> allPassives, String skill) {
+        List<String> filtered = new ArrayList<>();
+        
+        // Add known passives for each skill type
+        switch (skill.toLowerCase()) {
+            case "mining":
+                for (String passive : allPassives) {
+                    if (passive.equals("Double Ore Drop") || passive.equals("Auto Smelt") || 
+                        passive.equals("Fortune Boost") || passive.equals("Auto Smelt Upgrade")) {
+                        filtered.add(passive);
+                    }
+                }
+                break;
+            case "logging":
+                for (String passive : allPassives) {
+                    if (passive.equals("Double Wood Drop") || passive.equals("Tree Growth Boost") || 
+                        passive.equals("Triple Log Drop")) {
+                        filtered.add(passive);
+                    }
+                }
+                break;
+            case "farming":
+                for (String passive : allPassives) {
+                    if (passive.equals("Farming XP Boost") || passive.equals("Auto Replant") || 
+                        passive.equals("Double Harvest") || passive.equals("Growth Boost")) {
+                        filtered.add(passive);
+                    }
+                }
+                break;
+            case "fighting":
+                for (String passive : allPassives) {
+                    if (passive.equals("Lifesteal") || passive.equals("Damage Reduction") || 
+                        passive.equals("Heal on Kill")) {
+                        filtered.add(passive);
+                    }
+                }
+                break;
+            case "fishing":
+                for (String passive : allPassives) {
+                    if (passive.equals("XP Boost") || passive.equals("Treasure Hunter") || 
+                        passive.equals("Rare Fish Master") || passive.equals("Quick Hook")) {
+                        filtered.add(passive);
+                    }
+                }
+                break;
+            case "enchanting":
+                for (String passive : allPassives) {
+                    if (passive.equals("Research Master") || passive.equals("Book Upgrade") || 
+                        passive.equals("Custom Enchants") || passive.equals("Rare Enchant Boost")) {
+                        filtered.add(passive);
+                    }
+                }
+                break;
+        }
+        
+        return filtered;
     }
 }
