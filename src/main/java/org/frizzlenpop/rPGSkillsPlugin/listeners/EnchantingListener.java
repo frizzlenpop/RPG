@@ -1,91 +1,33 @@
 package org.frizzlenpop.rPGSkillsPlugin.listeners;
 
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
+import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.items.CustomEnchantScroll;
 import org.frizzlenpop.rPGSkillsPlugin.skills.XPManager;
 
 import java.util.*;
+import java.util.logging.Level;
 
 public class EnchantingListener implements Listener {
     private final XPManager xpManager;
     private final RPGSkillsPlugin plugin;
-    private final Map<Material, Integer> enchantingXPValues;
     private final Map<Enchantment, Integer> enchantmentRarity;
     private final Random random = new Random();
-
-    private static final NamespacedKey SCROLL_ENCHANT_KEY = new NamespacedKey("rpgskills", "scroll_enchant");
-    private static final NamespacedKey SCROLL_IDENTIFIED_KEY = new NamespacedKey("rpgskills", "identified");
+    private final CustomEnchantScroll customEnchantScroll;
 
     public EnchantingListener(XPManager xpManager, RPGSkillsPlugin plugin) {
         this.xpManager = xpManager;
         this.plugin = plugin;
-        this.enchantingXPValues = initializeXPValues();
         this.enchantmentRarity = initializeEnchantmentRarity();
-    }
-
-    private Map<Material, Integer> initializeXPValues() {
-        Map<Material, Integer> values = new HashMap<>();
-        // Common ores
-        values.put(Material.COAL_ORE, 5);
-        values.put(Material.COPPER_ORE, 8);
-        values.put(Material.IRON_ORE, 10);
-        values.put(Material.REDSTONE_ORE, 12);
-        values.put(Material.LAPIS_ORE, 15);
-        values.put(Material.NETHER_QUARTZ_ORE, 15);
-        values.put(Material.NETHER_GOLD_ORE, 18);
-        values.put(Material.GOLD_ORE, 20);
-
-        // Rare ores
-        values.put(Material.DIAMOND_ORE, 30);
-        values.put(Material.EMERALD_ORE, 35);
-        values.put(Material.ANCIENT_DEBRIS, 50);
-
-        // Deepslate variants (slightly more XP)
-        values.put(Material.DEEPSLATE_COAL_ORE, 7);
-        values.put(Material.DEEPSLATE_COPPER_ORE, 10);
-        values.put(Material.DEEPSLATE_IRON_ORE, 12);
-        values.put(Material.DEEPSLATE_REDSTONE_ORE, 14);
-        values.put(Material.DEEPSLATE_LAPIS_ORE, 17);
-        values.put(Material.DEEPSLATE_GOLD_ORE, 22);
-        values.put(Material.DEEPSLATE_DIAMOND_ORE, 33);
-        values.put(Material.DEEPSLATE_EMERALD_ORE, 38);
-
-        // Raw materials
-        values.put(Material.RAW_IRON, 5);
-        values.put(Material.RAW_COPPER, 4);
-        values.put(Material.RAW_GOLD, 10);
-
-        // Ingots and gems
-        values.put(Material.IRON_INGOT, 8);
-        values.put(Material.GOLD_INGOT, 15);
-        values.put(Material.COPPER_INGOT, 6);
-        values.put(Material.DIAMOND, 25);
-        values.put(Material.EMERALD, 30);
-        values.put(Material.NETHERITE_INGOT, 60);
-        values.put(Material.NETHERITE_SCRAP, 30);
-        values.put(Material.AMETHYST_SHARD, 12);
-        values.put(Material.QUARTZ, 8);
-
-        // Special items
-        values.put(Material.NETHER_STAR, 250);
-        values.put(Material.DRAGON_EGG, 500);
-        values.put(Material.DRAGON_HEAD, 300);
-        values.put(Material.ELYTRA, 200);
-        values.put(Material.ENCHANTED_GOLDEN_APPLE, 150);
-
-        return values;
+        this.customEnchantScroll = new CustomEnchantScroll(plugin);
+        plugin.getLogger().info("[RPGSkills] EnchantingListener has been initialized");
     }
 
     private Map<Enchantment, Integer> initializeEnchantmentRarity() {
@@ -142,43 +84,70 @@ public class EnchantingListener implements Listener {
         return rarity;
     }
 
-
     @EventHandler
-    public void onOreClick(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_AIR) return;
-
-        Player player = event.getPlayer();
-        ItemStack itemInHand = player.getInventory().getItemInMainHand();
-
-        if (itemInHand.getType() != Material.AIR && enchantingXPValues.containsKey(itemInHand.getType())) {
-            event.setCancelled(true); // Prevent any block interaction
-
-            // Reduce the item stack by 1
-            if (itemInHand.getAmount() > 1) {
-                itemInHand.setAmount(itemInHand.getAmount() - 1);
-            } else {
-                player.getInventory().setItemInMainHand(null);
+    public void onEnchantItem(EnchantItemEvent event) {
+        plugin.getLogger().info("[RPGSkills] EnchantItemEvent triggered!");
+        
+        Player player = event.getEnchanter();
+        int expLevelCost = event.getExpLevelCost();
+        Map<Enchantment, Integer> enchants = event.getEnchantsToAdd();
+        
+        plugin.getLogger().info("[RPGSkills] Player: " + player.getName() + 
+                              ", ExpCost: " + expLevelCost + 
+                              ", Enchants: " + enchants.size());
+        
+        // Log each enchantment being added
+        for (Map.Entry<Enchantment, Integer> entry : enchants.entrySet()) {
+            plugin.getLogger().info("[RPGSkills] - Adding " + entry.getKey().getKey() + 
+                                  " level " + entry.getValue());
+        }
+        
+        // Calculate XP based on level cost and number of enchantments
+        int baseXp = expLevelCost * 10; // Base XP is 10 times the level cost
+        int bonusXp = enchants.size() * 5; // Additional 5 XP per enchantment
+        int totalXp = baseXp + bonusXp;
+        
+        plugin.getLogger().info("[RPGSkills] Calculated XP: base=" + baseXp + 
+                              ", bonus=" + bonusXp + 
+                              ", total=" + totalXp);
+        
+        try {
+            // Award the enchanting XP
+            xpManager.addXP(player, "enchanting", totalXp);
+            plugin.getLogger().info("[RPGSkills] Successfully added " + totalXp + " enchanting XP to " + player.getName());
+            player.sendMessage("§6+" + totalXp + " Enchanting XP");
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "[RPGSkills] Error adding XP: " + e.getMessage(), e);
+        }
+        
+        // Calculate chance for enchantment scroll
+        // Base chance of 5% + up to additional 15% based on exp cost
+        double scrollChance = 5.0 + (expLevelCost * 0.5);
+        
+        // Increase chance based on rarity of enchantments added
+        int highestRarity = 0;
+        for (Enchantment enchant : enchants.keySet()) {
+            int rarity = enchantmentRarity.getOrDefault(enchant, 1);
+            if (rarity > highestRarity) {
+                highestRarity = rarity;
             }
-
-// Award XP
-            Integer xpValue = enchantingXPValues.get(itemInHand.getType());
-            if (xpValue == null) return;
-
-            xpManager.addXP(player, "enchanting", xpValue);
-            player.sendMessage("§6+" + xpValue + " Enchanting XP");
-
-// Calculate chance based on XP value
-// Base chance of 5% + up to additional 15% based on XP value
-            double scrollChance = 5.0 + (xpValue * 0.15);  // Using xpValue instead of recalculating
-
-// Roll for scroll with the calculated chance
-            if (random.nextDouble() * 100 < scrollChance) {
-                giveUnknownScroll(player, getRandomEnchantment());
-                player.sendMessage("§6You found an unknown enchantment scroll!");
-            }
-
-
-
+        }
+        
+        // Add 2% per rarity level of the highest enchantment
+        scrollChance += (highestRarity * 2.0);
+        
+        // Cap the chance at 40%
+        scrollChance = Math.min(scrollChance, 40.0);
+        
+        plugin.getLogger().info("[RPGSkills] Scroll chance: " + scrollChance + "%");
+        
+        // Roll for scroll with the calculated chance
+        if (random.nextDouble() * 100 < scrollChance) {
+            // Weighted selection based on the highest rarity enchantment present
+            Enchantment scrollEnchant = getRandomEnchantmentWeighted(highestRarity);
+            customEnchantScroll.giveUnknownScroll(player, scrollEnchant);
+            plugin.getLogger().info("[RPGSkills] Gave " + player.getName() + " a scroll with " + scrollEnchant.getKey());
+            player.sendMessage("§6You found an unknown enchantment scroll!");
         }
     }
 
@@ -191,7 +160,7 @@ public class EnchantingListener implements Listener {
         ItemStack current = event.getCurrentItem();
 
         // Allow placing scrolls back into inventory
-        if (isIdentifiedScroll(cursor)) {
+        if (CustomEnchantScroll.isIdentifiedScroll(cursor)) {
             // If clicking into an empty slot or onto another item, allow the normal inventory behavior
             if (current == null || current.getType() == Material.AIR) {
                 return; // Don't cancel the event, let the item be placed
@@ -199,102 +168,60 @@ public class EnchantingListener implements Listener {
 
             // If clicking onto an enchantable item, try to apply the enchantment
             event.setCancelled(true);
-
-            PersistentDataContainer container = cursor.getItemMeta().getPersistentDataContainer();
-            String enchantName = container.get(SCROLL_ENCHANT_KEY, PersistentDataType.STRING);
-            Enchantment enchantment = Enchantment.getByKey(NamespacedKey.minecraft(enchantName.toLowerCase()));
-
-            if (enchantment != null && enchantment.canEnchantItem(current)) {
-                // Apply the enchantment
-                current.addEnchantment(enchantment, 1);
-                // Remove one scroll from the stack
+            
+            // Try to apply the scroll to the item
+            if (customEnchantScroll.applyScrollToItem(cursor, current, player)) {
+                // Remove one scroll from the stack on success
                 if (cursor.getAmount() > 1) {
                     cursor.setAmount(cursor.getAmount() - 1);
                 } else {
                     event.getView().setCursor(null);
                 }
-                player.sendMessage("§aSuccessfully applied " + formatEnchantmentName(enchantment) + " to your item!");
-            } else {
-                player.sendMessage("§cThis enchantment cannot be applied to this item!");
             }
         }
 
         // Check if trying to identify an unknown scroll
-        else if (isUnknownScroll(current) && event.getClick().isRightClick()) {
+        else if (CustomEnchantScroll.isUnknownScroll(current) && event.getClick().isRightClick()) {
             event.setCancelled(true);
-            identifyScroll(current, player);
+            customEnchantScroll.identifyScroll(current, player);
         }
-    }
-
-    private void identifyScroll(ItemStack scroll, Player player) {
-        ItemMeta meta = scroll.getItemMeta();
-        if (meta == null) return;
-
-        PersistentDataContainer container = meta.getPersistentDataContainer();
-        String enchantName = container.get(SCROLL_ENCHANT_KEY, PersistentDataType.STRING);
-
-        if (enchantName != null) {
-            container.set(SCROLL_IDENTIFIED_KEY, PersistentDataType.BYTE, (byte)1);
-            Enchantment enchant = Enchantment.getByKey(NamespacedKey.minecraft(enchantName.toLowerCase()));
-            if (enchant != null) {
-                meta.setDisplayName("§6" + formatEnchantmentName(enchant) + " Scroll");
-                List<String> lore = new ArrayList<>();
-                lore.add("§7Right-click on an item to apply");
-                meta.setLore(lore);
-                scroll.setItemMeta(meta);
-                player.sendMessage("§aYou identified the scroll! It contains: " + formatEnchantmentName(enchant));
-            }
-        }
-    }
-
-    private void giveUnknownScroll(Player player, Enchantment enchantment) {
-        ItemStack scroll = new ItemStack(Material.PAPER);
-        ItemMeta meta = scroll.getItemMeta();
-        if (meta == null) return;
-
-        meta.setDisplayName("§5Unknown Enchantment Scroll");
-        List<String> lore = new ArrayList<>();
-        lore.add("§7Right-click to identify");
-        meta.setLore(lore);
-
-        PersistentDataContainer container = meta.getPersistentDataContainer();
-        container.set(SCROLL_ENCHANT_KEY, PersistentDataType.STRING, enchantment.getKey().getKey());
-
-        scroll.setItemMeta(meta);
-        if (player.getInventory().firstEmpty() != -1) {
-            player.getInventory().addItem(scroll);
-        } else {
-            player.getWorld().dropItemNaturally(player.getLocation(), scroll);
-        }
-    }
-
-    private boolean isUnknownScroll(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return false;
-        ItemMeta meta = item.getItemMeta();
-        return meta.getPersistentDataContainer().has(SCROLL_ENCHANT_KEY, PersistentDataType.STRING) &&
-                !meta.getPersistentDataContainer().has(SCROLL_IDENTIFIED_KEY, PersistentDataType.BYTE);
-    }
-
-    private boolean isIdentifiedScroll(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return false;
-        ItemMeta meta = item.getItemMeta();
-        return meta.getPersistentDataContainer().has(SCROLL_ENCHANT_KEY, PersistentDataType.STRING) &&
-                meta.getPersistentDataContainer().has(SCROLL_IDENTIFIED_KEY, PersistentDataType.BYTE);
-    }
-
-    private String formatEnchantmentName(Enchantment enchant) {
-        return enchant.getKey().getKey()
-                .replace('_', ' ')
-                .toLowerCase()
-                .replace(" v", " V")
-                .replace(" iv", " IV")
-                .replace(" iii", " III")
-                .replace(" ii", " II")
-                .replace(" i", " I");
     }
 
     private Enchantment getRandomEnchantment() {
         List<Enchantment> enchants = new ArrayList<>(enchantmentRarity.keySet());
+        return enchants.get(random.nextInt(enchants.size()));
+    }
+    
+    private Enchantment getRandomEnchantmentWeighted(int targetRarity) {
+        // Group enchantments by rarity
+        Map<Integer, List<Enchantment>> enchantsByRarity = new HashMap<>();
+        
+        for (Map.Entry<Enchantment, Integer> entry : enchantmentRarity.entrySet()) {
+            int rarity = entry.getValue();
+            enchantsByRarity.computeIfAbsent(rarity, k -> new ArrayList<>()).add(entry.getKey());
+        }
+        
+        // Determine which rarity group to pick from based on the target rarity
+        // Higher chance to pick from the target rarity group, but can also pick from adjacent groups
+        int finalRarity = targetRarity;
+        
+        // 60% chance to get target rarity, 20% chance to get one lower, 20% chance to get one higher
+        double roll = random.nextDouble();
+        if (roll < 0.2 && targetRarity > 1) {
+            finalRarity = targetRarity - 1;
+        } else if (roll >= 0.8 && targetRarity < 5) {
+            finalRarity = targetRarity + 1;
+        }
+        
+        // Get enchantments of the determined rarity
+        List<Enchantment> enchants = enchantsByRarity.getOrDefault(finalRarity, new ArrayList<>());
+        
+        // If no enchantments of that rarity, fall back to any random enchantment
+        if (enchants.isEmpty()) {
+            return getRandomEnchantment();
+        }
+        
+        // Return a random enchantment from the selected rarity group
         return enchants.get(random.nextInt(enchants.size()));
     }
 }

@@ -7,6 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.commands.*;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.gui.SkillsGUI;
+import org.frizzlenpop.rPGSkillsPlugin.items.CustomEnchantScroll;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.*;
 import org.frizzlenpop.rPGSkillsPlugin.skills.PassiveSkillManager;
 import org.frizzlenpop.rPGSkillsPlugin.skills.XPManager;
@@ -18,6 +19,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private SkillsGUI skillsGUI;
     private SkillAbilityManager abilityManager;
     private PassiveSkillManager passiveSkillManager;
+    private CustomEnchantScroll customEnchantScroll;
     private FileConfiguration config;
 
     @Override
@@ -36,7 +38,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
         this.abilityManager = new SkillAbilityManager(this);
         this.passiveSkillManager = new PassiveSkillManager(xpManager, this);
         this.skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
-
+        this.customEnchantScroll = new CustomEnchantScroll(this);
 
         // Set the passive skill manager after initialization
         xpManager.setPassiveSkillManager(passiveSkillManager);
@@ -142,5 +144,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
 
     public PassiveSkillManager getPassiveSkillManager() {
         return passiveSkillManager;
+    }
+    
+    public CustomEnchantScroll getCustomEnchantScroll() {
+        return customEnchantScroll;
     }
 }

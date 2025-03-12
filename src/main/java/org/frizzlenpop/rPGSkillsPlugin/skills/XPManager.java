@@ -17,7 +17,6 @@ public class XPManager {
     private final Map<Material, Integer> farmingXPValues;
     private final Map<String, Integer> fightingXPValues;
     private final Map<String, Integer> fishingXPValues;
-    private final Map<Material, Integer> enchantingXPValues;
 
     // Updated constructor to not require PassiveSkillManager
     public XPManager(PlayerDataManager dataManager) {
@@ -27,7 +26,6 @@ public class XPManager {
         this.farmingXPValues = initializeFarmingXP();
         this.fightingXPValues = initializeFightingXP();
         this.fishingXPValues = initializeFishingXP();
-        this.enchantingXPValues = initializeEnchantingXP();
     }
 
     public void setPassiveSkillManager(PassiveSkillManager passiveSkillManager) {
@@ -150,10 +148,6 @@ public class XPManager {
         return xpValue;
     }
 
-    public int getXPForEnchanting(Material material) {
-        return enchantingXPValues.getOrDefault(material, 0);
-    }
-
     // Initialize XP value maps
     private Map<Material, Integer> initializeMiningXP() {
         Map<Material, Integer> xpValues = new HashMap<>();
@@ -256,16 +250,6 @@ public class XPManager {
         xpValues.put("NAME_TAG", 25);
         xpValues.put("NAUTILUS_SHELL", 30);
         xpValues.put("SADDLE", 15);
-        return xpValues;
-    }
-
-    private Map<Material, Integer> initializeEnchantingXP() {
-        Map<Material, Integer> xpValues = new HashMap<>();
-        xpValues.put(Material.WOODEN_SWORD, 5);
-        xpValues.put(Material.STONE_SWORD, 7);
-        xpValues.put(Material.IRON_SWORD, 10);
-        xpValues.put(Material.DIAMOND_SWORD, 15);
-        xpValues.put(Material.NETHERITE_SWORD, 20);
         return xpValues;
     }
 }
