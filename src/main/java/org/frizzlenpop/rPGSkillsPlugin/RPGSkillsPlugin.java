@@ -175,4 +175,19 @@ public class RPGSkillsPlugin extends JavaPlugin {
     public SkillTreeGUI getSkillTreeGUI() {
         return skillTreeGUI;
     }
+
+    /**
+     * Reload the configuration and refresh skill tree
+     */
+    @Override
+    public void reloadConfig() {
+        super.reloadConfig();
+        this.config = getConfig();
+        
+        // Reinitialize skill tree with new config
+        if (skillTreeManager != null) {
+            // Refresh skill tree nodes
+            skillTreeManager.reloadSkillTreeConfig();
+        }
+    }
 }

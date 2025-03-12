@@ -121,8 +121,25 @@ public class SkillTreeManager implements Listener {
     private void addDefaultSkillTreeConfig() {
         FileConfiguration config = plugin.getConfig();
         
-        // Example nodes
-        if (!config.isConfigurationSection(CONFIG_NODES_PATH)) {
+        // Check for specific node presence rather than just the section
+        boolean missingNodes = false;
+        if (!config.isConfigurationSection(CONFIG_NODES_PATH + ".warrior_vitality") ||
+            !config.isConfigurationSection(CONFIG_NODES_PATH + ".warrior_toughness") ||
+            !config.isConfigurationSection(CONFIG_NODES_PATH + ".warrior_agility") ||
+            !config.isConfigurationSection(CONFIG_NODES_PATH + ".warrior_power") ||
+            !config.isConfigurationSection(CONFIG_NODES_PATH + ".mining_efficiency") ||
+            !config.isConfigurationSection(CONFIG_NODES_PATH + ".mining_fortune") ||
+            !config.isConfigurationSection(CONFIG_NODES_PATH + ".mining_xp_boost") ||
+            !config.isConfigurationSection(CONFIG_NODES_PATH + ".mining_treasure_hunter") ||
+            !config.isConfigurationSection(CONFIG_NODES_PATH + ".logging_efficiency") ||
+            !config.isConfigurationSection(CONFIG_NODES_PATH + ".fishing_luck")) {
+            
+            missingNodes = true;
+            plugin.getLogger().info("Found missing skill tree nodes. Adding defaults...");
+        }
+        
+        // Add default nodes if any are missing or the section doesn't exist
+        if (missingNodes || !config.isConfigurationSection(CONFIG_NODES_PATH)) {
             // ==== WARRIOR TREE ====
             // Warrior's Strength - Base node
             config.set(CONFIG_NODES_PATH + ".warrior_strength.name", "Warrior's Strength");
@@ -689,6 +706,24 @@ public class SkillTreeManager implements Listener {
         UUID playerUUID = player.getUniqueId();
         unlockedNodes.remove(playerUUID);
         spentPoints.remove(playerUUID);
+    }
+    
+    /**
+     * Reload skill tree configuration from config
+     */
+    public void reloadSkillTreeConfig() {
+        // Clear existing nodes
+        nodes.clear();
+        
+        // Reload nodes from config
+        loadSkillTreeConfig();
+        
+        // Reapply effects to online players
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            applyAllUnlockedEffects(player);
+        }
+        
+        plugin.getLogger().info("Skill tree configuration reloaded.");
     }
     
     /**
