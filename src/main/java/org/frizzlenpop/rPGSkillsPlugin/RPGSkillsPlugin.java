@@ -12,6 +12,9 @@ import org.frizzlenpop.rPGSkillsPlugin.listeners.*;
 import org.frizzlenpop.rPGSkillsPlugin.skills.PassiveSkillManager;
 import org.frizzlenpop.rPGSkillsPlugin.skills.XPManager;
 import org.frizzlenpop.rPGSkillsPlugin.skills.SkillAbilityManager;
+import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillTreeManager;
+import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillTreeGUI;
+import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillXPListener;
 
 public class RPGSkillsPlugin extends JavaPlugin {
     private PlayerDataManager playerDataManager;
@@ -20,6 +23,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private SkillAbilityManager abilityManager;
     private PassiveSkillManager passiveSkillManager;
     private CustomEnchantScroll customEnchantScroll;
+    private SkillTreeManager skillTreeManager;
+    private SkillTreeGUI skillTreeGUI;
+    private SkillXPListener skillXPListener;
     private FileConfiguration config;
 
     @Override
@@ -39,6 +45,11 @@ public class RPGSkillsPlugin extends JavaPlugin {
         this.passiveSkillManager = new PassiveSkillManager(xpManager, this);
         this.skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
         this.customEnchantScroll = new CustomEnchantScroll(this);
+        
+        // Initialize skill tree system
+        this.skillTreeManager = new SkillTreeManager(this, playerDataManager, xpManager);
+        this.skillTreeGUI = new SkillTreeGUI(this, skillTreeManager);
+        this.skillXPListener = new SkillXPListener(this, skillTreeManager);
 
         // Set the passive skill manager after initialization
         xpManager.setPassiveSkillManager(passiveSkillManager);
@@ -49,6 +60,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getCommand("skillsadmin").setExecutor(new SkillsAdminCommand(playerDataManager, xpManager));
         getCommand("toggleskillmessages").setExecutor(new ToggleSkillMessagesCommand(playerDataManager));
         getCommand("passives").setExecutor(new PassivesCommand(passiveSkillManager));
+        getCommand("skilltree").setExecutor(new SkillTreeCommand(this, skillTreeGUI, skillTreeManager));
 
         // Register all listeners
         registerListeners();
@@ -65,10 +77,10 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new LoggingListener(xpManager, this, passiveSkillManager), this);
         getServer().getPluginManager().registerEvents(new FarmingListener(xpManager), this);
         getServer().getPluginManager().registerEvents(new FightingListener(xpManager, this, passiveSkillManager), this);
-
         getServer().getPluginManager().registerEvents(abilityManager, this);
+        
+        // Skill tree listeners are registered in their respective classes
     }
-
 
     private void addDefaultPassiveConfig() {
         // Mining passives
@@ -148,5 +160,19 @@ public class RPGSkillsPlugin extends JavaPlugin {
     
     public CustomEnchantScroll getCustomEnchantScroll() {
         return customEnchantScroll;
+    }
+
+    /**
+     * Get the skill tree manager
+     */
+    public SkillTreeManager getSkillTreeManager() {
+        return skillTreeManager;
+    }
+    
+    /**
+     * Get the skill tree GUI
+     */
+    public SkillTreeGUI getSkillTreeGUI() {
+        return skillTreeGUI;
     }
 }
