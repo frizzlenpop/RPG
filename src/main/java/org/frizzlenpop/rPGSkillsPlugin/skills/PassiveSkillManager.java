@@ -35,6 +35,12 @@ import org.jetbrains.annotations.Nullable;
 import org.bukkit.inventory.Inventory;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.block.Action;
+import org.bukkit.Particle;
+import org.bukkit.GameMode;
+import org.bukkit.Sound;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 
@@ -86,6 +92,49 @@ public class PassiveSkillManager implements Listener {
     private final Set<UUID> emeraldSpecializationPlayers = new HashSet<>();
     
     // Farming passives
+    private final Set<UUID> farmingBasicsPlayers = new HashSet<>();
+    private final Set<UUID> seedSaverIPlayers = new HashSet<>();
+    private final Set<UUID> farmingXpBoostIPlayers = new HashSet<>();
+    private final Set<UUID> harvestFinderPlayers = new HashSet<>();
+    private final Set<UUID> doubleCropYieldIPlayers = new HashSet<>();
+    private final Set<UUID> wheatSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> growthSpeedIPlayers = new HashSet<>();
+    private final Set<UUID> carrotSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> autoReplantIPlayers = new HashSet<>();
+    private final Set<UUID> farmingXpBoostIIPlayers = new HashSet<>();
+    private final Set<UUID> seedSaverIIPlayers = new HashSet<>();
+    private final Set<UUID> potatoSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> fertilizerMasterPlayers = new HashSet<>();
+    private final Set<UUID> doubleCropYieldIIPlayers = new HashSet<>();
+    private final Set<UUID> beetrootSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> growthSpeedIIPlayers = new HashSet<>();
+    private final Set<UUID> rareCropMasterIPlayers = new HashSet<>();
+    private final Set<UUID> farmingXpBoostIIIPlayers = new HashSet<>();
+    private final Set<UUID> seedSaverIIIPlayers = new HashSet<>();
+    private final Set<UUID> melonSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> autoReplantIIPlayers = new HashSet<>();
+    private final Set<UUID> doubleCropYieldIIIPlayers = new HashSet<>();
+    private final Set<UUID> pumpkinSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> growthSpeedIIIPlayers = new HashSet<>();
+    private final Set<UUID> rareCropMasterIIPlayers = new HashSet<>();
+    private final Set<UUID> farmingXpBoostIVPlayers = new HashSet<>();
+    private final Set<UUID> seedSaverIVPlayers = new HashSet<>();
+    private final Set<UUID> netherWartSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> soilEnrichmentPlayers = new HashSet<>();
+    private final Set<UUID> farmingXpBoostVPlayers = new HashSet<>();
+    private final Set<UUID> tripleCropYieldPlayers = new HashSet<>();
+    private final Set<UUID> cactusSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> autoReplantIIIPlayers = new HashSet<>();
+    private final Set<UUID> seedSaverVPlayers = new HashSet<>();
+    private final Set<UUID> growthSpeedIVPlayers = new HashSet<>();
+    private final Set<UUID> sugarCaneSpecialistPlayers = new HashSet<>();
+    private final Set<UUID> instantGrowthMasterPlayers = new HashSet<>();
+    private final Set<UUID> farmingXpBoostVIPlayers = new HashSet<>();
+    private final Set<UUID> legendaryFarmerPlayers = new HashSet<>();
+    private final Set<UUID> quadrupleCropYieldPlayers = new HashSet<>();
+    private final Set<UUID> masterFarmerPlayers = new HashSet<>();
+    
+    // Existing fields for auto replant and double crop yield
     private final Set<UUID> autoReplantPlayers = new HashSet<>();
     private final Set<UUID> doubleCropYieldPlayers = new HashSet<>();
     private final Set<UUID> instantGrowthPlayers = new HashSet<>();
@@ -204,6 +253,9 @@ public class PassiveSkillManager implements Listener {
         
         // Start the tree growth booster task
         startTreeGrowthBooster();
+        
+        // Start the farming growth speed task
+        startGrowthSpeedTask();
     }
 
     // --- OLD SYSTEM: Loading player passives from PlayerDataManager ---
@@ -455,14 +507,174 @@ public class PassiveSkillManager implements Listener {
                 break;
 
             case "farming":
+                if (level >= 1) {
+                    unlockPassive(player, skill, "Farming Basics");
+                    farmingBasicsPlayers.add(player.getUniqueId());
+                }
+                if (level >= 3) {
+                    unlockPassive(player, skill, "Seed Saver I");
+                    seedSaverIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 5) {
+                    unlockPassive(player, skill, "Farming XP Boost I");
+                    farmingXpBoostIPlayers.add(player.getUniqueId());
+                    doubleCropYieldPlayers.add(player.getUniqueId()); // Legacy support
+                }
+                if (level >= 7) {
+                    unlockPassive(player, skill, "Harvest Finder");
+                    harvestFinderPlayers.add(player.getUniqueId());
+                }
                 if (level >= 10) {
-                    unlockPassive(player, skill, "doubleCropYield");
+                    unlockPassive(player, skill, "Double Crop Yield I");
+                    doubleCropYieldIPlayers.add(player.getUniqueId());
+                    // Legacy support
+                    autoReplantPlayers.add(player.getUniqueId());
+                }
+                if (level >= 12) {
+                    unlockPassive(player, skill, "Wheat Specialist");
+                    wheatSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 15) {
+                    unlockPassive(player, skill, "Growth Speed I");
+                    growthSpeedIPlayers.add(player.getUniqueId());
+                    // Legacy support
+                    instantGrowthPlayers.add(player.getUniqueId());
+                }
+                if (level >= 17) {
+                    unlockPassive(player, skill, "Carrot Specialist");
+                    carrotSpecialistPlayers.add(player.getUniqueId());
                 }
                 if (level >= 20) {
-                    unlockPassive(player, skill, "autoReplant");
+                    unlockPassive(player, skill, "Auto Replant I");
+                    autoReplantIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 22) {
+                    unlockPassive(player, skill, "Farming XP Boost II");
+                    farmingXpBoostIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 25) {
+                    unlockPassive(player, skill, "Seed Saver II");
+                    seedSaverIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 27) {
+                    unlockPassive(player, skill, "Potato Specialist");
+                    potatoSpecialistPlayers.add(player.getUniqueId());
                 }
                 if (level >= 30) {
-                    unlockPassive(player, skill, "instantGrowth");
+                    unlockPassive(player, skill, "Fertilizer Master");
+                    fertilizerMasterPlayers.add(player.getUniqueId());
+                }
+                if (level >= 32) {
+                    unlockPassive(player, skill, "Double Crop Yield II");
+                    doubleCropYieldIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 35) {
+                    unlockPassive(player, skill, "Beetroot Specialist");
+                    beetrootSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 37) {
+                    unlockPassive(player, skill, "Growth Speed II");
+                    growthSpeedIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 40) {
+                    unlockPassive(player, skill, "Rare Crop Master I");
+                    rareCropMasterIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 42) {
+                    unlockPassive(player, skill, "Farming XP Boost III");
+                    farmingXpBoostIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 45) {
+                    unlockPassive(player, skill, "Seed Saver III");
+                    seedSaverIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 47) {
+                    unlockPassive(player, skill, "Melon Specialist");
+                    melonSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 50) {
+                    unlockPassive(player, skill, "Auto Replant II");
+                    autoReplantIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 52) {
+                    unlockPassive(player, skill, "Double Crop Yield III");
+                    doubleCropYieldIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 55) {
+                    unlockPassive(player, skill, "Pumpkin Specialist");
+                    pumpkinSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 57) {
+                    unlockPassive(player, skill, "Growth Speed III");
+                    growthSpeedIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 60) {
+                    unlockPassive(player, skill, "Rare Crop Master II");
+                    rareCropMasterIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 62) {
+                    unlockPassive(player, skill, "Farming XP Boost IV");
+                    farmingXpBoostIVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 65) {
+                    unlockPassive(player, skill, "Seed Saver IV");
+                    seedSaverIVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 67) {
+                    unlockPassive(player, skill, "Nether Wart Specialist");
+                    netherWartSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 70) {
+                    unlockPassive(player, skill, "Soil Enrichment");
+                    soilEnrichmentPlayers.add(player.getUniqueId());
+                }
+                if (level >= 72) {
+                    unlockPassive(player, skill, "Farming XP Boost V");
+                    farmingXpBoostVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 75) {
+                    unlockPassive(player, skill, "Triple Crop Yield");
+                    tripleCropYieldPlayers.add(player.getUniqueId());
+                }
+                if (level >= 77) {
+                    unlockPassive(player, skill, "Cactus Specialist");
+                    cactusSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 80) {
+                    unlockPassive(player, skill, "Auto Replant III");
+                    autoReplantIIIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 82) {
+                    unlockPassive(player, skill, "Seed Saver V");
+                    seedSaverVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 85) {
+                    unlockPassive(player, skill, "Growth Speed IV");
+                    growthSpeedIVPlayers.add(player.getUniqueId());
+                }
+                if (level >= 87) {
+                    unlockPassive(player, skill, "Sugar Cane Specialist");
+                    sugarCaneSpecialistPlayers.add(player.getUniqueId());
+                }
+                if (level >= 90) {
+                    unlockPassive(player, skill, "Instant Growth Master");
+                    instantGrowthMasterPlayers.add(player.getUniqueId());
+                }
+                if (level >= 92) {
+                    unlockPassive(player, skill, "Farming XP Boost VI");
+                    farmingXpBoostVIPlayers.add(player.getUniqueId());
+                }
+                if (level >= 95) {
+                    unlockPassive(player, skill, "Legendary Farmer");
+                    legendaryFarmerPlayers.add(player.getUniqueId());
+                }
+                if (level >= 97) {
+                    unlockPassive(player, skill, "Quadruple Crop Yield");
+                    quadrupleCropYieldPlayers.add(player.getUniqueId());
+                }
+                if (level >= 100) {
+                    unlockPassive(player, skill, "Master Farmer");
+                    masterFarmerPlayers.add(player.getUniqueId());
                 }
                 break;
 
@@ -2391,5 +2603,567 @@ public class PassiveSkillManager implements Listener {
         }
         
         return bonusDrops;
+    }
+
+    @EventHandler
+    public void onFarmingBlockBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        Block block = event.getBlock();
+        Material blockType = block.getType();
+        
+        // Only handle farming-related blocks
+        if (!isFarmCrop(blockType) && !isMelon(blockType) && !isPumpkin(blockType) && 
+            blockType != Material.CACTUS && blockType != Material.SUGAR_CANE && 
+            blockType != Material.NETHER_WART) {
+            return;
+        }
+        
+        // Get the base drops
+        List<ItemStack> drops = new ArrayList<>(block.getDrops(player.getInventory().getItemInMainHand()));
+        if (drops.isEmpty()) {
+            return;
+        }
+        
+        // Cancel the default drops since we'll handle them manually
+        event.setDropItems(false);
+        
+        // Get player's farming level
+        int farmingLevel = xpManager.getPlayerLevel(player, "farming");
+        
+        // Apply drop multipliers based on crop type specialists
+        boolean specialistApplied = false;
+        double multiplier = 1.0;
+        
+        // Check for specialist passive based on crop type
+        if (blockType == Material.WHEAT && wheatSpecialistPlayers.contains(playerId)) {
+            multiplier += 0.25;
+            specialistApplied = true;
+        } else if (blockType == Material.CARROTS && carrotSpecialistPlayers.contains(playerId)) {
+            multiplier += 0.25;
+            specialistApplied = true;
+        } else if (blockType == Material.POTATOES && potatoSpecialistPlayers.contains(playerId)) {
+            multiplier += 0.25;
+            specialistApplied = true;
+        } else if (blockType == Material.BEETROOTS && beetrootSpecialistPlayers.contains(playerId)) {
+            multiplier += 0.25;
+            specialistApplied = true;
+        } else if (isMelon(blockType) && melonSpecialistPlayers.contains(playerId)) {
+            multiplier += 0.25;
+            specialistApplied = true;
+        } else if (isPumpkin(blockType) && pumpkinSpecialistPlayers.contains(playerId)) {
+            multiplier += 0.25;
+            specialistApplied = true;
+        } else if (blockType == Material.NETHER_WART && netherWartSpecialistPlayers.contains(playerId)) {
+            multiplier += 0.25;
+            specialistApplied = true;
+        } else if (blockType == Material.CACTUS && cactusSpecialistPlayers.contains(playerId)) {
+            multiplier += 0.25;
+            specialistApplied = true;
+        } else if (blockType == Material.SUGAR_CANE && sugarCaneSpecialistPlayers.contains(playerId)) {
+            multiplier += 0.25;
+            specialistApplied = true;
+        }
+        
+        if (specialistApplied) {
+            player.sendActionBar(Component.text("Crop Specialist: +25% yield!").color(NamedTextColor.GREEN));
+        }
+        
+        // Apply Double Crop Yield I-III passives
+        boolean extraDropsApplied = false;
+        boolean tripleDropsApplied = false;
+        boolean quadrupleDropsApplied = false;
+        double extraDropChance = 0.0;
+        
+        // Apply the legendary farmer effect that can double all boosts
+        boolean legendaryEffect = legendaryFarmerPlayers.contains(playerId) && Math.random() < 0.20;
+        
+        if (doubleCropYieldIIIPlayers.contains(playerId)) {
+            extraDropChance = 0.35; // 35% chance
+        } else if (doubleCropYieldIIPlayers.contains(playerId)) {
+            extraDropChance = 0.25; // 25% chance
+        } else if (doubleCropYieldIPlayers.contains(playerId) || doubleCropYieldPlayers.contains(playerId)) {
+            extraDropChance = 0.15; // 15% chance
+        }
+        
+        if (legendaryEffect) {
+            extraDropChance *= 2; // Double the chance with Legendary Farmer
+        }
+        
+        if (extraDropChance > 0 && Math.random() < extraDropChance) {
+            multiplier += 1.0; // Double drops
+            extraDropsApplied = true;
+            player.sendActionBar(Component.text("Double Crop Yield activated!").color(NamedTextColor.GOLD));
+        }
+        
+        // Apply Triple Crop Yield passive
+        if (tripleCropYieldPlayers.contains(playerId)) {
+            double tripleChance = 0.15; // 15% chance
+            if (legendaryEffect) {
+                tripleChance *= 2; // Double the chance with Legendary Farmer
+            }
+            
+            if (Math.random() < tripleChance) {
+                multiplier += 1.0; // Add another 100% (total 3x with double yield)
+                tripleDropsApplied = true;
+                player.sendActionBar(Component.text("Triple Crop Yield activated!").color(NamedTextColor.LIGHT_PURPLE));
+            }
+        }
+        
+        // Apply Quadruple Crop Yield passive
+        if (quadrupleCropYieldPlayers.contains(playerId)) {
+            double quadrupleChance = 0.05; // 5% chance
+            if (legendaryEffect) {
+                quadrupleChance *= 2; // Double the chance with Legendary Farmer
+            }
+            
+            if (Math.random() < quadrupleChance) {
+                multiplier += 1.0; // Add another 100% (total 4x with double and triple)
+                quadrupleDropsApplied = true;
+                player.sendActionBar(Component.text("Quadruple Crop Yield activated!").color(NamedTextColor.DARK_PURPLE));
+            }
+        }
+        
+        // Apply Master Farmer passive (Level 100)
+        if (masterFarmerPlayers.contains(playerId)) {
+            // Master Farmer has a 10% chance to add 1 to the multiplier
+            if (Math.random() < 0.10) {
+                multiplier += 1.0;
+                player.sendActionBar(Component.text("Master Farmer bonus activated!").color(NamedTextColor.AQUA));
+            }
+            
+            // Master Farmer also adds a flat 20% to all crops
+            multiplier += 0.20;
+        }
+        
+        // Apply Rare Crop Master passive
+        boolean rareCropApplied = false;
+        double rareCropChance = 0.0;
+        
+        if (rareCropMasterIIPlayers.contains(playerId)) {
+            rareCropChance = 0.25; // 25% chance
+        } else if (rareCropMasterIPlayers.contains(playerId)) {
+            rareCropChance = 0.15; // 15% chance
+        }
+        
+        if (rareCropChance > 0 && Math.random() < rareCropChance) {
+            // Add a rare crop variant
+            addRareCropVariant(player, blockType);
+            rareCropApplied = true;
+        }
+        
+        // Calculate final drops
+        if (multiplier > 1.0) {
+            for (ItemStack drop : drops) {
+                // Calculate new amount
+                int originalAmount = drop.getAmount();
+                int newAmount = (int) Math.round(originalAmount * multiplier);
+                
+                // Drop items with the new amount
+                if (newAmount > 0) {
+                    drop.setAmount(newAmount);
+                    block.getWorld().dropItemNaturally(block.getLocation(), drop);
+                }
+            }
+        } else {
+            // No multiplier, just drop the original items
+            for (ItemStack drop : drops) {
+                block.getWorld().dropItemNaturally(block.getLocation(), drop);
+            }
+        }
+        
+        // Apply Auto Replant functionality
+        boolean replanted = false;
+        double replantChance = 0.0;
+        
+        if (autoReplantIIIPlayers.contains(playerId)) {
+            replantChance = 0.60; // 60% chance
+        } else if (autoReplantIIPlayers.contains(playerId)) {
+            replantChance = 0.40; // 40% chance
+        } else if (autoReplantIPlayers.contains(playerId) || autoReplantPlayers.contains(playerId)) {
+            replantChance = 0.20; // 20% chance
+        }
+        
+        if (legendaryEffect) {
+            replantChance *= 2; // Double the chance with Legendary Farmer (capped at 100%)
+            replantChance = Math.min(replantChance, 1.0);
+        }
+        
+        if (replantChance > 0 && Math.random() < replantChance && canReplant(blockType)) {
+            // Schedule task to replant crop after a short delay (to avoid instant break)
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                replantCrop(block, blockType);
+            }, 2L); // 2 tick delay
+            
+            replanted = true;
+            player.sendActionBar(Component.text("Auto Replant activated!").color(NamedTextColor.GREEN));
+        }
+    }
+    
+    // Helper method to check if a material is a crop
+    private boolean isFarmCrop(Material material) {
+        return material == Material.WHEAT || 
+               material == Material.POTATOES || 
+               material == Material.CARROTS || 
+               material == Material.BEETROOTS ||
+               material == Material.NETHER_WART;
+    }
+    
+    // Helper method to check if a material is a melon
+    private boolean isMelon(Material material) {
+        return material == Material.MELON || material == Material.ATTACHED_MELON_STEM || 
+               material == Material.MELON_STEM;
+    }
+    
+    // Helper method to check if a material is a pumpkin
+    private boolean isPumpkin(Material material) {
+        return material == Material.PUMPKIN || material == Material.CARVED_PUMPKIN || 
+               material == Material.ATTACHED_PUMPKIN_STEM || material == Material.PUMPKIN_STEM;
+    }
+    
+    // Helper method to check if a crop can be replanted
+    private boolean canReplant(Material material) {
+        return material == Material.WHEAT || 
+               material == Material.POTATOES || 
+               material == Material.CARROTS || 
+               material == Material.BEETROOTS || 
+               material == Material.NETHER_WART;
+    }
+    
+    // Helper method to replant a crop
+    private void replantCrop(Block block, Material harvestedCrop) {
+        if (block.getType() == Material.AIR) {
+            if (harvestedCrop == Material.WHEAT) {
+                block.setType(Material.WHEAT);
+                Ageable crop = (Ageable) block.getBlockData();
+                crop.setAge(0);
+                block.setBlockData(crop);
+            } else if (harvestedCrop == Material.POTATOES) {
+                block.setType(Material.POTATOES);
+                Ageable crop = (Ageable) block.getBlockData();
+                crop.setAge(0);
+                block.setBlockData(crop);
+            } else if (harvestedCrop == Material.CARROTS) {
+                block.setType(Material.CARROTS);
+                Ageable crop = (Ageable) block.getBlockData();
+                crop.setAge(0);
+                block.setBlockData(crop);
+            } else if (harvestedCrop == Material.BEETROOTS) {
+                block.setType(Material.BEETROOTS);
+                Ageable crop = (Ageable) block.getBlockData();
+                crop.setAge(0);
+                block.setBlockData(crop);
+            } else if (harvestedCrop == Material.NETHER_WART) {
+                block.setType(Material.NETHER_WART);
+                Ageable crop = (Ageable) block.getBlockData();
+                crop.setAge(0);
+                block.setBlockData(crop);
+            }
+        }
+    }
+    
+    // Helper method to add a rare crop variant
+    private void addRareCropVariant(Player player, Material cropType) {
+        ItemStack rareItem = null;
+        
+        if (cropType == Material.WHEAT) {
+            // Rare wheat variant: Golden bread
+            rareItem = new ItemStack(Material.BREAD);
+            ItemMeta meta = rareItem.getItemMeta();
+            meta.setDisplayName("§6Golden Bread");
+            List<String> lore = new ArrayList<>();
+            lore.add("§eA special bread with enhanced properties");
+            lore.add("§eRestores more hunger and provides temporary effects");
+            meta.setLore(lore);
+            rareItem.setItemMeta(meta);
+        } else if (cropType == Material.POTATOES) {
+            // Rare potato variant: Golden potato
+            rareItem = new ItemStack(Material.BAKED_POTATO);
+            ItemMeta meta = rareItem.getItemMeta();
+            meta.setDisplayName("§6Golden Potato");
+            List<String> lore = new ArrayList<>();
+            lore.add("§eA special potato with enhanced properties");
+            lore.add("§eRestores more hunger and provides temporary effects");
+            meta.setLore(lore);
+            rareItem.setItemMeta(meta);
+        } else if (cropType == Material.CARROTS) {
+            // Just give a golden carrot
+            rareItem = new ItemStack(Material.GOLDEN_CARROT);
+        } else if (cropType == Material.BEETROOTS) {
+            // Enhanced beetroot soup
+            rareItem = new ItemStack(Material.BEETROOT_SOUP);
+            ItemMeta meta = rareItem.getItemMeta();
+            meta.setDisplayName("§6Enhanced Beetroot Soup");
+            List<String> lore = new ArrayList<>();
+            lore.add("§eA special soup with enhanced properties");
+            lore.add("§eRestores more hunger and provides temporary effects");
+            meta.setLore(lore);
+            rareItem.setItemMeta(meta);
+        } else if (cropType == Material.MELON) {
+            // Glistering melon slice
+            rareItem = new ItemStack(Material.GLISTERING_MELON_SLICE);
+        } else if (cropType == Material.PUMPKIN) {
+            // Special pumpkin pie
+            rareItem = new ItemStack(Material.PUMPKIN_PIE);
+            ItemMeta meta = rareItem.getItemMeta();
+            meta.setDisplayName("§6Magical Pumpkin Pie");
+            List<String> lore = new ArrayList<>();
+            lore.add("§eA special pie with enhanced properties");
+            lore.add("§eRestores more hunger and provides temporary effects");
+            meta.setLore(lore);
+            rareItem.setItemMeta(meta);
+        } else if (cropType == Material.NETHER_WART) {
+            // Rare nether wart
+            rareItem = new ItemStack(Material.NETHER_WART);
+            ItemMeta meta = rareItem.getItemMeta();
+            meta.setDisplayName("§6Potent Nether Wart");
+            List<String> lore = new ArrayList<>();
+            lore.add("§eA potent nether wart for brewing");
+            lore.add("§eCreates more powerful potions");
+            meta.setLore(lore);
+            rareItem.setItemMeta(meta);
+        }
+        
+        if (rareItem != null) {
+            player.getWorld().dropItemNaturally(player.getLocation(), rareItem);
+            player.sendMessage("§6Rare Crop Master: You've harvested a rare crop variant!");
+        }
+    }
+
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        Block clickedBlock = event.getClickedBlock();
+        ItemStack itemInHand = event.getItem();
+        
+        if (clickedBlock == null || itemInHand == null) {
+            return;
+        }
+        
+        // Handle seed planting (Seed Saver passive)
+        if (isFarmland(clickedBlock.getType()) && isSeed(itemInHand.getType())) {
+            double seedSaveChance = 0.0;
+            
+            // Apply the legendary farmer effect that can double all boosts
+            boolean legendaryEffect = legendaryFarmerPlayers.contains(playerId) && Math.random() < 0.20;
+            
+            // Check for Seed Saver passives
+            if (seedSaverVPlayers.contains(playerId)) {
+                seedSaveChance = 0.50; // 50% chance
+            } else if (seedSaverIVPlayers.contains(playerId)) {
+                seedSaveChance = 0.40; // 40% chance
+            } else if (seedSaverIIIPlayers.contains(playerId)) {
+                seedSaveChance = 0.30; // 30% chance
+            } else if (seedSaverIIPlayers.contains(playerId)) {
+                seedSaveChance = 0.20; // 20% chance
+            } else if (seedSaverIPlayers.contains(playerId)) {
+                seedSaveChance = 0.10; // 10% chance
+            }
+            
+            if (legendaryEffect) {
+                seedSaveChance *= 2; // Double the chance with Legendary Farmer (capped at 100%)
+                seedSaveChance = Math.min(seedSaveChance, 1.0);
+            }
+            
+            // Roll for seed saving
+            if (seedSaveChance > 0 && Math.random() < seedSaveChance) {
+                // Cancel event to prevent consuming the seed
+                event.setCancelled(true);
+                
+                // Manually plant the crop without consuming the seed
+                Block targetBlock = clickedBlock.getRelative(BlockFace.UP);
+                Material cropType = getSeedCropType(itemInHand.getType());
+                
+                if (cropType != null && targetBlock.getType() == Material.AIR) {
+                    targetBlock.setType(cropType);
+                    if (cropType != Material.NETHER_WART) {
+                        Ageable ageable = (Ageable) targetBlock.getBlockData();
+                        ageable.setAge(0);
+                        targetBlock.setBlockData(ageable);
+                    }
+                    
+                    // Play planting sound and effect
+                    player.getWorld().playSound(targetBlock.getLocation(), Sound.ITEM_CROP_PLANT, 1.0F, 1.0F);
+                    player.getWorld().spawnParticle(Particle.COMPOSTER, targetBlock.getLocation().add(0.5, 0.5, 0.5), 5, 0.3, 0.3, 0.3, 0);
+                    
+                    // Notify player
+                    player.sendActionBar(Component.text("Seed Saver activated!").color(NamedTextColor.GREEN));
+                }
+            }
+        }
+        
+        // Handle fertilizer master passive when using bone meal
+        if (itemInHand.getType() == Material.BONE_MEAL && clickedBlock != null && isFarmCrop(clickedBlock.getType())) {
+            if (fertilizerMasterPlayers.contains(playerId)) {
+                // There's a 35% chance the bone meal will have extra effect
+                if (Math.random() < 0.35) {
+                    // Cancel the event to handle it manually
+                    event.setCancelled(true);
+                    
+                    // Get the current crop age
+                    Ageable ageable = (Ageable) clickedBlock.getBlockData();
+                    int currentAge = ageable.getAge();
+                    int maxAge = ageable.getMaximumAge();
+                    
+                    // If not fully grown
+                    if (currentAge < maxAge) {
+                        // Set the age to a higher value (multiple growth stages)
+                        int newAge = Math.min(currentAge + 2, maxAge); // Grow by 2 stages instead of 1
+                        ageable.setAge(newAge);
+                        clickedBlock.setBlockData(ageable);
+                        
+                        // Consume one bone meal
+                        if (player.getGameMode() != GameMode.CREATIVE) {
+                            itemInHand.setAmount(itemInHand.getAmount() - 1);
+                        }
+                        
+                        // Play bone meal effect
+                        player.getWorld().playSound(clickedBlock.getLocation(), Sound.ITEM_BONE_MEAL_USE, 1.0F, 1.0F);
+                        player.getWorld().spawnParticle(Particle.COMPOSTER, clickedBlock.getLocation().add(0.5, 0.5, 0.5), 15, 0.5, 0.5, 0.5, 0);
+                        
+                        // Notify player
+                        player.sendActionBar(Component.text("Fertilizer Master: Enhanced bone meal effect!").color(NamedTextColor.GREEN));
+                    }
+                }
+            }
+        }
+    }
+
+    // Helper methods for farming passives
+    
+    // Helper method to check if a material is farmland
+    private boolean isFarmland(Material material) {
+        return material == Material.FARMLAND || material == Material.SOUL_SAND;
+    }
+    
+    // Helper method to check if a material is a seed
+    private boolean isSeed(Material material) {
+        return material == Material.WHEAT_SEEDS || 
+               material == Material.POTATO || 
+               material == Material.CARROT || 
+               material == Material.BEETROOT_SEEDS ||
+               material == Material.NETHER_WART;
+    }
+    
+    // Helper method to get the crop type from a seed
+    private Material getSeedCropType(Material seedType) {
+        switch (seedType) {
+            case WHEAT_SEEDS: return Material.WHEAT;
+            case POTATO: return Material.POTATOES;
+            case CARROT: return Material.CARROTS;
+            case BEETROOT_SEEDS: return Material.BEETROOTS;
+            case NETHER_WART: return Material.NETHER_WART;
+            default: return null;
+        }
+    }
+    
+    // Handle the Growth Speed passive with a scheduled task
+    private BukkitTask growthSpeedTask;
+    
+    public void startGrowthSpeedTask() {
+        // Cancel existing task if it exists
+        if (growthSpeedTask != null) {
+            growthSpeedTask.cancel();
+        }
+        
+        // Start a new task that runs every minute (1200 ticks)
+        growthSpeedTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            // Process all online players with growth speed passives
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                UUID playerId = player.getUniqueId();
+                
+                // Skip players without any growth speed passives
+                if (!growthSpeedIPlayers.contains(playerId) && 
+                    !growthSpeedIIPlayers.contains(playerId) && 
+                    !growthSpeedIIIPlayers.contains(playerId) && 
+                    !growthSpeedIVPlayers.contains(playerId)) {
+                    continue;
+                }
+                
+                // Determine growth speed bonus based on passive level
+                double growthChance = 0.0;
+                if (growthSpeedIVPlayers.contains(playerId)) {
+                    growthChance = 0.40; // 40% chance
+                } else if (growthSpeedIIIPlayers.contains(playerId)) {
+                    growthChance = 0.30; // 30% chance
+                } else if (growthSpeedIIPlayers.contains(playerId)) {
+                    growthChance = 0.20; // 20% chance
+                } else if (growthSpeedIPlayers.contains(playerId)) {
+                    growthChance = 0.10; // 10% chance
+                }
+                
+                // Apply soil enrichment passive (crops within 10 blocks grow 20% faster)
+                if (soilEnrichmentPlayers.contains(playerId)) {
+                    growthChance += 0.20;
+                }
+                
+                // Apply the legendary farmer effect that can double the growth chance
+                if (legendaryFarmerPlayers.contains(playerId) && Math.random() < 0.20) {
+                    growthChance *= 2; // Double the chance with Legendary Farmer
+                }
+                
+                // Apply master farmer bonus
+                if (masterFarmerPlayers.contains(playerId)) {
+                    growthChance += 0.10; // Additional 10% bonus
+                }
+                
+                // Check nearby crops and possibly advance their growth
+                if (growthChance > 0) {
+                    Location playerLoc = player.getLocation();
+                    int radius = soilEnrichmentPlayers.contains(playerId) ? 10 : 5;
+                    
+                    // Get all blocks in the radius
+                    for (int x = -radius; x <= radius; x++) {
+                        for (int y = -3; y <= 3; y++) {
+                            for (int z = -radius; z <= radius; z++) {
+                                Block block = playerLoc.getBlock().getRelative(x, y, z);
+                                
+                                // Only process crops
+                                if (isFarmCrop(block.getType())) {
+                                    // Random chance to grow the crop based on player's passive
+                                    if (Math.random() < growthChance) {
+                                        growCrop(block);
+                                    }
+                                    
+                                    // Check for Instant Growth Master (5% chance for instant growth)
+                                    if (instantGrowthMasterPlayers.contains(playerId) && Math.random() < 0.05) {
+                                        // Instantly grow to max age
+                                        Ageable ageable = (Ageable) block.getBlockData();
+                                        ageable.setAge(ageable.getMaximumAge());
+                                        block.setBlockData(ageable);
+                                        
+                                        // Spawn effect
+                                        block.getWorld().spawnParticle(Particle.COMPOSTER, block.getLocation().add(0.5, 0.5, 0.5), 10, 0.3, 0.3, 0.3, 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }, 1200L, 1200L); // Check every minute (1200 ticks)
+    }
+    
+    // Helper method to grow a crop by one stage
+    private void growCrop(Block block) {
+        if (block.getBlockData() instanceof Ageable) {
+            Ageable ageable = (Ageable) block.getBlockData();
+            int currentAge = ageable.getAge();
+            int maxAge = ageable.getMaximumAge();
+            
+            // Only grow if not at max age
+            if (currentAge < maxAge) {
+                ageable.setAge(currentAge + 1);
+                block.setBlockData(ageable);
+                
+                // Spawn a small effect
+                block.getWorld().spawnParticle(Particle.COMPOSTER, block.getLocation().add(0.5, 0.5, 0.5), 3, 0.3, 0.3, 0.3, 0);
+            }
+        }
     }
 }

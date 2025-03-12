@@ -753,6 +753,110 @@ public class SkillsGUI implements Listener {
                 passives.add(new PassiveSkillInfo("Master Enchanter", 100, Material.END_CRYSTAL,
                         "Ultimate enchanting mastery with multiple bonuses"));
                 break;
+
+            case "farming":
+                // Level 1-10
+                passives.add(new PassiveSkillInfo("Farming Basics", 1, Material.WOODEN_HOE,
+                        "Basic farming knowledge"));
+                passives.add(new PassiveSkillInfo("Seed Saver I", 3, Material.WHEAT_SEEDS,
+                        "10% chance to not consume seeds when planting"));
+                passives.add(new PassiveSkillInfo("Farming XP Boost I", 5, Material.EXPERIENCE_BOTTLE,
+                        "+5% bonus farming XP"));
+                passives.add(new PassiveSkillInfo("Harvest Finder", 7, Material.COMPASS,
+                        "Highlights nearby harvestable crops"));
+                passives.add(new PassiveSkillInfo("Double Crop Yield I", 10, Material.WHEAT,
+                        "15% chance for double drops from crops"));
+                
+                // Level 11-20
+                passives.add(new PassiveSkillInfo("Wheat Specialist", 12, Material.HAY_BLOCK,
+                        "25% more drops from wheat"));
+                passives.add(new PassiveSkillInfo("Growth Speed I", 15, Material.BONE_MEAL,
+                        "10% faster crop growth"));
+                passives.add(new PassiveSkillInfo("Carrot Specialist", 17, Material.CARROT,
+                        "25% more drops from carrots"));
+                passives.add(new PassiveSkillInfo("Auto Replant I", 20, Material.GOLDEN_HOE,
+                        "20% chance to automatically replant crops"));
+                
+                // Level 21-30
+                passives.add(new PassiveSkillInfo("Farming XP Boost II", 22, Material.EXPERIENCE_BOTTLE,
+                        "+10% bonus farming XP"));
+                passives.add(new PassiveSkillInfo("Seed Saver II", 25, Material.WHEAT_SEEDS,
+                        "20% chance to not consume seeds when planting"));
+                passives.add(new PassiveSkillInfo("Potato Specialist", 27, Material.POTATO,
+                        "25% more drops from potatoes"));
+                passives.add(new PassiveSkillInfo("Fertilizer Master", 30, Material.BONE_MEAL,
+                        "Bone meal has 35% improved efficiency"));
+                
+                // Level 31-40
+                passives.add(new PassiveSkillInfo("Double Crop Yield II", 32, Material.WHEAT,
+                        "25% chance for double drops from crops"));
+                passives.add(new PassiveSkillInfo("Beetroot Specialist", 35, Material.BEETROOT,
+                        "25% more drops from beetroot"));
+                passives.add(new PassiveSkillInfo("Growth Speed II", 37, Material.BONE_MEAL,
+                        "20% faster crop growth"));
+                passives.add(new PassiveSkillInfo("Rare Crop Master I", 40, Material.GOLDEN_CARROT,
+                        "15% chance for rare crop variants"));
+                
+                // Level 41-50
+                passives.add(new PassiveSkillInfo("Farming XP Boost III", 42, Material.EXPERIENCE_BOTTLE,
+                        "+15% bonus farming XP"));
+                passives.add(new PassiveSkillInfo("Seed Saver III", 45, Material.WHEAT_SEEDS,
+                        "30% chance to not consume seeds when planting"));
+                passives.add(new PassiveSkillInfo("Melon Specialist", 47, Material.MELON,
+                        "25% more drops from melons"));
+                passives.add(new PassiveSkillInfo("Auto Replant II", 50, Material.IRON_HOE,
+                        "40% chance to automatically replant crops"));
+                
+                // Level 51-60
+                passives.add(new PassiveSkillInfo("Double Crop Yield III", 52, Material.WHEAT,
+                        "35% chance for double drops from crops"));
+                passives.add(new PassiveSkillInfo("Pumpkin Specialist", 55, Material.PUMPKIN,
+                        "25% more drops from pumpkins"));
+                passives.add(new PassiveSkillInfo("Growth Speed III", 57, Material.BONE_MEAL,
+                        "30% faster crop growth"));
+                passives.add(new PassiveSkillInfo("Rare Crop Master II", 60, Material.GOLDEN_CARROT,
+                        "25% chance for rare crop variants"));
+                
+                // Level 61-70
+                passives.add(new PassiveSkillInfo("Farming XP Boost IV", 62, Material.EXPERIENCE_BOTTLE,
+                        "+20% bonus farming XP"));
+                passives.add(new PassiveSkillInfo("Seed Saver IV", 65, Material.WHEAT_SEEDS,
+                        "40% chance to not consume seeds when planting"));
+                passives.add(new PassiveSkillInfo("Nether Wart Specialist", 67, Material.NETHER_WART,
+                        "25% more drops from nether wart"));
+                passives.add(new PassiveSkillInfo("Soil Enrichment", 70, Material.DIRT,
+                        "Crops within 10 blocks grow 20% faster"));
+                
+                // Level 71-80
+                passives.add(new PassiveSkillInfo("Farming XP Boost V", 72, Material.EXPERIENCE_BOTTLE,
+                        "+25% bonus farming XP"));
+                passives.add(new PassiveSkillInfo("Triple Crop Yield", 75, Material.WHEAT,
+                        "15% chance for triple drops from crops"));
+                passives.add(new PassiveSkillInfo("Cactus Specialist", 77, Material.CACTUS,
+                        "25% more drops from cacti"));
+                passives.add(new PassiveSkillInfo("Auto Replant III", 80, Material.DIAMOND_HOE,
+                        "60% chance to automatically replant crops"));
+                
+                // Level 81-90
+                passives.add(new PassiveSkillInfo("Seed Saver V", 82, Material.WHEAT_SEEDS,
+                        "50% chance to not consume seeds when planting"));
+                passives.add(new PassiveSkillInfo("Growth Speed IV", 85, Material.BONE_MEAL,
+                        "40% faster crop growth"));
+                passives.add(new PassiveSkillInfo("Sugar Cane Specialist", 87, Material.SUGAR_CANE,
+                        "25% more drops from sugar cane"));
+                passives.add(new PassiveSkillInfo("Instant Growth Master", 90, Material.NETHERITE_HOE,
+                        "5% chance for instant crop growth"));
+                
+                // Level 91-100
+                passives.add(new PassiveSkillInfo("Farming XP Boost VI", 92, Material.EXPERIENCE_BOTTLE,
+                        "+30% bonus farming XP"));
+                passives.add(new PassiveSkillInfo("Legendary Farmer", 95, Material.ENCHANTED_GOLDEN_APPLE,
+                        "20% chance for all farming boosts to be doubled"));
+                passives.add(new PassiveSkillInfo("Quadruple Crop Yield", 97, Material.HAY_BLOCK,
+                        "5% chance for quadruple drops from crops"));
+                passives.add(new PassiveSkillInfo("Master Farmer", 100, Material.DRAGON_EGG,
+                        "Ultimate farming mastery with multiple bonuses"));
+                break;
         }
 
         return passives;
@@ -890,8 +994,17 @@ public class SkillsGUI implements Listener {
             case "logging":
                 abilityManager.activateTimberChop(player);
                 break;
+            case "farming":
+                abilityManager.activateSuperHarvest(player);
+                break;
             case "fighting":
                 abilityManager.activateBerserkerRage(player);
+                break;
+            case "enchanting":
+                abilityManager.activateDoubleEnchant(player);
+                break;
+            case "fishing":
+                abilityManager.activateInstantCatch(player);
                 break;
             default:
                 player.sendMessage("§cNo active skill available for this category.");
@@ -914,6 +1027,9 @@ public class SkillsGUI implements Listener {
             case "mining": return "Mining Burst";
             case "logging": return "Timber Chop";
             case "fighting": return "Berserker Rage";
+            case "farming": return "Super Harvest";
+            case "enchanting": return "Double Enchant";
+            case "fishing": return "Instant Catch";
             default: return "None";
         }
     }
