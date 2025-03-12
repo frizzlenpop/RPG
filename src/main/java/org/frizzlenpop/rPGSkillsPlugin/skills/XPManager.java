@@ -219,11 +219,41 @@ public class XPManager {
     // Initialize XP value maps
     private Map<Material, Integer> initializeMiningXP() {
         Map<Material, Integer> xpValues = new HashMap<>();
+        // Stone variants
         xpValues.put(Material.STONE, 1);
+        xpValues.put(Material.DEEPSLATE, 2);
+        xpValues.put(Material.COBBLED_DEEPSLATE, 2);
+        xpValues.put(Material.TUFF, 1);
+        xpValues.put(Material.GRANITE, 1);
+        xpValues.put(Material.DIORITE, 1);
+        xpValues.put(Material.ANDESITE, 1);
+        xpValues.put(Material.CALCITE, 1);
+        
+        // Regular ores
         xpValues.put(Material.COAL_ORE, 5);
         xpValues.put(Material.IRON_ORE, 10);
+        xpValues.put(Material.COPPER_ORE, 8);
         xpValues.put(Material.GOLD_ORE, 15);
+        xpValues.put(Material.REDSTONE_ORE, 12);
+        xpValues.put(Material.LAPIS_ORE, 12);
         xpValues.put(Material.DIAMOND_ORE, 30);
+        xpValues.put(Material.EMERALD_ORE, 35);
+        
+        // Deepslate ores (more XP than regular variants)
+        xpValues.put(Material.DEEPSLATE_COAL_ORE, 7);
+        xpValues.put(Material.DEEPSLATE_IRON_ORE, 12);
+        xpValues.put(Material.DEEPSLATE_COPPER_ORE, 10);
+        xpValues.put(Material.DEEPSLATE_GOLD_ORE, 18);
+        xpValues.put(Material.DEEPSLATE_REDSTONE_ORE, 15);
+        xpValues.put(Material.DEEPSLATE_LAPIS_ORE, 15);
+        xpValues.put(Material.DEEPSLATE_DIAMOND_ORE, 35);
+        xpValues.put(Material.DEEPSLATE_EMERALD_ORE, 40);
+        
+        // Nether ores
+        xpValues.put(Material.NETHER_GOLD_ORE, 15);
+        xpValues.put(Material.NETHER_QUARTZ_ORE, 10);
+        xpValues.put(Material.ANCIENT_DEBRIS, 50);
+        
         return xpValues;
     }
 

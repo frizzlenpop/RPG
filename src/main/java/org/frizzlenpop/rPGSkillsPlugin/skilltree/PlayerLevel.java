@@ -43,13 +43,26 @@ public class PlayerLevel {
      */
     public int getPlayerLevel(Player player) {
         int totalXP = getTotalXP(player);
-        int level = 1;
-        int requiredXP = getRequiredXPForLevel(level);
         
-        while (totalXP >= requiredXP) {
-            totalXP -= requiredXP;
+        // Start at level 1
+        int level = 1;
+        
+        // Calculate how much total XP is needed for each level until we find the player's level
+        int cumulativeXP = 0;
+        
+        // While the cumulative XP for the next level is less than or equal to the player's total XP
+        while (true) {
+            int xpForNextLevel = getRequiredXPForLevel(level);
+            if (cumulativeXP + xpForNextLevel > totalXP) {
+                // Not enough XP for the next level
+                break;
+            }
+            
+            // Add the XP required for this level to the cumulative total
+            cumulativeXP += xpForNextLevel;
+            
+            // Increase level
             level++;
-            requiredXP = getRequiredXPForLevel(level);
         }
         
         return level;
@@ -89,12 +102,17 @@ public class PlayerLevel {
     public double getLevelProgress(Player player) {
         int totalXP = getTotalXP(player);
         int currentLevel = getPlayerLevel(player);
+        
+        // Calculate the XP needed for previous levels (from level 1 to current level)
         int xpForCurrentLevel = getTotalXPForLevel(currentLevel);
-        int xpForNextLevel = getTotalXPForLevel(currentLevel + 1);
         
+        // Calculate XP needed for the next level
+        int xpRequiredForNextLevel = getRequiredXPForLevel(currentLevel);
+        
+        // Calculate how much XP player has in the current level
         int xpInCurrentLevel = totalXP - xpForCurrentLevel;
-        int xpRequiredForNextLevel = xpForNextLevel - xpForCurrentLevel;
         
+        // Calculate progress as a percentage
         return (double) xpInCurrentLevel / xpRequiredForNextLevel;
     }
     
@@ -104,8 +122,17 @@ public class PlayerLevel {
     public int getXPUntilNextLevel(Player player) {
         int totalXP = getTotalXP(player);
         int currentLevel = getPlayerLevel(player);
-        int xpForNextLevel = getTotalXPForLevel(currentLevel + 1);
         
-        return xpForNextLevel - totalXP;
+        // Calculate the XP needed for previous levels (from level 1 to current level)
+        int xpForCurrentLevel = getTotalXPForLevel(currentLevel);
+        
+        // Calculate XP needed for the next level
+        int xpRequiredForNextLevel = getRequiredXPForLevel(currentLevel);
+        
+        // Calculate how much XP player has in the current level
+        int xpInCurrentLevel = totalXP - xpForCurrentLevel;
+        
+        // Calculate remaining XP needed
+        return xpRequiredForNextLevel - xpInCurrentLevel;
     }
 } 

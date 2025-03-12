@@ -148,7 +148,26 @@ public class SkillTreeNode {
      * Remove a single effect from a player
      */
     private void removeEffect(Player player, NodeEffect effect) {
-        // Implementation would mirror applyEffect but remove the effects
+        if (effect.getType() == EffectType.ATTRIBUTE_BOOST) {
+            try {
+                Attribute attribute = Attribute.valueOf(effect.getTarget());
+                
+                // Generate the same UUID used when applying the effect
+                UUID modifierUUID = UUID.nameUUIDFromBytes(
+                    (player.getUniqueId().toString() + "." + id + "." + attribute.name()).getBytes()
+                );
+                
+                // Remove the modifier with this UUID
+                player.getAttribute(attribute).getModifiers().forEach(existingModifier -> {
+                    if (existingModifier.getUniqueId().equals(modifierUUID)) {
+                        player.getAttribute(attribute).removeModifier(existingModifier);
+                    }
+                });
+            } catch (IllegalArgumentException e) {
+                // Invalid attribute
+            }
+        }
+        // Other effect types might need specific removal logic
     }
     
     /**
@@ -157,13 +176,28 @@ public class SkillTreeNode {
     private void applyAttributeEffect(Player player, NodeEffect effect) {
         try {
             Attribute attribute = Attribute.valueOf(effect.getTarget());
+            
+            // Generate a consistent UUID based on the player UUID, node ID, and attribute
+            // This ensures we don't add duplicate modifiers
+            UUID modifierUUID = UUID.nameUUIDFromBytes(
+                (player.getUniqueId().toString() + "." + id + "." + attribute.name()).getBytes()
+            );
+            
             AttributeModifier modifier = new AttributeModifier(
-                UUID.randomUUID(),
+                modifierUUID,
                 "skilltree." + id,
                 effect.getValue(),
                 AttributeModifier.Operation.ADD_NUMBER
             );
             
+            // Remove existing modifier with the same UUID if it exists
+            player.getAttribute(attribute).getModifiers().forEach(existingModifier -> {
+                if (existingModifier.getUniqueId().equals(modifierUUID)) {
+                    player.getAttribute(attribute).removeModifier(existingModifier);
+                }
+            });
+            
+            // Add the new modifier
             player.getAttribute(attribute).addModifier(modifier);
         } catch (IllegalArgumentException e) {
             // Invalid attribute

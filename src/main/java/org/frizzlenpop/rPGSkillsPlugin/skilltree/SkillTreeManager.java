@@ -538,6 +538,16 @@ public class SkillTreeManager implements Listener {
         UUID playerUUID = player.getUniqueId();
         Set<String> playerNodes = unlockedNodes.getOrDefault(playerUUID, new HashSet<>());
         
+        // First, remove all effects for each node the player has unlocked
+        // This ensures we don't stack effects when relogging or reapplying
+        for (String nodeId : playerNodes) {
+            SkillTreeNode node = nodes.get(nodeId);
+            if (node != null) {
+                node.removeEffects(player);
+            }
+        }
+        
+        // Now apply the effects
         for (String nodeId : playerNodes) {
             SkillTreeNode node = nodes.get(nodeId);
             if (node != null) {
@@ -599,6 +609,9 @@ public class SkillTreeManager implements Listener {
         
         UUID playerUUID = player.getUniqueId();
         SkillTreeNode node = nodes.get(nodeId);
+        
+        // First remove any existing effects (in case we're reapplying)
+        node.removeEffects(player);
         
         // Add to unlocked nodes
         Set<String> playerNodes = unlockedNodes.getOrDefault(playerUUID, new HashSet<>());
@@ -693,6 +706,8 @@ public class SkillTreeManager implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         loadPlayerData(player);
+        
+        // Clear and reapply effects for consistency
         applyAllUnlockedEffects(player);
     }
     
@@ -712,6 +727,19 @@ public class SkillTreeManager implements Listener {
      * Reload skill tree configuration from config
      */
     public void reloadSkillTreeConfig() {
+        // First, remove all effects from online players to prevent duplicates
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            UUID playerUUID = player.getUniqueId();
+            Set<String> playerNodes = unlockedNodes.getOrDefault(playerUUID, new HashSet<>());
+            
+            for (String nodeId : playerNodes) {
+                SkillTreeNode node = nodes.get(nodeId);
+                if (node != null) {
+                    node.removeEffects(player);
+                }
+            }
+        }
+        
         // Clear existing nodes
         nodes.clear();
         
