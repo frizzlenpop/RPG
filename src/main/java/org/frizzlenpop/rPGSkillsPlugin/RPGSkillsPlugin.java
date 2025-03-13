@@ -19,6 +19,7 @@ import org.frizzlenpop.rPGSkillsPlugin.listeners.ExcavationListener;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.RepairListener;
 import org.frizzlenpop.rPGSkillsPlugin.data.PartyManager;
 import org.frizzlenpop.rPGSkillsPlugin.data.EconomyManager;
+import org.frizzlenpop.rPGSkillsPlugin.data.XPBoosterManager;
 import org.frizzlenpop.rPGSkillsPlugin.commands.PartyCommand;
 import org.frizzlenpop.rPGSkillsPlugin.gui.RPGScoreboardManager;
 import org.frizzlenpop.rPGSkillsPlugin.gui.PartyPerksGUI;
@@ -37,6 +38,7 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private EconomyManager economyManager;
     private PartyPerksGUI partyPerksGUI;
     private RPGScoreboardManager scoreboardManager;
+    private XPBoosterManager xpBoosterManager;
     private FileConfiguration config;
 
     @Override
@@ -56,7 +58,8 @@ public class RPGSkillsPlugin extends JavaPlugin {
 
         // Initialize managers in the correct order
         this.playerDataManager = new PlayerDataManager(this);
-        this.xpManager = new XPManager(playerDataManager);
+        this.xpBoosterManager = new XPBoosterManager(this);
+        this.xpManager = new XPManager(playerDataManager, this);
         this.abilityManager = new SkillAbilityManager(this);
         this.passiveSkillManager = new PassiveSkillManager(xpManager, this);
         this.skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
@@ -99,6 +102,11 @@ public class RPGSkillsPlugin extends JavaPlugin {
         PartyCommand partyCommand = new PartyCommand(this, partyManager, partyPerksGUI);
         getCommand("rparty").setExecutor(partyCommand);
         getCommand("rparty").setTabCompleter(partyCommand);
+        
+        // Register XP booster command
+        XPBoosterCommand xpBoosterCommand = new XPBoosterCommand(this, xpBoosterManager);
+        getCommand("rpgbooster").setExecutor(xpBoosterCommand);
+        getCommand("rpgbooster").setTabCompleter(xpBoosterCommand);
         
         // Register scoreboard command
         getCommand("rscoreboard").setExecutor(new RScoreboardCommand(this, scoreboardManager));
@@ -279,6 +287,13 @@ public class RPGSkillsPlugin extends JavaPlugin {
      */
     public RPGScoreboardManager getScoreboardManager() {
         return scoreboardManager;
+    }
+
+    /**
+     * Get the XP booster manager
+     */
+    public XPBoosterManager getXPBoosterManager() {
+        return xpBoosterManager;
     }
 
     /**

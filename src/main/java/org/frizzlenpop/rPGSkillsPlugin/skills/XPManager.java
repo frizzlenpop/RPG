@@ -3,8 +3,11 @@ package org.frizzlenpop.rPGSkillsPlugin.skills;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.data.PartyManager;
+import org.frizzlenpop.rPGSkillsPlugin.data.XPBoosterManager;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,10 +25,12 @@ public class XPManager {
     private final Map<String, Integer> fightingXPValues;
     private final Map<String, Integer> fishingXPValues;
     private final Map<Material, Integer> excavationXPValues; // Added for excavation
+    private final RPGSkillsPlugin plugin;
 
-    // Updated constructor to not require PassiveSkillManager
-    public XPManager(PlayerDataManager dataManager) {
+    // Updated constructor to include plugin
+    public XPManager(PlayerDataManager dataManager, RPGSkillsPlugin plugin) {
         this.dataManager = dataManager;
+        this.plugin = plugin;
         this.miningXPValues = initializeMiningXP();
         this.loggingXPValues = initializeLoggingXP();
         this.farmingXPValues = initializeFarmingXP();
@@ -70,14 +75,35 @@ public class XPManager {
         int baseXP = xpGained;
         int bonusXP = 0;
         
-        // Apply XP multipliers if PassiveSkillManager is available
-        if (passiveSkillManager != null) {
-            double multiplier = passiveSkillManager.getXPMultiplier(player, skill);
-            if (multiplier > 1.0) {
-                // Calculate bonus XP correctly - multiply base XP by the percentage boost
-                bonusXP = (int)Math.round(baseXP * (multiplier - 1.0));
-                xpGained = baseXP + bonusXP;
+        // Check for XP booster on the player's held item
+        ItemStack heldItem = player.getInventory().getItemInMainHand();
+        double itemBoosterMultiplier = 1.0;
+        
+        // Only apply item booster if the plugin has a booster manager
+        try {
+            XPBoosterManager boosterManager = plugin.getXPBoosterManager();
+            if (boosterManager != null) {
+                itemBoosterMultiplier = boosterManager.getMultiplier(heldItem, skill);
             }
+        } catch (Exception e) {
+            // If there's any error getting the booster manager, ignore it
+            // This prevents issues if the method doesn't exist
+        }
+        
+        // Apply XP multipliers if PassiveSkillManager is available
+        double multiplier = 1.0;
+        if (passiveSkillManager != null) {
+            multiplier = passiveSkillManager.getXPMultiplier(player, skill);
+        }
+        
+        // Combine with item booster multiplier
+        double totalMultiplier = multiplier * itemBoosterMultiplier;
+        
+        // If we have any multiplier bonus, calculate bonus XP
+        if (totalMultiplier > 1.0) {
+            // Calculate bonus XP correctly - multiply base XP by the percentage boost
+            bonusXP = (int)Math.round(baseXP * (totalMultiplier - 1.0));
+            xpGained = baseXP + bonusXP;
         }
         
         // Calculate amount to share with party members

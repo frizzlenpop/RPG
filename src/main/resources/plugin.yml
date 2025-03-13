@@ -64,3 +64,7 @@ commands:
     description: Toggle the RPG skills scoreboard visibility
     usage: /rscoreboard
     permission: rpgskills.scoreboard
+  rpgbooster:
+    description: Admin command to apply XP boosters to tools
+    usage: /rpgbooster [apply|remove|check|help]
+    permission: rpgskills.admin.xpbooster
