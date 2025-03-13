@@ -92,7 +92,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Register commands
         getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
         getCommand("abilities").setExecutor(new AbilitiesCommand(this, playerDataManager));
-        getCommand("skillsadmin").setExecutor(new SkillsAdminCommand(playerDataManager, xpManager));
+        SkillsAdminCommand skillsAdminCommand = new SkillsAdminCommand(playerDataManager, xpManager);
+        getCommand("skillsadmin").setExecutor(skillsAdminCommand);
+        getCommand("skillsadmin").setTabCompleter(skillsAdminCommand);
         getCommand("toggleskillmessages").setExecutor(new ToggleSkillMessagesCommand(playerDataManager));
         getCommand("passives").setExecutor(new PassivesCommand(passiveSkillManager));
         getCommand("skilltree").setExecutor(new SkillTreeCommand(this, skillTreeGUI, skillTreeManager));

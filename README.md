@@ -1,186 +1,69 @@
-**RPG Skills Plugin (Minecraft 1.21)**
+# RPG Skills Plugin
 
-📜 Overview
+A comprehensive RPG skills and progression system for Minecraft servers, allowing players to level up skills, unlock passive and active abilities, navigate skill trees, form parties, and use XP boosters.
 
-RPGSkillsPlugin is a fully-fledged RPG-style skill system for Minecraft 1.21, designed to enhance gameplay with skill leveling, passive abilities, and active abilities. The plugin allows players to level up skills, unlock powerful abilities, and access a GUI to manage their progress.
+## Features
 
-✅ Key Features
+- **8 Core Skills**: Mining, Logging, Farming, Fishing, Fighting, Excavation, Enchanting, and Repair
+- **Passive Abilities**: Automatically trigger as you level up skills
+- **Active Abilities**: Powerful skills you can activate with commands
+- **Skill Tree**: Advanced progression system with unlockable perks
+- **Party System**: Form groups with friends for shared XP and bonuses
+- **XP Boosters**: Special tools that provide bonus XP when used
+- **Economy Integration**: Purchase party perks with in-game currency
+- **Custom GUI Menus**: User-friendly interfaces for all systems
+- **Admin Commands**: Comprehensive tools for server management
+- **Extensive Configuration**: Customize every aspect of the plugin
 
-Skill System: Gain XP and level up skills.
+## Documentation
 
-Active Abilities: Special abilities triggered by commands.
+### Getting Started
+- [Installation Guide](docs/installation.md) - How to install and set up the plugin
+- [Quick Start Guide](docs/quick_start.md) - Get up and running quickly
+- [Configuration](docs/configuration.md) - Customize the plugin to your needs
 
-Passive Abilities: Automatically activated abilities when reaching milestones.
+### Core Systems
+- [Skills System](docs/skills_system.md) - All about the skills and leveling up
+- [XP System](docs/xp_system.md) - How XP works and is calculated
+- [Passive Skills](docs/passive_skills.md) - Skills that trigger automatically
+- [Active Abilities](docs/active_abilities.md) - Powerful abilities you can use on command
+- [Skill Tree](docs/skill_tree.md) - Advanced progression system
 
-GUI Interface: View and manage skills in a clean graphical menu.
+### Additional Features
+- [Party System](docs/party_system.md) - Form groups with other players
+- [XP Boosters](docs/xp_boosters.md) - Tools that provide bonus XP
+- [Economy Integration](docs/economy.md) - How the plugin integrates with economy plugins
 
-Data Persistence: Player progress is stored using YAML.
+### Reference
+- [Commands](docs/commands.md) - Complete list of all available commands
+- [Permissions](docs/permissions.md) - All permission nodes and their usage
+- [Admin Commands](docs/admin_commands.md) - Server administration commands
+- [Placeholders](docs/placeholders.md) - PlaceholderAPI variables provided by the plugin
+- [API Documentation](docs/api.md) - For developers wanting to integrate with the plugin
 
-Command-Based Actions: Players can trigger skills and view progress using commands.
+### Development
+- [Developer Guide](docs/dev_guide.md) - How to extend the plugin
+- [Contributing Guidelines](docs/contributing.md) - How to contribute to the project
+- [Changelog](CHANGELOG.md) - History of changes and updates
 
-Event-Based XP Gains: Players earn XP from mining, farming, combat, fishing, and enchanting.
+## Support
 
-Modular Design: Easy to expand and integrate new skills and abilities.
------------------------------------------------------------------------------------------------------------------
+If you encounter any issues or have questions:
 
+- [Common Issues](docs/common_issues.md) - Solutions to frequently encountered problems
+- [Discord Support](https://discord.gg/rpgskills) - Join our Discord server for help
+- [GitHub Issues](https://github.com/frizzlenpop/RPGSkillsPlugin/issues) - Report bugs or suggest features
 
-**🛠️ Installation & Setup**
+## License
 
-Prerequisites
+This plugin is licensed under the [MIT License](LICENSE.md).
 
-Minecraft Server 1.21 (Paper recommended)
+## Credits
 
-Java 17+
+- **Developer**: FrizzleNPop
+- **Contributors**: Community members who have contributed code or ideas
+- **Special Thanks**: To all server owners and players who provide feedback
 
-Vault (optional, for economy integration)
+---
 
-Installation
-
-Download the latest RPGSkillsPlugin.jar.
-
-Place the .jar file into your server's plugins/ folder.
-
-Restart your server to generate configuration files.
-
-Edit the config files (if needed) and restart the server again.
------------------------------------------------------------------------------------------------------------------
-🎮 Gameplay & Features
-
-📌 Skill System
-
-Players can level up skills by performing relevant actions. Each skill has passive abilities unlocked at Level 5, 10, and 15.
-
-📂 Current Skills & XP Gains
-
-Skill / XP Source
-Mining / Breaking ores, stone
-
-Logging / Chopping trees
-
-Farming / Harvesting crops
-
-Fighting / Killing mobs
-
-Fishing / Catching fish
-
-Enchanting / Using enchanted books & items
-
-🎯 XP Scaling & Leveling
-
-XP increases dynamically based on level.
-
-Formula: XP Required = (Level^1.5) * 100.
-
-Passive abilities unlocked at Level 5, 10, 15.
------------------------------------------------------------------------------------------------------------------
-🎇 Active Abilities
-
-Ability Name / Skill / Command / Effect
-
-Mining Burst / Mining / /miningburst / Triple mining speed for 5s
-
-Timber Chop / Logging / /timberchop / Instantly cut down trees
-
-Berserker Rage / Fighting / /berserkerrage / +50% damage for 10s
-
-Abilities have cooldowns, configurable in config.yml.
-
-Players must unlock abilities by leveling up.
-⚡ Passive Abilities
-
-Passive abilities are automatically activated when a player reaches a milestone level.
-
-Passive Ability Unlocks
-
-Skill / Level 5 / Level 10 / Level 15
-
-Mining / +10% XP boost / Auto-smelt ores / Double ore drops
-
-Logging / +10% XP boost / Fast chop trees / Double wood drops
-
-Farming / +10% XP boost / Auto-replant crops / Double crop yield
-
-Fighting / +10% damage boost / Heal on kill / Critical hit bonus
-
-Fishing / +10% XP boost / More treasure / Rare fish bonus
-
-Enchanting / Faster research / Auto-upgrade books / Custom enchantments
-
-Players can view their active passives using:
-
-/passives
------------------------------------------------------------------------------------------------------------------
-🖥️ GUI Features
-
-A custom GUI allows players to view skill progress and passive abilities.
-
-Locked passives appear greyed out with unlock information.
-
-Unlocked passives display in green.
-
-Opens via command: /skills
------------------------------------------------------------------------------------------------------------------
-🛠️ Configuration (**COMING SOON**)
-
-config.yml Options
-```
-cooldowns:
-  miningburst: 60 # Cooldown in seconds
-  timberchop: 30
-  berserkerrage: 90
-
-xp_multipliers:
-  mining: 1.0
-  logging: 1.0
-  farming: 1.0
-  fighting: 1.0
-  fishing: 1.0
-  enchanting: 1.0
-```
-Adjust XP multipliers for balancing.
-
-Modify cooldowns for active abilities.
------------------------------------------------------------------------------------------------------------------
-**🔧 Developer Guide**
-
-Project Structure
-```
-RPGSkillsPlugin/
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   ├── org/frizzlenpop/rPGSkillsPlugin/
-│   │   │   │   ├── commands/ (Skill commands)
-│   │   │   │   ├── data/ (Player data storage)
-│   │   │   │   ├── gui/ (GUI system)
-│   │   │   │   ├── listeners/ (XP event listeners)
-│   │   │   │   ├── skills/ (Skill & Ability logic)
-│   │   │   │   ├── RPGSkillsPlugin.java (Main class)
-│   ├── resources/
-│   │   ├── plugin.yml
-│   │   ├── config.yml
-```
-How to Contribute
-
-1. Clone the repository:
-```
-git clone https://github.com/YourUsername/RPGSkillsPlugin.git
-```
-2. Set up the project in IntelliJ IDEA or Eclipse.
-
-3. Compile using Maven/Gradle.
-
-4. Submit a pull request with new features!
------------------------------------------------------------------------------------------------------------------
-🎯 Future Plans
-
-✅ More skills (Smithing, Alchemy, Cooking, etc.)
-✅ Economy integration with Vault
-✅ Party XP sharing system
-✅ Custom enchantment expansion
------------------------------------------------------------------------------------------------------------------
-📜 License
-
-This project is licensed under the MIT License. Contributions are welcome!
-
-🚀 Join the development and help improve the RPG experience! 🎯
+*RPG Skills Plugin is not affiliated with Mojang or Minecraft.*
