@@ -1,0 +1,407 @@
+# ===========================================
+#          RPG Skills Plugin - Mounts
+# ===========================================
+# Configuration for the mounts system
+# This file controls various settings related 
+# to mounts, their abilities, and pricing.
+
+# General settings for the mount system
+settings:
+  # Cooldown between mount summons (in seconds)
+  summon-cooldown: 10
+  # Whether to disable mounts in certain worlds
+  disabled-worlds:
+    - "disabled_world_1"
+    - "disabled_world_2"
+  # Whether to enable mount particle effects
+  enable-particles: true
+  # Maximum upgrade level for each upgrade path
+  max-upgrade-level: 5
+
+# Mount types configuration
+mounts:
+  phoenix_blaze:
+    # Display name shown to players
+    display-name: "&6Phoenix Blaze"
+    # Description of the mount
+    description: "&7A majestic fiery bird that grants its rider flame-based powers."
+    # Base cost to purchase the mount
+    base-cost: 25000
+    # Entity type used for the mount
+    entity-type: HORSE
+    # Base stats
+    stats:
+      speed: 0.3
+      jump: 0.8
+      health: 20.0
+    # Specific customization options
+    customization:
+      horse-color: CHESTNUT
+      horse-style: WHITE
+    # Mount abilities
+    abilities:
+      flame_trail:
+        enabled: true
+        cooldown: 5
+        min-level: 1
+      thermal_updraft:
+        enabled: true
+        cooldown: 30
+        min-level: 2
+      fire_immunity:
+        enabled: true
+        passive: true
+        min-level: 1
+
+  shadow_steed:
+    display-name: "&5Shadow Steed"
+    description: "&7A mysterious horse born from shadows with stealth abilities."
+    base-cost: 25000
+    entity-type: HORSE
+    stats:
+      speed: 0.28
+      jump: 0.75
+      health: 25.0
+    customization:
+      horse-color: BLACK
+      horse-style: BLACK_DOTS
+    abilities:
+      shadow_dash:
+        enabled: true
+        cooldown: 20
+        min-level: 1
+      stealth:
+        enabled: true
+        cooldown: 60
+        min-level: 2
+      night_vision:
+        enabled: true
+        passive: true
+        min-level: 1
+
+  crystal_drake:
+    display-name: "&bCrystal Drake"
+    description: "&7A crystalline dragon with teleportation and damage reflection abilities."
+    base-cost: 25000
+    entity-type: HORSE
+    stats:
+      speed: 0.25
+      jump: 1.0
+      health: 30.0
+    customization:
+      horse-color: WHITE
+      horse-style: WHITE_DOTS
+    abilities:
+      crystal_teleport:
+        enabled: true
+        cooldown: 45
+        min-level: 2
+      crystal_shield:
+        enabled: true
+        cooldown: 90
+        min-level: 3
+      light_body:
+        enabled: true
+        passive: true
+        min-level: 1
+
+  storm_charger:
+    display-name: "&9Storm Charger"
+    description: "&7An electric steed with lightning and speed abilities."
+    base-cost: 25000
+    entity-type: HORSE
+    stats:
+      speed: 0.35
+      jump: 0.6
+      health: 20.0
+    customization:
+      horse-color: GRAY
+      horse-style: WHITE
+    abilities:
+      lightning_strike:
+        enabled: true
+        cooldown: 30
+        min-level: 2
+      speed_boost:
+        enabled: true
+        cooldown: 45
+        min-level: 1
+      static_aura:
+        enabled: true
+        passive: true
+        min-level: 3
+
+  ancient_golem:
+    display-name: "&8Ancient Golem"
+    description: "&7A massive stone construct with immense strength and durability."
+    base-cost: 25000
+    entity-type: HORSE
+    stats:
+      speed: 0.2
+      jump: 0.9
+      health: 40.0
+    customization:
+      horse-color: DARK_BROWN
+      horse-style: NONE
+    abilities:
+      ground_pound:
+        enabled: true
+        cooldown: 25
+        min-level: 1
+      stone_skin:
+        enabled: true
+        passive: true
+        min-level: 2
+      mountain_climber:
+        enabled: true
+        passive: true
+        min-level: 3
+
+# Upgrade costs and multipliers
+upgrades:
+  # Formula for base upgrade costs
+  base-formula: "%base_cost% * 0.25 * (2 ^ %current_level%)"
+  
+  # Multipliers applied to the base formula for different upgrade paths
+  multipliers:
+    speed: 1.2
+    ability: 1.5
+    appearance: 0.8
+  
+  # Effect power scaling based on level (percentage increases)
+  effects:
+    speed:
+      per-level: 10
+    ability:
+      per-level: 20
+    appearance:
+      per-level: 0
+
+# Messages for mount-related actions
+messages:
+  purchase:
+    success: "&aYou have purchased a %mount% for %cost% coins!"
+    already-owned: "&cYou already own this mount!"
+    not-enough-money: "&cYou don't have enough money to purchase this mount! (Cost: %cost% coins, Balance: %balance% coins)"
+    invalid-mount: "&cInvalid mount!"
+  
+  summon:
+    success: "&aYou have summoned your %mount%!"
+    not-owned: "&cYou don't own this mount!"
+    failed: "&cFailed to summon mount!"
+    invalid-mount: "&cInvalid mount!"
+    no-mount-specified: "&cYou must specify a mount to summon!"
+  
+  dismiss:
+    success: "&aYou have dismissed your %mount%!"
+    none-active: "&cYou don't have an active mount!"
+  
+  upgrade:
+    success: "&aYou have upgraded your %mount%'s %path% to level %level% for %cost% coins!"
+    not-owned: "&cYou don't own this mount!"
+    not-enough-money: "&cYou don't have enough money for this upgrade! (Cost: %cost% coins, Balance: %balance% coins)"
+    max-level-reached: "&cThis upgrade is already at maximum level!"
+    invalid-mount: "&cInvalid mount!"
+  
+  list:
+    none-owned: "&cYou don't own any mounts yet! Visit the mount shop to purchase one."
+  
+  info:
+    none-active: "&cYou don't have an active mount!"
+    invalid-mount: "&cInvalid mount!"
+  
+  ability:
+    no-mount-active: "&cYou must be on a mount to use mount abilities!"
+    no-ability-specified: "&cYou must specify an ability to activate!"
+    activation-failed: "&cCouldn't activate the ability!"
+  
+  unknown-command: "&cUnknown mount command: %command%"
+
+# RPGSkills Mount System Configuration
+
+# General settings
+general:
+  # Whether mounts are enabled
+  enabled: true
+  # Maximum number of mounts a player can own (0 = unlimited)
+  max_mounts_per_player: 0
+  # Whether to save mount data to database (true) or files (false)
+  use_database: false
+  # Whether to save mounted state when players log out
+  persistent_mounts: false
+
+# Worlds where mounts are disabled
+disabled_worlds:
+  - world_nether
+  - world_the_end
+  - pvp_arena
+
+# Economy settings
+economy:
+  # Whether mount purchases require coins
+  require_coins: true
+  # Whether to give free mounts to players with specific permissions
+  use_permission_mounts: true
+  # Permission-based mount unlocks (format: permission: mountId)
+  permission_mounts:
+    rpgskills.mount.phoenix: phoenix_blaze
+    rpgskills.mount.shadow: shadow_steed
+    rpgskills.mount.crystal: crystal_drake
+    rpgskills.mount.storm: storm_charger
+    rpgskills.mount.golem: ancient_golem
+
+# Mount abilities settings
+abilities:
+  # Whether to enable mount abilities
+  enabled: true
+  # Default cooldown reduction for abilities (percentage, 0-100)
+  default_cooldown_reduction: 0
+  # Permission-based cooldown reductions
+  cooldown_reductions:
+    rpgskills.mount.cooldown.vip: 10
+    rpgskills.mount.cooldown.elite: 25
+    rpgskills.mount.cooldown.legend: 40
+    rpgskills.mount.cooldown.staff: 50
+
+# Mount upgrade settings
+upgrades:
+  # Base costs for different upgrade paths
+  base_costs:
+    speed: 5000
+    ability: 7500
+    appearance: 3000
+  # Cost multiplier per level (exponential growth)
+  cost_multiplier: 2.0
+  # Maximum upgrade level
+  max_level: 5
+
+# Mount specifics
+mounts:
+  phoenix_blaze:
+    name: "&6Phoenix Blaze"
+    description: "A majestic mount born from eternal flames"
+    entity_type: HORSE
+    base_stats:
+      speed: 0.28
+      jump: 1.1
+      health: 30.0
+    base_cost: 25000
+    abilities:
+      flame_burst:
+        cooldown: 45
+        description: "Create a burst of flame around you"
+      updraft:
+        cooldown: 60
+        description: "Gain a temporary boost of levitation"
+      reignite:
+        cooldown: 180
+        description: "Restore health and apply fire resistance"
+    
+  shadow_steed:
+    name: "&8Shadow Steed"
+    description: "A dark horse that moves through shadows"
+    entity_type: HORSE
+    base_stats:
+      speed: 0.32
+      jump: 0.9
+      health: 25.0
+    base_cost: 25000
+    abilities:
+      shadow_dash:
+        cooldown: 30
+        description: "Dash forward with increased speed"
+      stealth:
+        cooldown: 90
+        description: "Become partially invisible for a short time"
+      fear:
+        cooldown: 120
+        description: "Cause nearby enemies to flee in terror"
+  
+  crystal_drake:
+    name: "&bCrystal Drake"
+    description: "A crystalline dragon with teleportation abilities"
+    entity_type: HORSE
+    base_stats:
+      speed: 0.25
+      jump: 1.0
+      health: 30.0
+    base_cost: 25000
+    abilities:
+      crystal_teleport:
+        cooldown: 45
+        description: "Teleport to a location you're looking at"
+      crystal_shield:
+        cooldown: 90
+        description: "Create a protective shield that reduces damage"
+      light_body:
+        cooldown: 0
+        description: "Passive ability that grants slow falling"
+  
+  storm_charger:
+    name: "&9Storm Charger"
+    description: "A mount infused with the power of lightning"
+    entity_type: HORSE
+    base_stats:
+      speed: 0.3
+      jump: 0.8
+      health: 25.0
+    base_cost: 25000
+    abilities:
+      lightning_strike:
+        cooldown: 60
+        description: "Call lightning to strike nearby enemies"
+      speed_surge:
+        cooldown: 45
+        description: "Gain a temporary boost of speed"
+      static_aura:
+        cooldown: 90
+        description: "Create a damaging aura of electricity"
+  
+  ancient_golem:
+    name: "&7Ancient Golem"
+    description: "A massive stone construct with incredible strength"
+    entity_type: HORSE
+    base_stats:
+      speed: 0.2
+      jump: 1.2
+      health: 40.0
+    base_cost: 25000
+    abilities:
+      ground_pound:
+        cooldown: 40
+        description: "Slam the ground, damaging and knocking back enemies"
+      stone_armor:
+        cooldown: 90
+        description: "Gain resistance to damage for a short time"
+      earth_path:
+        cooldown: 120
+        description: "Create temporary blocks to cross gaps"
+
+# Visual settings
+visuals:
+  # Whether to show particle effects for mounts
+  enable_particles: true
+  # Whether to show mount names
+  show_names: true
+  # Whether to enable custom sounds
+  enable_sounds: true
+  # Particle density (1-10, higher = more particles)
+  particle_density: 5
+  # Maximum particle render distance
+  particle_distance: 32
+
+# Commands settings
+commands:
+  # Primary command name
+  main_command: mount
+  # Command aliases
+  aliases:
+    - mounts
+    - pet
+  # Whether to enable command cooldowns
+  enable_cooldowns: true
+  # Command cooldowns in seconds
+  cooldowns:
+    summon: 3
+    dismiss: 1
+    ability: 1 
