@@ -58,8 +58,7 @@ public class SkillsGUI implements Listener {
         gui.setItem(17, createSkillIcon(Material.ANVIL, "Repair", "repair", config));
 
         // Add exit button
-        gui.setItem(18, createExitButton());
-
+      
         player.openInventory(gui);
     }
 
