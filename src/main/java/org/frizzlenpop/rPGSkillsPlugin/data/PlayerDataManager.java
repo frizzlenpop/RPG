@@ -29,6 +29,26 @@ public class PlayerDataManager {
     public File getPlayerDataFolder() {
         return playerDataFolder;
     }
+    
+    /**
+     * Checks if a player has an existing data file
+     * 
+     * @param playerUUID The player's UUID
+     * @return True if the player has a data file, false otherwise
+     */
+    public boolean hasPlayerData(UUID playerUUID) {
+        File playerFile = new File(playerDataFolder, playerUUID + ".yml");
+        return playerFile.exists();
+    }
+    
+    /**
+     * Creates default player data for a new player
+     * 
+     * @param playerUUID The player's UUID
+     */
+    public void createDefaultPlayerData(UUID playerUUID) {
+        createNewPlayerFile(playerUUID);
+    }
 
     public FileConfiguration getPlayerData(UUID playerUUID) {
         File playerFile = new File(playerDataFolder, playerUUID + ".yml");
@@ -36,6 +56,16 @@ public class PlayerDataManager {
             createNewPlayerFile(playerUUID);
         }
         return YamlConfiguration.loadConfiguration(playerFile);
+    }
+
+    /**
+     * Saves player data to file
+     * 
+     * @param playerUUID The player's UUID
+     */
+    public void savePlayerData(UUID playerUUID) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        savePlayerData(playerUUID, config);
     }
 
     public void savePlayerData(UUID playerUUID, FileConfiguration config) {
@@ -72,6 +102,7 @@ public class PlayerDataManager {
             
             // Set default preferences
             config.set("preferences.scoreboard", true);
+            config.set("preferences.show_rpg_hub_on_login", true);
 
             config.save(playerFile);
         } catch (IOException e) {

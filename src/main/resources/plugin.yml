@@ -80,6 +80,11 @@ commands:
     usage: /mountchest [open|keys|give|editrate]
     aliases: [mchest]
     permission: rpgskills.mount.chest
+  rpghub:
+    description: Opens the centralized RPG Hub menu
+    usage: /rpghub
+    aliases: [hub, rpg]
+    permission: rpgskills.hub
 
 permissions:
   rpgskills.mount.use:
@@ -89,3 +94,7 @@ permissions:
   rpgskills.mount.admin:
     description: Allows access to mount admin commands
     default: op
+    
+  rpgskills.hub:
+    description: Allows access to the RPG Hub menu
+    default: true

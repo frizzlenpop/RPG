@@ -6,6 +6,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.commands.*;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
+import org.frizzlenpop.rPGSkillsPlugin.gui.InventoryManager;
+import org.frizzlenpop.rPGSkillsPlugin.gui.RPGHubGUI;
 import org.frizzlenpop.rPGSkillsPlugin.gui.SkillsGUI;
 import org.frizzlenpop.rPGSkillsPlugin.items.CustomEnchantScroll;
 import org.frizzlenpop.rPGSkillsPlugin.listeners.*;
@@ -68,6 +70,8 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private MountVisualManager mountVisualManager;
     private ProtocolLibEffectManager protocolLibEffectManager;
     private MountAbilityManager mountAbilityManager;
+    private RPGHubGUI rpgHubGUI;
+    private InventoryManager inventoryManager;
 
     @Override
     public void onEnable() {
@@ -83,6 +87,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Add default passive configuration
         addDefaultPassiveConfig();
         saveConfig();
+
+        // Initialize inventory manager first (needed by GUIs)
+        this.inventoryManager = new InventoryManager(this);
 
         // Initialize managers in the correct order
         this.playerDataManager = new PlayerDataManager(this);
@@ -149,6 +156,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
         mountKeyManager = new MountKeyManager(this);
         mountChestGUI = new MountChestGUI(this, mountKeyManager, mountManager);
         mountChestCommand = new MountChestCommand(this, mountKeyManager, mountChestGUI);
+        
+        // Initialize the centralized hub GUI AFTER all other systems
+        rpgHubGUI = new RPGHubGUI(this);
 
         // Register commands
         getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
@@ -180,6 +190,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Register mount chest command
         getCommand("mountchest").setExecutor(mountChestCommand);
         getCommand("mountchest").setTabCompleter(mountChestCommand);
+        
+        // Register central hub command
+        getCommand("rpghub").setExecutor(new RPGHubCommand(rpgHubGUI));
 
         // Register all listeners
         registerListeners();
@@ -461,5 +474,32 @@ public class RPGSkillsPlugin extends JavaPlugin {
      */
     public ProtocolLibEffectManager getProtocolLibEffectManager() {
         return protocolLibEffectManager;
+    }
+
+    /**
+     * Gets the skills GUI
+     * 
+     * @return The skills GUI
+     */
+    public SkillsGUI getSkillsGUI() {
+        return skillsGUI;
+    }
+    
+    /**
+     * Gets the centralized RPG Hub GUI
+     * 
+     * @return The RPG Hub GUI
+     */
+    public RPGHubGUI getRpgHubGUI() {
+        return rpgHubGUI;
+    }
+
+    /**
+     * Gets the inventory manager
+     * 
+     * @return The inventory manager
+     */
+    public InventoryManager getInventoryManager() {
+        return inventoryManager;
     }
 }

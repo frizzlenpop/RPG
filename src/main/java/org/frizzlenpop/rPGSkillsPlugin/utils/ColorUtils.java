@@ -19,6 +19,16 @@ public class ColorUtils {
     }
     
     /**
+     * Alias for color method to maintain compatibility with both naming conventions.
+     * 
+     * @param text The text to colorize
+     * @return The colorized text
+     */
+    public static String colorize(String text) {
+        return color(text);
+    }
+    
+    /**
      * Removes all color codes from a string.
      * 
      * @param text The text to strip colors from
