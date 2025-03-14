@@ -4,6 +4,8 @@ main: org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin
 api-version: 1.21
 author: Frizzlenpop
 config-yml: config.yml
+depend: [Vault]
+softdepend: [ProtocolLib]
 
 commands:
   skills:
@@ -68,3 +70,22 @@ commands:
     description: Admin command to apply XP boosters to tools
     usage: /rpgbooster [apply|remove|check|help]
     permission: rpgskills.admin.xpbooster
+  mount:
+    description: Mount system commands
+    usage: /mount <subcommand>
+    aliases: [mounts]
+    permission: rpgskills.mount.use
+  mountchest:
+    description: Mount chest and key system commands
+    usage: /mountchest [open|keys|give|editrate]
+    aliases: [mchest]
+    permission: rpgskills.mount.chest
+
+permissions:
+  rpgskills.mount.use:
+    description: Allows using the mount system
+    default: true
+  
+  rpgskills.mount.admin:
+    description: Allows access to mount admin commands
+    default: op

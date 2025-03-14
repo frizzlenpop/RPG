@@ -1,0 +1,419 @@
+# Warrior Skill Tree - Expanded (30 Skills)
+
+# Tier 1 - Base Skills (No prerequisites)
+warrior_strength:
+  name: "Strength"
+  description: "Increases melee damage by 10%"
+  point_cost: 1
+  prerequisites: []
+  icon: "IRON_SWORD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "DAMAGE_MULTIPLIER"
+      target: "melee"
+      value: 0.1
+
+warrior_toughness:
+  name: "Toughness"
+  description: "Reduces damage taken by 5%"
+  point_cost: 1
+  prerequisites: []
+  icon: "IRON_CHESTPLATE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "DAMAGE_REDUCTION"
+      target: "all"
+      value: 0.05
+
+warrior_health:
+  name: "Vitality"
+  description: "Increases max health by 2 hearts"
+  point_cost: 1
+  prerequisites: []
+  icon: "APPLE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "ATTRIBUTE"
+      target: "GENERIC_MAX_HEALTH"
+      value: 4.0
+
+warrior_speed:
+  name: "Agility"
+  description: "Increases movement speed by 5%"
+  point_cost: 1
+  prerequisites: []
+  icon: "LEATHER_BOOTS"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "ATTRIBUTE"
+      target: "GENERIC_MOVEMENT_SPEED"
+      value: 0.05
+
+# Tier 2 - Advanced Skills (Require 1 Tier 1 prerequisite)
+warrior_power_strike:
+  name: "Power Strike"
+  description: "15% chance to deal double damage"
+  point_cost: 2
+  prerequisites: ["warrior_strength"]
+  icon: "DIAMOND_SWORD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "CRITICAL_CHANCE"
+      target: "melee"
+      value: 0.15
+
+warrior_resilience:
+  name: "Resilience"
+  description: "20% chance to ignore knockback"
+  point_cost: 2
+  prerequisites: ["warrior_toughness"]
+  icon: "SHIELD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "KNOCKBACK_RESISTANCE"
+      target: "all"
+      value: 0.2
+
+warrior_regeneration:
+  name: "Regeneration"
+  description: "Regenerate health 10% faster"
+  point_cost: 2
+  prerequisites: ["warrior_health"]
+  icon: "GOLDEN_APPLE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "REGENERATION_RATE"
+      target: "health"
+      value: 0.1
+
+warrior_sprint_master:
+  name: "Sprint Master"
+  description: "Sprint 10% faster and use 20% less hunger"
+  point_cost: 2
+  prerequisites: ["warrior_speed"]
+  icon: "SUGAR"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "SPRINT_SPEED"
+      target: "movement"
+      value: 0.1
+    effect1:
+      type: "FOOD_CONSUMPTION"
+      target: "sprint"
+      value: -0.2
+
+# Tier 2.5 - Hybrid Skills (Require combinations of Tier 1 skills)
+warrior_weapon_expertise:
+  name: "Weapon Expertise"
+  description: "10% faster attack speed with all weapons"
+  point_cost: 2
+  prerequisites: ["warrior_strength", "warrior_speed"]
+  icon: "GOLDEN_SWORD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "ATTRIBUTE"
+      target: "GENERIC_ATTACK_SPEED"
+      value: 0.1
+
+warrior_iron_skin:
+  name: "Iron Skin"
+  description: "Gain +1 armor point and 5% damage reduction"
+  point_cost: 2
+  prerequisites: ["warrior_toughness", "warrior_health"]
+  icon: "IRON_INGOT"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "ATTRIBUTE"
+      target: "GENERIC_ARMOR"
+      value: 1.0
+    effect1:
+      type: "DAMAGE_REDUCTION"
+      target: "all"
+      value: 0.05
+
+# Tier 3 - Specialized Skills (Require Tier 2 prerequisite)
+warrior_cleave:
+  name: "Cleave"
+  description: "Attacks deal 25% damage to nearby enemies"
+  point_cost: 3
+  prerequisites: ["warrior_power_strike"]
+  icon: "NETHERITE_AXE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "AOE_DAMAGE"
+      target: "melee"
+      value: 0.25
+
+warrior_deflection:
+  name: "Deflection"
+  description: "10% chance to reflect projectiles"
+  point_cost: 3
+  prerequisites: ["warrior_resilience"]
+  icon: "ARROW"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "PROJECTILE_REFLECTION"
+      target: "all"
+      value: 0.1
+
+warrior_second_wind:
+  name: "Second Wind"
+  description: "Gain Regeneration II for 5s when below 4 hearts"
+  point_cost: 3
+  prerequisites: ["warrior_regeneration"]
+  icon: "TOTEM_OF_UNDYING"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "LOW_HEALTH_EFFECT"
+      target: "regeneration"
+      value: 2.0
+
+warrior_wall_jump:
+  name: "Wall Jump"
+  description: "Double jump ability when next to a wall"
+  point_cost: 3
+  prerequisites: ["warrior_sprint_master"]
+  icon: "FEATHER"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "DOUBLE_JUMP"
+      target: "movement"
+      value: 1.0
+
+warrior_berserker:
+  name: "Berserker"
+  description: "Gain 5% damage for each 10% health missing"
+  point_cost: 3
+  prerequisites: ["warrior_weapon_expertise"]
+  icon: "REDSTONE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "LOW_HEALTH_DAMAGE"
+      target: "melee"
+      value: 0.5
+
+warrior_shield_bash:
+  name: "Shield Bash"
+  description: "Right-click with shield to stun enemies for 1s"
+  point_cost: 3
+  prerequisites: ["warrior_iron_skin"]
+  icon: "SHIELD"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "STUN_EFFECT"
+      target: "enemies"
+      value: 1.0
+
+# Tier 4 - Advanced Specializations
+warrior_battle_cry:
+  name: "Battle Cry"
+  description: "Right-click with sword to cause nearby enemies to flee"
+  point_cost: 4
+  prerequisites: ["warrior_cleave", "warrior_berserker"]
+  icon: "GHAST_TEAR"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "FEAR_EFFECT"
+      target: "enemies"
+      value: 10.0
+
+warrior_battle_medic:
+  name: "Battle Medic"
+  description: "Heal 5% of max health when hitting enemies"
+  point_cost: 4
+  prerequisites: ["warrior_cleave", "warrior_second_wind"]
+  icon: "GLISTERING_MELON_SLICE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "LIFESTEAL"
+      target: "health"
+      value: 0.05
+
+warrior_shadow_step:
+  name: "Shadow Step"
+  description: "Gain brief invisibility after sprint jumping"
+  point_cost: 4
+  prerequisites: ["warrior_wall_jump", "warrior_speed"]
+  icon: "ENDER_PEARL"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "INVISIBILITY"
+      target: "movement"
+      value: 3.0
+
+warrior_phalanx:
+  name: "Phalanx"
+  description: "Blocking with shield reduces damage to nearby allies by 15%"
+  point_cost: 4
+  prerequisites: ["warrior_shield_bash", "warrior_deflection"]
+  icon: "SHIELD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "TEAM_PROTECTION"
+      target: "all"
+      value: 0.15
+
+warrior_juggernaut:
+  name: "Juggernaut"
+  description: "Gain 20% knockback resistance and deal damage when colliding with enemies while sprinting"
+  point_cost: 4
+  prerequisites: ["warrior_iron_skin", "warrior_sprint_master"]
+  icon: "ANVIL"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "KNOCKBACK_RESISTANCE"
+      target: "all"
+      value: 0.2
+    effect1:
+      type: "COLLISION_DAMAGE"
+      target: "enemies"
+      value: 3.0
+
+# Tier 5 - Master Skills
+warrior_battle_master:
+  name: "Battle Master"
+  description: "Gain Strength I for 5s after killing an enemy"
+  point_cost: 5
+  prerequisites: ["warrior_battle_cry", "warrior_battle_medic"]
+  icon: "BEACON"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "ON_KILL_EFFECT"
+      target: "strength"
+      value: 1.0
+
+warrior_phantom_blade:
+  name: "Phantom Blade"
+  description: "Right-click to teleport to target within 20 blocks and deal 150% damage"
+  point_cost: 5
+  prerequisites: ["warrior_battle_medic", "warrior_shadow_step"]
+  icon: "END_CRYSTAL"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "TELEPORT_STRIKE"
+      target: "combat"
+      value: 1.5
+
+warrior_guardian_aura:
+  name: "Guardian Aura"
+  description: "Allies within 10 blocks gain 10% damage reduction"
+  point_cost: 5
+  prerequisites: ["warrior_phalanx", "warrior_juggernaut"]
+  icon: "BEACON"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "TEAM_AURA"
+      target: "protection"
+      value: 0.1
+
+warrior_unstoppable:
+  name: "Unstoppable"
+  description: "Immune to slowness, weakness, and mining fatigue"
+  point_cost: 5
+  prerequisites: ["warrior_juggernaut", "warrior_berserker"]
+  icon: "DIAMOND_BLOCK"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "EFFECT_IMMUNITY"
+      target: "debuffs"
+      value: 1.0
+
+# Tier 6 - Elite Skills
+warrior_warcry:
+  name: "Warcry"
+  description: "Right-click with sword to buff allies' damage by 20% for 10s"
+  point_cost: 6
+  prerequisites: ["warrior_battle_master", "warrior_guardian_aura"]
+  icon: "DRAGON_BREATH"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "TEAM_BUFF"
+      target: "damage"
+      value: 0.2
+
+warrior_blademaster:
+  name: "Blademaster"
+  description: "Critical hits deal 3x damage instead of 2x"
+  point_cost: 6
+  prerequisites: ["warrior_phantom_blade", "warrior_battle_master"]
+  icon: "NETHERITE_SWORD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "CRITICAL_MULTIPLIER"
+      target: "melee"
+      value: 1.0
+
+warrior_unbreakable:
+  name: "Unbreakable"
+  description: "When below 3 hearts, gain Resistance II and Strength I for 5s (60s cooldown)"
+  point_cost: 6
+  prerequisites: ["warrior_unstoppable", "warrior_guardian_aura"]
+  icon: "OBSIDIAN"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "LAST_STAND"
+      target: "survival"
+      value: 5.0
+
+# Tier 7 - Ultimate Skills
+warrior_avatar_of_war:
+  name: "Avatar of War"
+  description: "Transform into a powerful warrior with enhanced abilities for 30 seconds"
+  point_cost: 8
+  prerequisites: ["warrior_warcry", "warrior_blademaster"]
+  icon: "NETHER_STAR"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "SUPER_FORM"
+      target: "all"
+      value: 30.0
+    effect1: 
+      type: "ATTRIBUTE"
+      target: "GENERIC_ATTACK_DAMAGE"
+      value: 5.0
+    effect2:
+      type: "ATTRIBUTE"
+      target: "GENERIC_MAX_HEALTH"
+      value: 10.0
+
+warrior_immortal:
+  name: "Immortal"
+  description: "Upon fatal damage, survive with 1 heart and gain invulnerability for 5s (5 min cooldown)"
+  point_cost: 8
+  prerequisites: ["warrior_unbreakable", "warrior_blademaster"]
+  icon: "TOTEM_OF_UNDYING"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "DEATH_PREVENTION"
+      target: "survival"
+      value: 5.0 

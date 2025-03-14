@@ -5,7 +5,10 @@ import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.skills.XPManager;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages player levels based on total XP from all skills
@@ -18,6 +21,10 @@ public class PlayerLevel {
     // Base XP required for each level
     private static final int BASE_XP_REQUIRED = 100;
     private static final double XP_SCALING_FACTOR = 1.15;
+    
+    // Store the total XP and highest level reached for each player
+    private final Map<UUID, Integer> playerTotalXP = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> playerHighestLevel = new ConcurrentHashMap<>();
     
     public PlayerLevel(PlayerDataManager dataManager, XPManager xpManager) {
         this.dataManager = dataManager;
@@ -32,9 +39,11 @@ public class PlayerLevel {
         int totalXP = 0;
         
         for (String skill : SKILL_TYPES) {
-            totalXP += dataManager.getSkillXP(playerUUID, skill);
+            // Use total_earned field instead of current XP
+            totalXP += dataManager.getTotalSkillXPEarned(playerUUID, skill);
         }
         
+        // No need to store in a map anymore since we're using persistent storage
         return totalXP;
     }
     
@@ -42,17 +51,18 @@ public class PlayerLevel {
      * Get player's overall level based on total XP
      */
     public int getPlayerLevel(Player player) {
+        UUID playerUUID = player.getUniqueId();
         int totalXP = getTotalXP(player);
         
         // Start at level 1
-        int level = 1;
+        int calculatedLevel = 1;
         
         // Calculate how much total XP is needed for each level until we find the player's level
         int cumulativeXP = 0;
         
         // While the cumulative XP for the next level is less than or equal to the player's total XP
         while (true) {
-            int xpForNextLevel = getRequiredXPForLevel(level);
+            int xpForNextLevel = getRequiredXPForLevel(calculatedLevel);
             if (cumulativeXP + xpForNextLevel > totalXP) {
                 // Not enough XP for the next level
                 break;
@@ -62,10 +72,12 @@ public class PlayerLevel {
             cumulativeXP += xpForNextLevel;
             
             // Increase level
-            level++;
+            calculatedLevel++;
         }
         
-        return level;
+        // Return the calculated level - no need to persist highest level since that's 
+        // now handled by the data manager for individual skills
+        return calculatedLevel;
     }
     
     /**
@@ -89,11 +101,15 @@ public class PlayerLevel {
     /**
      * Get total skill points available to a player
      * 1 point per level + 2 bonus points every 10 levels (total 3 at milestones)
+     * Players always start with at least 1 point regardless of level
      */
     public int getTotalSkillPoints(Player player) {
         int level = getPlayerLevel(player);
         int milestones = level / 10;
-        return level + (milestones * 2);
+        int points = level + (milestones * 2);
+        
+        // Ensure players always have at least 1 point to start with
+        return Math.max(1, points);
     }
     
     /**

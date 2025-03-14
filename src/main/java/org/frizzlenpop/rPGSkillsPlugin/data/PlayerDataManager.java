@@ -60,6 +60,8 @@ public class PlayerDataManager {
             for (String skill : skills) {
                 config.set("skills." + skill + ".level", 1);
                 config.set("skills." + skill + ".xp", 0);
+                config.set("skills." + skill + ".total_earned", 0);
+                config.set("skills." + skill + ".highest_level", 1);
             }
 
             // Create milestones section
@@ -95,8 +97,51 @@ public class PlayerDataManager {
 
     public void setSkillXP(UUID playerUUID, String skill, int xp) {
         FileConfiguration config = getPlayerData(playerUUID);
+        // Store current XP to calculate total earned
+        int currentXP = config.getInt("skills." + skill + ".xp", 0);
+        
+        // Set new XP
         config.set("skills." + skill + ".xp", xp);
+        
+        // Update total XP earned for tracking purposes
+        int totalEarned = config.getInt("skills." + skill + ".total_earned", 0);
+        // Only add positive XP gains to total earned
+        if (xp > currentXP) {
+            totalEarned += (xp - currentXP);
+            config.set("skills." + skill + ".total_earned", totalEarned);
+        }
+        
         savePlayerData(playerUUID, config);
+    }
+    
+    /**
+     * Gets the total XP earned for a skill (lifetime)
+     */
+    public int getTotalSkillXPEarned(UUID playerUUID, String skill) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        return config.getInt("skills." + skill + ".total_earned", 0);
+    }
+    
+    /**
+     * Sets the highest level achieved for a skill
+     */
+    public void setHighestSkillLevel(UUID playerUUID, String skill, int level) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        int currentHighest = config.getInt("skills." + skill + ".highest_level", 1);
+        
+        // Only update if the new level is higher
+        if (level > currentHighest) {
+            config.set("skills." + skill + ".highest_level", level);
+            savePlayerData(playerUUID, config);
+        }
+    }
+    
+    /**
+     * Gets the highest level achieved for a skill
+     */
+    public int getHighestSkillLevel(UUID playerUUID, String skill) {
+        FileConfiguration config = getPlayerData(playerUUID);
+        return config.getInt("skills." + skill + ".highest_level", 1);
     }
 
     public boolean hasUnlockedActiveSkill(UUID playerUUID, String skill) {

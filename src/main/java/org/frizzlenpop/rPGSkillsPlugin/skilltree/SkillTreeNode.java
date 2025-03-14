@@ -1,5 +1,6 @@
 package org.frizzlenpop.rPGSkillsPlugin.skilltree;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -21,7 +22,7 @@ public class SkillTreeNode {
     private final String description;
     private final int pointCost;
     private final List<String> prerequisites;
-    private final Material icon;
+    private final Material iconMaterial;
     private final NodeType type;
     private final List<NodeEffect> effects;
     
@@ -85,7 +86,7 @@ public class SkillTreeNode {
         this.description = description;
         this.pointCost = pointCost;
         this.prerequisites = prerequisites != null ? prerequisites : new ArrayList<>();
-        this.icon = icon;
+        this.iconMaterial = icon;
         this.type = type;
         this.effects = new ArrayList<>();
     }
@@ -157,12 +158,37 @@ public class SkillTreeNode {
                     (player.getUniqueId().toString() + "." + id + "." + attribute.name()).getBytes()
                 );
                 
-                // Remove the modifier with this UUID
-                player.getAttribute(attribute).getModifiers().forEach(existingModifier -> {
-                    if (existingModifier.getUniqueId().equals(modifierUUID)) {
-                        player.getAttribute(attribute).removeModifier(existingModifier);
+                // Special handling for problematic attributes
+                if (attribute.name().equals("GENERIC_MAX_HEALTH") || attribute.name().equals("GENERIC_MOVEMENT_SPEED")) {
+                    // For health and speed, we need to be more forceful about removing the modifiers
+                    // Get the attribute instance
+                    try {
+                        // Remove all modifiers that match our skilltree pattern
+                        player.getAttribute(attribute).getModifiers().forEach(existingModifier -> {
+                            if (existingModifier.getName().startsWith("skilltree.")) {
+                                player.getAttribute(attribute).removeModifier(existingModifier);
+                            }
+                        });
+                        
+                        // If it's health, also set the player's health to prevent issues
+                        if (attribute.name().equals("GENERIC_MAX_HEALTH")) {
+                            double baseMaxHealth = player.getAttribute(attribute).getBaseValue();
+                            if (player.getHealth() > baseMaxHealth) {
+                                player.setHealth(baseMaxHealth);
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Log any issues with removing the modifier
+                        Bukkit.getLogger().warning("Error removing attribute modifier: " + e.getMessage());
                     }
-                });
+                } else {
+                    // Standard removal for other attributes
+                    player.getAttribute(attribute).getModifiers().forEach(existingModifier -> {
+                        if (existingModifier.getUniqueId().equals(modifierUUID)) {
+                            player.getAttribute(attribute).removeModifier(existingModifier);
+                        }
+                    });
+                }
             } catch (IllegalArgumentException e) {
                 // Invalid attribute
             }
@@ -183,73 +209,128 @@ public class SkillTreeNode {
                 (player.getUniqueId().toString() + "." + id + "." + attribute.name()).getBytes()
             );
             
-            AttributeModifier modifier = new AttributeModifier(
-                modifierUUID,
-                "skilltree." + id,
-                effect.getValue(),
-                AttributeModifier.Operation.ADD_NUMBER
-            );
-            
-            // Remove existing modifier with the same UUID if it exists
-            player.getAttribute(attribute).getModifiers().forEach(existingModifier -> {
-                if (existingModifier.getUniqueId().equals(modifierUUID)) {
-                    player.getAttribute(attribute).removeModifier(existingModifier);
-                }
-            });
-            
-            // Add the new modifier
-            player.getAttribute(attribute).addModifier(modifier);
+            // Special handling for movement speed
+            if (attribute.name().equals("GENERIC_MOVEMENT_SPEED")) {
+                // Movement speed can cause issues if values are too high
+                // Ensure the value is appropriate (typical base is 0.1)
+                double safeValue = Math.min(effect.getValue(), 0.05); // Cap at +0.05 (50% increase)
+                
+                AttributeModifier modifier = new AttributeModifier(
+                    modifierUUID,
+                    "skilltree." + id,
+                    safeValue,
+                    AttributeModifier.Operation.ADD_NUMBER
+                );
+                
+                // Make sure to remove any existing modifier first
+                player.getAttribute(attribute).getModifiers().forEach(existingModifier -> {
+                    if (existingModifier.getUniqueId().equals(modifierUUID) || 
+                        existingModifier.getName().equals("skilltree." + id)) {
+                        player.getAttribute(attribute).removeModifier(existingModifier);
+                    }
+                });
+                
+                // Add the new modifier
+                player.getAttribute(attribute).addModifier(modifier);
+            } else {
+                // Standard handling for other attributes
+                AttributeModifier modifier = new AttributeModifier(
+                    modifierUUID,
+                    "skilltree." + id,
+                    effect.getValue(),
+                    AttributeModifier.Operation.ADD_NUMBER
+                );
+                
+                // Remove existing modifier with the same UUID if it exists
+                player.getAttribute(attribute).getModifiers().forEach(existingModifier -> {
+                    if (existingModifier.getUniqueId().equals(modifierUUID) ||
+                        existingModifier.getName().equals("skilltree." + id)) {
+                        player.getAttribute(attribute).removeModifier(existingModifier);
+                    }
+                });
+                
+                // Add the new modifier
+                player.getAttribute(attribute).addModifier(modifier);
+            }
         } catch (IllegalArgumentException e) {
             // Invalid attribute
+            Bukkit.getLogger().warning("Invalid attribute in skill tree node: " + effect.getTarget());
+        } catch (Exception e) {
+            // Log any other issues
+            Bukkit.getLogger().warning("Error applying attribute modifier: " + e.getMessage());
         }
     }
     
     /**
-     * Create an item representation of this node for GUI
+     * Create an item stack icon for this node
+     * @param unlocked Whether the node is unlocked
+     * @param available Whether the node is available to be unlocked
+     * @param isFreeNode Whether this is a free starter node (no points required)
+     * @return The item stack icon
      */
-    public ItemStack createIcon(boolean unlocked, boolean available) {
-        ItemStack item = new ItemStack(icon);
-        ItemMeta meta = item.getItemMeta();
+    public ItemStack createIcon(boolean unlocked, boolean available, boolean isFreeNode) {
+        ItemStack iconItem = new ItemStack(iconMaterial);
+        ItemMeta meta = iconItem.getItemMeta();
         
         if (meta != null) {
             // Set display name based on status
             if (unlocked) {
                 meta.setDisplayName("§a" + name + " §7(Unlocked)");
             } else if (available) {
-                meta.setDisplayName("§e" + name + " §7(Available)");
+                if (isFreeNode) {
+                    meta.setDisplayName("§b" + name + " §7(Free Starter Skill)");
+                } else {
+                    meta.setDisplayName("§e" + name + " §7(Available)");
+                }
             } else {
-                meta.setDisplayName("§8" + name + " §7(Locked)");
+                meta.setDisplayName("§c" + name + " §7(Locked)");
             }
             
-            // Add description and details
+            // Set lore with description and effects
             List<String> lore = new ArrayList<>();
             lore.add("§7" + description);
             lore.add("");
-            lore.add("§7Cost: §e" + pointCost + " point" + (pointCost > 1 ? "s" : ""));
             
-            // Add prerequisites if any
-            if (!prerequisites.isEmpty()) {
-                lore.add("");
-                lore.add("§7Requires:");
-                for (String prereq : prerequisites) {
-                    lore.add("§8- " + prereq);
+            // Add point cost or free indicator
+            if (!unlocked) {
+                if (isFreeNode) {
+                    lore.add("§bFree starter skill - requires no points!");
+                } else {
+                    lore.add("§7Cost: §e" + pointCost + " skill point" + (pointCost > 1 ? "s" : ""));
                 }
+                lore.add("");
             }
             
             // Add effects
             if (!effects.isEmpty()) {
-                lore.add("");
                 lore.add("§7Effects:");
                 for (NodeEffect effect : effects) {
-                    lore.add("§8- " + formatEffect(effect));
+                    // Format effect description based on type
+                    lore.add("§a- " + formatEffect(effect));
+                }
+            }
+            
+            // Add prerequisites if not unlocked and not available
+            if (!unlocked && !available && !prerequisites.isEmpty()) {
+                lore.add("");
+                lore.add("§cRequirements:");
+                for (String prereq : prerequisites) {
+                    lore.add("§c- " + prereq);
                 }
             }
             
             meta.setLore(lore);
-            item.setItemMeta(meta);
+            iconItem.setItemMeta(meta);
         }
         
-        return item;
+        return iconItem;
+    }
+    
+    /**
+     * Create an item stack icon for this node (legacy method)
+     */
+    public ItemStack createIcon(boolean unlocked, boolean available) {
+        return createIcon(unlocked, available, false);
     }
     
     /**
@@ -320,7 +401,7 @@ public class SkillTreeNode {
     }
     
     public Material getIcon() {
-        return icon;
+        return iconMaterial;
     }
     
     public NodeType getType() {

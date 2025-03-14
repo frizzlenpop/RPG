@@ -23,6 +23,24 @@ import org.frizzlenpop.rPGSkillsPlugin.data.XPBoosterManager;
 import org.frizzlenpop.rPGSkillsPlugin.commands.PartyCommand;
 import org.frizzlenpop.rPGSkillsPlugin.gui.RPGScoreboardManager;
 import org.frizzlenpop.rPGSkillsPlugin.gui.PartyPerksGUI;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.MountManager;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.abilities.MountAbilityManager;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.commands.MountCommand;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.fusion.MountCombinationGUI;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.gui.MountGUI;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.gui.MountGUIListener;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.gui.MountShopGUI;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.loot.MountChestCommand;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.loot.MountChestGUI;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.loot.MountChestListener;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.loot.MountKeyManager;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.xp.MountXPManager;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.MountVisualManager;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.MountInteractionListener;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.listeners.MountProjectileListener;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.abilities.MountAbilityManager;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.effects.ProtocolLibEffectManager;
+import org.bukkit.Bukkit;
 
 public class RPGSkillsPlugin extends JavaPlugin {
     private PlayerDataManager playerDataManager;
@@ -40,6 +58,16 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private RPGScoreboardManager scoreboardManager;
     private XPBoosterManager xpBoosterManager;
     private FileConfiguration config;
+    private MountManager mountManager;
+    private MountGUI mountGUI;
+    private MountShopGUI mountShopGUI;
+    private MountCombinationGUI mountCombinationGUI;
+    private MountKeyManager mountKeyManager;
+    private MountChestGUI mountChestGUI;
+    private MountChestCommand mountChestCommand;
+    private MountVisualManager mountVisualManager;
+    private ProtocolLibEffectManager protocolLibEffectManager;
+    private MountAbilityManager mountAbilityManager;
 
     @Override
     public void onEnable() {
@@ -89,6 +117,39 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Initialize scoreboard manager
         this.scoreboardManager = new RPGScoreboardManager(this);
 
+        // Initialize mount system
+        mountManager = new MountManager(this);
+        mountGUI = new MountGUI(this, mountManager);
+        
+        // Initialize mount shop GUI
+        mountShopGUI = new MountShopGUI(this, mountManager);
+        
+        // Initialize mount combination/fusion GUI
+        mountCombinationGUI = new MountCombinationGUI(this, mountManager);
+        
+        // Initialize mount visual enhancements
+        mountVisualManager = new MountVisualManager(this);
+        
+        // Initialize ProtocolLib effect manager if ProtocolLib is available
+        if (Bukkit.getPluginManager().getPlugin("ProtocolLib") != null) {
+            getLogger().info("ProtocolLib found! Enabling enhanced visual effects for mounts.");
+            protocolLibEffectManager = new ProtocolLibEffectManager(this);
+            mountVisualManager.setProtocolLibEffectManager(protocolLibEffectManager);
+        } else {
+            getLogger().warning("ProtocolLib not found. Enhanced visual effects will be disabled.");
+        }
+        
+        // Connect mount visual manager to mount manager
+        mountManager.setVisualManager(mountVisualManager);
+        
+        // Initialize mount ability manager
+        mountAbilityManager = mountManager.getAbilityManager();
+        
+        // Initialize mount chest system
+        mountKeyManager = new MountKeyManager(this);
+        mountChestGUI = new MountChestGUI(this, mountKeyManager, mountManager);
+        mountChestCommand = new MountChestCommand(this, mountKeyManager, mountChestGUI);
+
         // Register commands
         getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
         getCommand("abilities").setExecutor(new AbilitiesCommand(this, playerDataManager));
@@ -113,6 +174,13 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Register scoreboard command
         getCommand("rscoreboard").setExecutor(new RScoreboardCommand(this, scoreboardManager));
 
+        // Register mount command
+        getCommand("mount").setExecutor(new MountCommand(this));
+        
+        // Register mount chest command
+        getCommand("mountchest").setExecutor(mountChestCommand);
+        getCommand("mountchest").setTabCompleter(mountChestCommand);
+
         // Register all listeners
         registerListeners();
 
@@ -133,6 +201,19 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new RepairListener(xpManager), this);
         
         // Skill tree listeners are registered in their respective classes
+
+        // Register mount listeners
+        getServer().getPluginManager().registerEvents(mountManager, this);
+        getServer().getPluginManager().registerEvents(mountManager.getAbilityManager(), this);
+        getServer().getPluginManager().registerEvents(mountManager.getXPManager(), this);
+        getServer().getPluginManager().registerEvents(new MountGUIListener(this, mountGUI), this);
+        getServer().getPluginManager().registerEvents(new MountInteractionListener(this, mountManager), this);
+        getServer().getPluginManager().registerEvents(new MountProjectileListener(this, mountManager, mountAbilityManager, xpManager), this);
+        
+        // Register mount chest listeners
+        if (mountChestGUI != null) {
+            getServer().getPluginManager().registerEvents(new MountChestListener(mountChestGUI), this);
+        }
     }
 
     private void addDefaultPassiveConfig() {
@@ -222,6 +303,21 @@ public class RPGSkillsPlugin extends JavaPlugin {
             scoreboardManager.cleanup();
         }
 
+        // Save mount data
+        if (mountManager != null) {
+            mountManager.saveAllMountData();
+        }
+        
+        // Clean up mount visual effects
+        if (mountVisualManager != null) {
+            mountVisualManager.cleanup();
+        }
+
+        // Clean up ProtocolLib effects if enabled
+        if (protocolLibEffectManager != null) {
+            protocolLibEffectManager.cleanup();
+        }
+
         // Save configuration
         saveConfig();
 
@@ -299,6 +395,51 @@ public class RPGSkillsPlugin extends JavaPlugin {
     }
 
     /**
+     * Get the mount manager
+     * 
+     * @return The mount manager
+     */
+    public MountManager getMountManager() {
+        return mountManager;
+    }
+
+    /**
+     * Get the mount GUI manager
+     * 
+     * @return The mount GUI
+     */
+    public MountGUI getMountGUI() {
+        return mountGUI;
+    }
+
+    /**
+     * Get the mount chest command handler
+     * 
+     * @return The mount chest command
+     */
+    public MountChestCommand getMountChestCommand() {
+        return mountChestCommand;
+    }
+    
+    /**
+     * Get the mount shop GUI
+     * 
+     * @return The mount shop GUI
+     */
+    public MountShopGUI getMountShopGUI() {
+        return mountShopGUI;
+    }
+    
+    /**
+     * Get the mount combination GUI
+     * 
+     * @return The mount combination GUI
+     */
+    public MountCombinationGUI getMountCombinationGUI() {
+        return mountCombinationGUI;
+    }
+
+    /**
      * Reload the configuration and refresh skill tree
      */
     @Override
@@ -311,5 +452,14 @@ public class RPGSkillsPlugin extends JavaPlugin {
             // Refresh skill tree nodes
             skillTreeManager.reloadSkillTreeConfig();
         }
+    }
+
+    /**
+     * Gets the ProtocolLib effect manager
+     * 
+     * @return The ProtocolLib effect manager, or null if ProtocolLib is not available
+     */
+    public ProtocolLibEffectManager getProtocolLibEffectManager() {
+        return protocolLibEffectManager;
     }
 }

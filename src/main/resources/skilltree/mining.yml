@@ -1,0 +1,248 @@
+# Mining Skill Tree
+# Tier 1 - Base Skills (No prerequisites)
+mining_efficiency:
+  name: "Mining Efficiency"
+  description: "Mine blocks 10% faster"
+  point_cost: 1
+  prerequisites: []
+  icon: "IRON_PICKAXE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "MINING_SPEED"
+      target: "all"
+      value: 0.1
+
+mining_fortune:
+  name: "Lucky Miner"
+  description: "5% chance to get double drops from ores"
+  point_cost: 1
+  prerequisites: []
+  icon: "GOLD_NUGGET"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "DOUBLE_DROP_CHANCE"
+      target: "ores"
+      value: 0.05
+
+mining_smelting:
+  name: "Hot Touch"
+  description: "5% chance to auto-smelt ores while mining"
+  point_cost: 1
+  prerequisites: []
+  icon: "FURNACE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "AUTO_SMELT_CHANCE"
+      target: "ores"
+      value: 0.05
+
+mining_endurance:
+  name: "Mining Endurance"
+  description: "Mining consumes 10% less hunger"
+  point_cost: 1
+  prerequisites: []
+  icon: "COOKED_BEEF"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "FOOD_CONSUMPTION"
+      target: "mining"
+      value: -0.1
+
+# Tier 2 - Advanced Skills (Require 1 Tier 1 prerequisite)
+mining_haste:
+  name: "Miner's Haste"
+  description: "Mine blocks 20% faster"
+  point_cost: 2
+  prerequisites: ["mining_efficiency"]
+  icon: "DIAMOND_PICKAXE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "MINING_SPEED"
+      target: "all"
+      value: 0.2
+
+mining_treasure:
+  name: "Treasure Hunter"
+  description: "1% chance to find gems in stone"
+  point_cost: 2
+  prerequisites: ["mining_fortune"]
+  icon: "EMERALD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "RARE_DROP_CHANCE"
+      target: "stone"
+      value: 0.01
+
+mining_expert_smelter:
+  name: "Expert Smelter"
+  description: "15% chance to auto-smelt ores"
+  point_cost: 2
+  prerequisites: ["mining_smelting"]
+  icon: "BLAST_FURNACE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "AUTO_SMELT_CHANCE"
+      target: "ores"
+      value: 0.15
+
+mining_night_vision:
+  name: "Miner's Vision"
+  description: "Gain night vision in dark areas"
+  point_cost: 2
+  prerequisites: ["mining_endurance"]
+  icon: "GOLDEN_CARROT"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "NIGHT_VISION"
+      target: "darkness"
+      value: 1.0
+
+# Tier 3 - Specialized Skills (Require Tier 2 prerequisite)
+mining_explosion:
+  name: "Explosive Mining"
+  description: "5% chance to create a small explosion when mining that doesn't damage blocks"
+  point_cost: 3
+  prerequisites: ["mining_haste"]
+  icon: "TNT"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "MINING_EXPLOSION"
+      target: "blocks"
+      value: 0.05
+
+mining_vein_miner:
+  name: "Vein Miner"
+  description: "5% chance to mine entire veins of ore at once"
+  point_cost: 3
+  prerequisites: ["mining_treasure"]
+  icon: "REDSTONE_ORE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "VEIN_MINING"
+      target: "ores"
+      value: 0.05
+
+mining_master_smelter:
+  name: "Master Smelter"
+  description: "30% chance to auto-smelt ores and stones"
+  point_cost: 3
+  prerequisites: ["mining_expert_smelter"]
+  icon: "SMOKER"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "AUTO_SMELT_CHANCE"
+      target: "all"
+      value: 0.3
+
+mining_spelunker:
+  name: "Spelunker"
+  description: "Nearby ores glow through walls within 8 blocks"
+  point_cost: 3
+  prerequisites: ["mining_night_vision"]
+  icon: "GLOWSTONE"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "ORE_DETECTION"
+      target: "blocks"
+      value: 8.0
+
+# Tier 4 - Advanced Specializations (Require 2 Tier 3 prerequisites)
+mining_demolition:
+  name: "Demolition Expert"
+  description: "Right-click with pickaxe to create a controlled blast (2 min cooldown)"
+  point_cost: 4
+  prerequisites: ["mining_explosion", "mining_vein_miner"]
+  icon: "FIRE_CHARGE"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "DEMOLITION_BLAST"
+      target: "blocks"
+      value: 120.0
+
+mining_prospector:
+  name: "Master Prospector"
+  description: "10% chance for triple ore drops"
+  point_cost: 4
+  prerequisites: ["mining_vein_miner", "mining_spelunker"]
+  icon: "DIAMOND"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "TRIPLE_DROP_CHANCE"
+      target: "ores"
+      value: 0.1
+
+mining_forge:
+  name: "Portable Forge"
+  description: "Right-click to open a portable smelting interface"
+  point_cost: 4
+  prerequisites: ["mining_master_smelter", "mining_spelunker"]
+  icon: "ANVIL"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "PORTABLE_SMELTING"
+      target: "interface"
+      value: 1.0
+
+# Tier 5 - Master Skills (Require multiple Tier 4 prerequisites)
+mining_earthbender:
+  name: "Earthbender"
+  description: "Mine in a 3x3 area when using a diamond or netherite pickaxe"
+  point_cost: 5
+  prerequisites: ["mining_demolition", "mining_prospector"]
+  icon: "NETHERITE_PICKAXE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "AREA_MINING"
+      target: "blocks"
+      value: 3.0
+
+mining_geomancer:
+  name: "Geomancer"
+  description: "Place temporary bridges of stone by right-clicking with a pickaxe"
+  point_cost: 5
+  prerequisites: ["mining_prospector", "mining_forge"]
+  icon: "STONE_BRICKS"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "STONE_BRIDGE"
+      target: "world"
+      value: 15.0
+
+# Ultimate Skill (Requires all Tier 5 prerequisites)
+mining_earth_shaper:
+  name: "Earth Shaper"
+  description: "Temporarily reshape terrain in a 15-block radius (10 min cooldown)"
+  point_cost: 10
+  prerequisites: ["mining_earthbender", "mining_geomancer"]
+  icon: "DRAGON_EGG"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "TERRAIN_MANIPULATION"
+      target: "world"
+      value: 15.0
+    effect1:
+      type: "COOLDOWN"
+      target: "ability"
+      value: 600.0
+    effect2:
+      type: "DURATION"
+      target: "effect"
+      value: 30.0 

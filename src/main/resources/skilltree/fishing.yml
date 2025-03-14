@@ -1,0 +1,244 @@
+# Fishing Skill Tree
+# Tier 1 - Base Skills (No prerequisites)
+fishing_luck:
+  name: "Fishing Luck"
+  description: "10% better chance for good loot"
+  point_cost: 1
+  prerequisites: []
+  icon: "FISHING_ROD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "FISHING_LUCK"
+      target: "all"
+      value: 0.1
+
+fishing_speed:
+  name: "Quick Catch"
+  description: "Fish bite 15% faster"
+  point_cost: 1
+  prerequisites: []
+  icon: "COD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "FISHING_SPEED"
+      target: "all"
+      value: 0.15
+
+fishing_double_catch:
+  name: "Double Catch"
+  description: "5% chance to catch two fish at once"
+  point_cost: 1
+  prerequisites: []
+  icon: "SALMON"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "DOUBLE_CATCH"
+      target: "fishing"
+      value: 0.05
+
+fishing_water_breathing:
+  name: "Fisherman's Lungs"
+  description: "Hold breath 20% longer underwater"
+  point_cost: 1
+  prerequisites: []
+  icon: "TROPICAL_FISH"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "WATER_BREATHING"
+      target: "submersion"
+      value: 0.2
+
+# Tier 2 - Advanced Skills (Require 1 Tier 1 prerequisite)
+fishing_better_luck:
+  name: "Angler's Fortune"
+  description: "25% better chance for good loot"
+  point_cost: 2
+  prerequisites: ["fishing_luck"]
+  icon: "LAPIS_LAZULI"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "FISHING_LUCK"
+      target: "all"
+      value: 0.25
+
+fishing_faster_speed:
+  name: "Master Angler"
+  description: "Fish bite 30% faster"
+  point_cost: 2
+  prerequisites: ["fishing_speed"]
+  icon: "PUFFERFISH"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "FISHING_SPEED"
+      target: "all"
+      value: 0.3
+
+fishing_triple_catch:
+  name: "Triple Catch"
+  description: "2% chance to catch three fish at once"
+  point_cost: 2
+  prerequisites: ["fishing_double_catch"]
+  icon: "COOKED_COD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "TRIPLE_CATCH"
+      target: "fishing"
+      value: 0.02
+
+fishing_water_affinity:
+  name: "Water Affinity"
+  description: "10% increased swim speed"
+  point_cost: 2
+  prerequisites: ["fishing_water_breathing"]
+  icon: "TURTLE_HELMET"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "SWIM_SPEED"
+      target: "movement"
+      value: 0.1
+
+# Tier 3 - Specialized Skills (Require Tier 2 prerequisite)
+fishing_treasure_hunter:
+  name: "Treasure Hunter"
+  description: "5% chance to catch treasure items"
+  point_cost: 3
+  prerequisites: ["fishing_better_luck"]
+  icon: "GOLDEN_APPLE"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "TREASURE_CHANCE"
+      target: "fishing"
+      value: 0.05
+
+fishing_jig_casting:
+  name: "Jig Casting"
+  description: "Right-click to cast your line 50% further"
+  point_cost: 3
+  prerequisites: ["fishing_faster_speed"]
+  icon: "STRING"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "CAST_DISTANCE"
+      target: "fishing"
+      value: 0.5
+
+fishing_aqua_harvest:
+  name: "Aqua Harvest"
+  description: "10% chance to catch special underwater plants"
+  point_cost: 3
+  prerequisites: ["fishing_triple_catch"]
+  icon: "SEAGRASS"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "SPECIAL_CATCH"
+      target: "plants"
+      value: 0.1
+
+fishing_dolphin_grace:
+  name: "Dolphin's Grace"
+  description: "Gain Dolphin's Grace effect in water"
+  point_cost: 3
+  prerequisites: ["fishing_water_affinity"]
+  icon: "PRISMARINE_CRYSTALS"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "WATER_MOBILITY"
+      target: "movement"
+      value: 1.0
+
+# Tier 4 - Advanced Specializations (Require 2 Tier 3 prerequisites)
+fishing_ancient_treasures:
+  name: "Ancient Treasures"
+  description: "2% chance to catch rare ancient items"
+  point_cost: 4
+  prerequisites: ["fishing_treasure_hunter", "fishing_jig_casting"]
+  icon: "HEART_OF_THE_SEA"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "RARE_TREASURE"
+      target: "fishing"
+      value: 0.02
+
+fishing_aqua_affinity:
+  name: "Aqua Affinity"
+  description: "Mine underwater at normal speed"
+  point_cost: 4
+  prerequisites: ["fishing_dolphin_grace", "fishing_aqua_harvest"]
+  icon: "PRISMARINE_SHARD"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "UNDERWATER_MINING"
+      target: "mining"
+      value: 1.0
+
+fishing_lure_crafting:
+  name: "Lure Crafting"
+  description: "Craft special lures to enhance fishing (unlocks recipes)"
+  point_cost: 4
+  prerequisites: ["fishing_treasure_hunter", "fishing_aqua_harvest"]
+  icon: "TRIPWIRE_HOOK"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "UNLOCK_RECIPES"
+      target: "crafting"
+      value: 1.0
+
+# Tier 5 - Master Skills (Require multiple Tier 4 prerequisites)
+fishing_poseidon_blessing:
+  name: "Poseidon's Blessing"
+  description: "5% chance for epic loot from the depths"
+  point_cost: 5
+  prerequisites: ["fishing_ancient_treasures", "fishing_lure_crafting"]
+  icon: "TRIDENT"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "MYTHIC_CATCH"
+      target: "fishing"
+      value: 0.05
+
+fishing_water_guardian:
+  name: "Water Guardian"
+  description: "Gain Conduit Power when fishing or underwater"
+  point_cost: 5
+  prerequisites: ["fishing_aqua_affinity", "fishing_lure_crafting"]
+  icon: "CONDUIT"
+  type: "PASSIVE"
+  effects:
+    effect0:
+      type: "CONDUIT_POWER"
+      target: "water"
+      value: 1.0
+
+# Ultimate Skill (Requires all Tier 5 prerequisites)
+fishing_master_of_the_sea:
+  name: "Master of the Sea"
+  description: "Temporarily summon a guardian fish companion (5 min cooldown)"
+  point_cost: 10
+  prerequisites: ["fishing_poseidon_blessing", "fishing_water_guardian"]
+  icon: "GUARDIAN_SPAWN_EGG"
+  type: "ACTIVE"
+  effects:
+    effect0:
+      type: "SUMMON_COMPANION"
+      target: "guardian"
+      value: 60.0
+    effect1:
+      type: "COOLDOWN"
+      target: "ability"
+      value: 300.0 

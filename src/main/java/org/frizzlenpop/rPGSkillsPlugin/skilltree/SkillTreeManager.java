@@ -10,6 +10,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.skills.XPManager;
@@ -36,6 +38,10 @@ public class SkillTreeManager implements Listener {
     private static final String PLAYER_DATA_NODES_PATH = "skill_tree.unlocked_nodes";
     private static final String PLAYER_DATA_POINTS_SPENT_PATH = "skill_tree.points_spent";
     
+    // Added for skill tree directory and files
+    private static final String SKILL_TREE_FOLDER = "skilltree";
+    private static final String[] SKILL_CATEGORIES = {"warrior", "mining", "logging", "farming", "fighting", "fishing", "excavation", "enchanting"};
+
     /**
      * Constructor for the skill tree manager
      */
@@ -52,6 +58,9 @@ public class SkillTreeManager implements Listener {
         // Register events
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         
+        // Create skill tree directory if it doesn't exist
+        createSkillTreeDirectory();
+        
         // Load skill tree configuration
         loadSkillTreeConfig();
         
@@ -60,438 +69,583 @@ public class SkillTreeManager implements Listener {
             loadPlayerData(player);
             applyAllUnlockedEffects(player);
         }
+        
+        // Register commands
+        registerCommands();
     }
     
     /**
-     * Load skill tree configuration from config
+     * Register commands related to skill tree
      */
-    private void loadSkillTreeConfig() {
-        // Ensure default config values
-        addDefaultSkillTreeConfig();
-        
-        // Load nodes from config
-        ConfigurationSection nodesSection = plugin.getConfig().getConfigurationSection(CONFIG_NODES_PATH);
-        if (nodesSection != null) {
-            for (String nodeId : nodesSection.getKeys(false)) {
-                ConfigurationSection nodeSection = nodesSection.getConfigurationSection(nodeId);
-                if (nodeSection != null) {
-                    try {
-                        String name = nodeSection.getString("name", "Unknown Node");
-                        String description = nodeSection.getString("description", "");
-                        int pointCost = nodeSection.getInt("point_cost", 1);
-                        List<String> prerequisites = nodeSection.getStringList("prerequisites");
-                        String iconName = nodeSection.getString("icon", "BOOK");
-                        Material icon = Material.getMaterial(iconName) != null ? 
-                                        Material.getMaterial(iconName) : Material.BOOK;
-                        String typeName = nodeSection.getString("type", "PASSIVE");
-                        SkillTreeNode.NodeType type = SkillTreeNode.NodeType.valueOf(typeName);
+    private void registerCommands() {
+        plugin.getCommand("skilltree").setExecutor((sender, command, label, args) -> {
+            if (args.length > 0 && args[0].equalsIgnoreCase("admin") && sender.hasPermission("skilltree.admin")) {
+                if (args.length > 1) {
+                    if (args[1].equalsIgnoreCase("resetplayer") && args.length > 2) {
+                        String playerName = args[2];
+                        Player targetPlayer = Bukkit.getPlayer(playerName);
                         
-                        SkillTreeNode node = new SkillTreeNode(nodeId, name, description, pointCost, 
-                                                             prerequisites, icon, type);
-                        
-                        // Load effects
-                        ConfigurationSection effectsSection = nodeSection.getConfigurationSection("effects");
-                        if (effectsSection != null) {
-                            for (String effectKey : effectsSection.getKeys(false)) {
-                                ConfigurationSection effectSection = effectsSection.getConfigurationSection(effectKey);
-                                if (effectSection != null) {
-                                    String effectTypeName = effectSection.getString("type");
-                                    String target = effectSection.getString("target", "");
-                                    double value = effectSection.getDouble("value", 0.0);
-                                    
-                                    SkillTreeNode.EffectType effectType = SkillTreeNode.EffectType.valueOf(effectTypeName);
-                                    node.addEffect(new SkillTreeNode.NodeEffect(effectType, target, value));
-                                }
-                            }
+                        if (targetPlayer != null) {
+                            resetPlayerSkills(targetPlayer);
+                            sender.sendMessage("§aRemoved all skills from player " + targetPlayer.getName());
+                            return true;
+                        } else {
+                            sender.sendMessage("§cPlayer not found: " + playerName);
                         }
-                        
-                        nodes.put(nodeId, node);
-                        plugin.getLogger().info("Loaded skill tree node: " + nodeId);
-                    } catch (Exception e) {
-                        plugin.getLogger().warning("Failed to load skill tree node " + nodeId + ": " + e.getMessage());
+                    } else if (args[1].equalsIgnoreCase("reload")) {
+                        reloadSkillTreeConfig();
+                        sender.sendMessage("§aSkill tree configuration reloaded.");
+                        return true;
                     }
+                }
+                
+                sender.sendMessage("§cUsage: /skilltree admin [reload|resetplayer <player>]");
+                return true;
+            }
+            return false;
+        });
+    }
+    
+    /**
+     * Reset all skills for a player, removing all effects
+     */
+    public void resetPlayerSkills(Player player) {
+        UUID playerUUID = player.getUniqueId();
+        Set<String> playerNodes = unlockedNodes.getOrDefault(playerUUID, new HashSet<>());
+        
+        // Remove all effects from the player
+        for (String nodeId : playerNodes) {
+            SkillTreeNode node = nodes.get(nodeId);
+            if (node != null) {
+                node.removeEffects(player);
+            }
+        }
+        
+        // Clear unlocked nodes and reset spent points
+        playerNodes.clear();
+        unlockedNodes.put(playerUUID, playerNodes);
+        spentPoints.put(playerUUID, 0);
+        
+        // Save player data
+        savePlayerData(player);
+        
+        player.sendMessage("§c⚠ All your skill tree perks have been reset!");
+    }
+    
+    /**
+     * Reset all skills for a player, removing all unlocked nodes and refunding points
+     * @param player The player to reset
+     * @return The number of nodes that were reset
+     */
+    public int resetAllSkills(Player player) {
+        UUID playerUUID = player.getUniqueId();
+        Set<String> playerNodes = unlockedNodes.getOrDefault(playerUUID, new HashSet<>());
+        
+        if (playerNodes.isEmpty()) {
+            return 0;
+        }
+        
+        // First, remove all effects
+        for (String nodeId : playerNodes) {
+            SkillTreeNode node = nodes.get(nodeId);
+            if (node != null) {
+                node.removeEffects(player);
+            }
+        }
+        
+        // Get the number of nodes being reset
+        int nodeCount = playerNodes.size();
+        
+        // Reset spent points
+        int pointsSpent = spentPoints.getOrDefault(playerUUID, 0);
+        spentPoints.put(playerUUID, 0);
+        
+        // Clear unlocked nodes
+        unlockedNodes.put(playerUUID, new HashSet<>());
+        
+        // Save player data
+        savePlayerData(player);
+        
+        plugin.getLogger().info("Reset all skills for " + player.getName() + 
+                ", removed " + nodeCount + " nodes and refunded " + pointsSpent + " points");
+        
+        return nodeCount;
+    }
+    
+    /**
+     * Create the skill tree directory and default files if they don't exist
+     */
+    private void createSkillTreeDirectory() {
+        File skillTreeDir = new File(plugin.getDataFolder(), SKILL_TREE_FOLDER);
+        if (!skillTreeDir.exists()) {
+            skillTreeDir.mkdirs();
+        }
+        
+        // Create default category files if they don't exist
+        for (String category : SKILL_CATEGORIES) {
+            File categoryFile = new File(skillTreeDir, category + ".yml");
+            if (!categoryFile.exists()) {
+                YamlConfiguration config = new YamlConfiguration();
+                
+                try {
+                    config.save(categoryFile);
+                    plugin.getLogger().info("Created empty skill tree file: " + category + ".yml");
+                } catch (IOException e) {
+                    plugin.getLogger().severe("Could not create skill tree file: " + category + ".yml");
+                    e.printStackTrace();
                 }
             }
         }
     }
     
     /**
-     * Add default skill tree config values if they don't exist
+     * Load skill tree configuration from files
      */
-    private void addDefaultSkillTreeConfig() {
-        FileConfiguration config = plugin.getConfig();
+    private void loadSkillTreeConfig() {
+        // Clear existing nodes
+        nodes.clear();
         
-        // Check for specific node presence rather than just the section
-        boolean missingNodes = false;
-        if (!config.isConfigurationSection(CONFIG_NODES_PATH + ".warrior_vitality") ||
-            !config.isConfigurationSection(CONFIG_NODES_PATH + ".warrior_toughness") ||
-            !config.isConfigurationSection(CONFIG_NODES_PATH + ".warrior_agility") ||
-            !config.isConfigurationSection(CONFIG_NODES_PATH + ".warrior_power") ||
-            !config.isConfigurationSection(CONFIG_NODES_PATH + ".mining_efficiency") ||
-            !config.isConfigurationSection(CONFIG_NODES_PATH + ".mining_fortune") ||
-            !config.isConfigurationSection(CONFIG_NODES_PATH + ".mining_xp_boost") ||
-            !config.isConfigurationSection(CONFIG_NODES_PATH + ".mining_treasure_hunter") ||
-            !config.isConfigurationSection(CONFIG_NODES_PATH + ".logging_efficiency") ||
-            !config.isConfigurationSection(CONFIG_NODES_PATH + ".fishing_luck")) {
-            
-            missingNodes = true;
-            plugin.getLogger().info("Found missing skill tree nodes. Adding defaults...");
+        File skillTreeDir = new File(plugin.getDataFolder(), SKILL_TREE_FOLDER);
+        if (!skillTreeDir.exists() || !skillTreeDir.isDirectory()) {
+            plugin.getLogger().warning("Skill tree directory not found, using default configuration.");
+            migrateFromDefaultConfig();
+            return;
         }
         
-        // Add default nodes if any are missing or the section doesn't exist
-        if (missingNodes || !config.isConfigurationSection(CONFIG_NODES_PATH)) {
-            // ==== WARRIOR TREE ====
-            // Warrior's Strength - Base node
-            config.set(CONFIG_NODES_PATH + ".warrior_strength.name", "Warrior's Strength");
-            config.set(CONFIG_NODES_PATH + ".warrior_strength.description", "Increases your maximum health");
-            config.set(CONFIG_NODES_PATH + ".warrior_strength.point_cost", 1);
-            config.set(CONFIG_NODES_PATH + ".warrior_strength.icon", "IRON_SWORD");
-            config.set(CONFIG_NODES_PATH + ".warrior_strength.type", "STAT_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_strength.effects.health.type", "ATTRIBUTE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_strength.effects.health.target", "GENERIC_MAX_HEALTH");
-            config.set(CONFIG_NODES_PATH + ".warrior_strength.effects.health.value", 2.0);
+        // Check if directory is empty - if so, migrate from config.yml
+        File[] files = skillTreeDir.listFiles((dir, name) -> name.endsWith(".yml"));
+        if (files == null || files.length == 0) {
+            migrateFromDefaultConfig();
+            return;
+        }
+        
+        // Load each category file
+        for (File file : files) {
+            try {
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+                
+                // Load nodes from this file
+                for (String nodeId : config.getKeys(false)) {
+                    ConfigurationSection nodeSection = config.getConfigurationSection(nodeId);
+                    if (nodeSection != null) {
+                        loadNodeFromConfig(nodeId, nodeSection);
+                    }
+                }
+                
+                plugin.getLogger().info("Loaded skill tree nodes from: " + file.getName());
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error loading skill tree file: " + file.getName());
+                e.printStackTrace();
+            }
+        }
+        
+        if (nodes.isEmpty()) {
+            plugin.getLogger().warning("No skill tree nodes loaded, using default configuration.");
+            migrateFromDefaultConfig();
+        }
+    }
+    
+    /**
+     * Load a specific node from a configuration section
+     */
+    private void loadNodeFromConfig(String nodeId, ConfigurationSection nodeSection) {
+        try {
+            String name = nodeSection.getString("name", "Unknown Node");
+            String description = nodeSection.getString("description", "");
+            int pointCost = nodeSection.getInt("point_cost", 1);
+            List<String> prerequisites = nodeSection.getStringList("prerequisites");
+            String iconName = nodeSection.getString("icon", "BOOK");
+            Material icon = Material.getMaterial(iconName) != null ? 
+                            Material.getMaterial(iconName) : Material.BOOK;
+            String typeName = nodeSection.getString("type", "PASSIVE");
+            SkillTreeNode.NodeType type = SkillTreeNode.NodeType.valueOf(typeName);
             
-            // Warrior's Vitality
-            config.set(CONFIG_NODES_PATH + ".warrior_vitality.name", "Warrior's Vitality");
-            config.set(CONFIG_NODES_PATH + ".warrior_vitality.description", "Increases your health regeneration");
-            config.set(CONFIG_NODES_PATH + ".warrior_vitality.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".warrior_vitality.prerequisites", Arrays.asList("warrior_strength"));
-            config.set(CONFIG_NODES_PATH + ".warrior_vitality.icon", "GOLDEN_APPLE");
-            config.set(CONFIG_NODES_PATH + ".warrior_vitality.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".warrior_vitality.effects.regen.type", "ATTRIBUTE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_vitality.effects.regen.target", "GENERIC_MAX_HEALTH");
-            config.set(CONFIG_NODES_PATH + ".warrior_vitality.effects.regen.value", 2.0);
+            SkillTreeNode node = new SkillTreeNode(nodeId, name, description, pointCost, 
+                                             prerequisites, icon, type);
             
-            // Warrior's Toughness
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.name", "Warrior's Toughness");
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.description", "Increases your armor and damage resistance");
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.point_cost", 3);
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.prerequisites", Arrays.asList("warrior_vitality"));
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.icon", "DIAMOND_CHESTPLATE");
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.type", "STAT_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.effects.armor.type", "ATTRIBUTE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.effects.armor.target", "GENERIC_ARMOR");
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.effects.armor.value", 2.0);
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.effects.toughness.type", "ATTRIBUTE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.effects.toughness.target", "GENERIC_ARMOR_TOUGHNESS");
-            config.set(CONFIG_NODES_PATH + ".warrior_toughness.effects.toughness.value", 1.0);
+            // Load effects
+            ConfigurationSection effectsSection = nodeSection.getConfigurationSection("effects");
+            if (effectsSection != null) {
+                for (String effectKey : effectsSection.getKeys(false)) {
+                    ConfigurationSection effectSection = effectsSection.getConfigurationSection(effectKey);
+                    if (effectSection != null) {
+                        String effectTypeName = effectSection.getString("type");
+                        String target = effectSection.getString("target", "");
+                        double value = effectSection.getDouble("value", 0.0);
+                        
+                        SkillTreeNode.EffectType effectType = SkillTreeNode.EffectType.valueOf(effectTypeName);
+                        node.addEffect(new SkillTreeNode.NodeEffect(effectType, target, value));
+                    }
+                }
+            }
             
-            // Warrior's Agility
-            config.set(CONFIG_NODES_PATH + ".warrior_agility.name", "Warrior's Agility");
-            config.set(CONFIG_NODES_PATH + ".warrior_agility.description", "Increases your movement speed");
-            config.set(CONFIG_NODES_PATH + ".warrior_agility.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".warrior_agility.prerequisites", Arrays.asList("warrior_strength"));
-            config.set(CONFIG_NODES_PATH + ".warrior_agility.icon", "FEATHER");
-            config.set(CONFIG_NODES_PATH + ".warrior_agility.type", "STAT_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_agility.effects.speed.type", "ATTRIBUTE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_agility.effects.speed.target", "GENERIC_MOVEMENT_SPEED");
-            config.set(CONFIG_NODES_PATH + ".warrior_agility.effects.speed.value", 0.02);
+            nodes.put(nodeId, node);
+            plugin.getLogger().info("Loaded skill tree node: " + nodeId);
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to load skill tree node " + nodeId + ": " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Migrate nodes from config.yml to separate files
+     */
+    private void migrateFromDefaultConfig() {
+        plugin.getLogger().info("Migrating skill tree configuration to separate files...");
+        
+        // First, check if there are any nodes in the config.yml
+        ConfigurationSection nodesSection = plugin.getConfig().getConfigurationSection(CONFIG_NODES_PATH);
+        if (nodesSection == null || nodesSection.getKeys(false).isEmpty()) {
+            // No nodes in config.yml, create default nodes directly
+            createDefaultNodes();
+            return;
+        }
+        
+        // Map to organize nodes by category
+        Map<String, YamlConfiguration> categoryConfigs = new HashMap<>();
+        
+        // Create configurations for each category
+        for (String category : SKILL_CATEGORIES) {
+            categoryConfigs.put(category, new YamlConfiguration());
+        }
+        
+        // Process each node from config.yml
+        for (String nodeId : nodesSection.getKeys(false)) {
+            ConfigurationSection nodeSection = nodesSection.getConfigurationSection(nodeId);
+            if (nodeSection == null) continue;
             
-            // Warrior's Power
-            config.set(CONFIG_NODES_PATH + ".warrior_power.name", "Warrior's Power");
-            config.set(CONFIG_NODES_PATH + ".warrior_power.description", "Increases your attack damage");
-            config.set(CONFIG_NODES_PATH + ".warrior_power.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".warrior_power.prerequisites", Arrays.asList("warrior_strength"));
-            config.set(CONFIG_NODES_PATH + ".warrior_power.icon", "DIAMOND_SWORD");
-            config.set(CONFIG_NODES_PATH + ".warrior_power.type", "STAT_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_power.effects.damage.type", "ATTRIBUTE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".warrior_power.effects.damage.target", "GENERIC_ATTACK_DAMAGE");
-            config.set(CONFIG_NODES_PATH + ".warrior_power.effects.damage.value", 1.0);
+            // Determine which category this node belongs to
+            String category = determineNodeCategory(nodeId);
+            YamlConfiguration categoryConfig = categoryConfigs.get(category);
             
-            // ==== MINING TREE ====
-            // Mining Efficiency
-            config.set(CONFIG_NODES_PATH + ".mining_efficiency.name", "Mining Efficiency");
-            config.set(CONFIG_NODES_PATH + ".mining_efficiency.description", "Mine blocks faster");
-            config.set(CONFIG_NODES_PATH + ".mining_efficiency.point_cost", 1);
-            config.set(CONFIG_NODES_PATH + ".mining_efficiency.icon", "IRON_PICKAXE");
-            config.set(CONFIG_NODES_PATH + ".mining_efficiency.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".mining_efficiency.effects.mining_speed.type", "CUSTOM_EFFECT");
-            config.set(CONFIG_NODES_PATH + ".mining_efficiency.effects.mining_speed.target", "Increases mining speed by 10%");
-            config.set(CONFIG_NODES_PATH + ".mining_efficiency.effects.mining_speed.value", 0.10);
+            // Copy all node properties to the category configuration
+            for (String key : nodeSection.getKeys(true)) {
+                if (nodeSection.isConfigurationSection(key)) continue;
+                categoryConfig.set(nodeId + "." + key, nodeSection.get(key));
+            }
             
-            // Mining Fortune
-            config.set(CONFIG_NODES_PATH + ".mining_fortune.name", "Mining Fortune");
-            config.set(CONFIG_NODES_PATH + ".mining_fortune.description", "Chance to get extra drops from ores");
-            config.set(CONFIG_NODES_PATH + ".mining_fortune.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".mining_fortune.prerequisites", Arrays.asList("mining_efficiency"));
-            config.set(CONFIG_NODES_PATH + ".mining_fortune.icon", "GOLD_INGOT");
-            config.set(CONFIG_NODES_PATH + ".mining_fortune.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".mining_fortune.effects.fortune.type", "RESOURCE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".mining_fortune.effects.fortune.target", "ores");
-            config.set(CONFIG_NODES_PATH + ".mining_fortune.effects.fortune.value", 0.15);
+            // Load the node into memory
+            loadNodeFromConfig(nodeId, nodeSection);
+        }
+        
+        // Save each category to its respective file
+        for (String category : categoryConfigs.keySet()) {
+            YamlConfiguration config = categoryConfigs.get(category);
+            File categoryFile = new File(new File(plugin.getDataFolder(), SKILL_TREE_FOLDER), category + ".yml");
             
-            // Mining XP Boost
-            config.set(CONFIG_NODES_PATH + ".mining_xp_boost.name", "Mining XP Boost");
-            config.set(CONFIG_NODES_PATH + ".mining_xp_boost.description", "Gain more mining XP");
-            config.set(CONFIG_NODES_PATH + ".mining_xp_boost.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".mining_xp_boost.prerequisites", Arrays.asList("mining_efficiency"));
-            config.set(CONFIG_NODES_PATH + ".mining_xp_boost.icon", "EXPERIENCE_BOTTLE");
-            config.set(CONFIG_NODES_PATH + ".mining_xp_boost.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".mining_xp_boost.effects.xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".mining_xp_boost.effects.xp.target", "mining");
-            config.set(CONFIG_NODES_PATH + ".mining_xp_boost.effects.xp.value", 0.20);
-            
-            // Mining Treasure Hunter
-            config.set(CONFIG_NODES_PATH + ".mining_treasure_hunter.name", "Mining Treasure Hunter");
-            config.set(CONFIG_NODES_PATH + ".mining_treasure_hunter.description", "Chance to find rare items while mining");
-            config.set(CONFIG_NODES_PATH + ".mining_treasure_hunter.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".mining_treasure_hunter.prerequisites", Arrays.asList("mining_efficiency"));
-            config.set(CONFIG_NODES_PATH + ".mining_treasure_hunter.icon", "CHEST");
-            config.set(CONFIG_NODES_PATH + ".mining_treasure_hunter.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".mining_treasure_hunter.effects.treasure.type", "CUSTOM_EFFECT");
-            config.set(CONFIG_NODES_PATH + ".mining_treasure_hunter.effects.treasure.target", "5% chance to find rare items when mining");
-            config.set(CONFIG_NODES_PATH + ".mining_treasure_hunter.effects.treasure.value", 0.05);
-            
-            // Mining Mastery
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.name", "Mining Mastery");
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.description", "Increases mining XP gain and ore drops");
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.point_cost", 3);
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.prerequisites", Arrays.asList("mining_fortune", "mining_xp_boost"));
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.icon", "DIAMOND_PICKAXE");
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.type", "MASTERY");
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.effects.mining_xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.effects.mining_xp.target", "mining");
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.effects.mining_xp.value", 0.15);
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.effects.resource.type", "RESOURCE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.effects.resource.target", "ores");
-            config.set(CONFIG_NODES_PATH + ".mining_mastery.effects.resource.value", 0.10);
-            
-            // ==== LOGGING TREE ====
-            // Logging Efficiency
-            config.set(CONFIG_NODES_PATH + ".logging_efficiency.name", "Logging Efficiency");
-            config.set(CONFIG_NODES_PATH + ".logging_efficiency.description", "Chop wood faster");
-            config.set(CONFIG_NODES_PATH + ".logging_efficiency.point_cost", 1);
-            config.set(CONFIG_NODES_PATH + ".logging_efficiency.icon", "IRON_AXE");
-            config.set(CONFIG_NODES_PATH + ".logging_efficiency.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".logging_efficiency.effects.logging_speed.type", "CUSTOM_EFFECT");
-            config.set(CONFIG_NODES_PATH + ".logging_efficiency.effects.logging_speed.target", "Increases wood chopping speed by 10%");
-            config.set(CONFIG_NODES_PATH + ".logging_efficiency.effects.logging_speed.value", 0.10);
-            
-            // Logging Harvester
-            config.set(CONFIG_NODES_PATH + ".logging_harvester.name", "Logging Harvester");
-            config.set(CONFIG_NODES_PATH + ".logging_harvester.description", "Chance to get extra logs");
-            config.set(CONFIG_NODES_PATH + ".logging_harvester.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".logging_harvester.prerequisites", Arrays.asList("logging_efficiency"));
-            config.set(CONFIG_NODES_PATH + ".logging_harvester.icon", "OAK_LOG");
-            config.set(CONFIG_NODES_PATH + ".logging_harvester.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".logging_harvester.effects.logs.type", "RESOURCE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".logging_harvester.effects.logs.target", "logs");
-            config.set(CONFIG_NODES_PATH + ".logging_harvester.effects.logs.value", 0.15);
-            
-            // Logging Naturalist
-            config.set(CONFIG_NODES_PATH + ".logging_naturalist.name", "Logging Naturalist");
-            config.set(CONFIG_NODES_PATH + ".logging_naturalist.description", "Chance to get saplings and apples");
-            config.set(CONFIG_NODES_PATH + ".logging_naturalist.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".logging_naturalist.prerequisites", Arrays.asList("logging_efficiency"));
-            config.set(CONFIG_NODES_PATH + ".logging_naturalist.icon", "OAK_SAPLING");
-            config.set(CONFIG_NODES_PATH + ".logging_naturalist.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".logging_naturalist.effects.saplings.type", "RESOURCE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".logging_naturalist.effects.saplings.target", "saplings");
-            config.set(CONFIG_NODES_PATH + ".logging_naturalist.effects.saplings.value", 0.20);
-            
-            // Logging XP Boost
-            config.set(CONFIG_NODES_PATH + ".logging_xp_boost.name", "Logging XP Boost");
-            config.set(CONFIG_NODES_PATH + ".logging_xp_boost.description", "Gain more logging XP");
-            config.set(CONFIG_NODES_PATH + ".logging_xp_boost.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".logging_xp_boost.prerequisites", Arrays.asList("logging_efficiency"));
-            config.set(CONFIG_NODES_PATH + ".logging_xp_boost.icon", "EXPERIENCE_BOTTLE");
-            config.set(CONFIG_NODES_PATH + ".logging_xp_boost.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".logging_xp_boost.effects.xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".logging_xp_boost.effects.xp.target", "logging");
-            config.set(CONFIG_NODES_PATH + ".logging_xp_boost.effects.xp.value", 0.20);
-            
-            // Logging Mastery
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.name", "Logging Mastery");
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.description", "Master of woodcutting");
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.point_cost", 3);
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.prerequisites", Arrays.asList("logging_harvester", "logging_xp_boost"));
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.icon", "DIAMOND_AXE");
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.type", "MASTERY");
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.effects.logging_xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.effects.logging_xp.target", "logging");
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.effects.logging_xp.value", 0.15);
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.effects.timber.type", "ABILITY_UNLOCK");
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.effects.timber.target", "Timber Ability");
-            config.set(CONFIG_NODES_PATH + ".logging_mastery.effects.timber.value", 1.0);
-            
-            // ==== FARMING TREE ====
-            // Farming Green Thumb
-            config.set(CONFIG_NODES_PATH + ".farming_green_thumb.name", "Farming Green Thumb");
-            config.set(CONFIG_NODES_PATH + ".farming_green_thumb.description", "Crops grow faster near you");
-            config.set(CONFIG_NODES_PATH + ".farming_green_thumb.point_cost", 1);
-            config.set(CONFIG_NODES_PATH + ".farming_green_thumb.icon", "WHEAT_SEEDS");
-            config.set(CONFIG_NODES_PATH + ".farming_green_thumb.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".farming_green_thumb.effects.growth.type", "CUSTOM_EFFECT");
-            config.set(CONFIG_NODES_PATH + ".farming_green_thumb.effects.growth.target", "Crops within 5 blocks grow 10% faster");
-            config.set(CONFIG_NODES_PATH + ".farming_green_thumb.effects.growth.value", 0.10);
-            
-            // Farming Harvester
-            config.set(CONFIG_NODES_PATH + ".farming_harvester.name", "Farming Harvester");
-            config.set(CONFIG_NODES_PATH + ".farming_harvester.description", "Chance to get extra crops");
-            config.set(CONFIG_NODES_PATH + ".farming_harvester.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".farming_harvester.prerequisites", Arrays.asList("farming_green_thumb"));
-            config.set(CONFIG_NODES_PATH + ".farming_harvester.icon", "WHEAT");
-            config.set(CONFIG_NODES_PATH + ".farming_harvester.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".farming_harvester.effects.crops.type", "RESOURCE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".farming_harvester.effects.crops.target", "crops");
-            config.set(CONFIG_NODES_PATH + ".farming_harvester.effects.crops.value", 0.20);
-            
-            // Farming Animal Whisperer
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.name", "Animal Whisperer");
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.description", "Better breeding and animal products");
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.prerequisites", Arrays.asList("farming_green_thumb"));
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.icon", "EGG");
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.effects.breeding.type", "CUSTOM_EFFECT");
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.effects.breeding.target", "20% chance for twins when breeding animals");
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.effects.breeding.value", 0.20);
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.effects.products.type", "RESOURCE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.effects.products.target", "animal products");
-            config.set(CONFIG_NODES_PATH + ".farming_animal_whisperer.effects.products.value", 0.15);
-            
-            // Farming XP Boost
-            config.set(CONFIG_NODES_PATH + ".farming_xp_boost.name", "Farming XP Boost");
-            config.set(CONFIG_NODES_PATH + ".farming_xp_boost.description", "Gain more farming XP");
-            config.set(CONFIG_NODES_PATH + ".farming_xp_boost.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".farming_xp_boost.prerequisites", Arrays.asList("farming_green_thumb"));
-            config.set(CONFIG_NODES_PATH + ".farming_xp_boost.icon", "EXPERIENCE_BOTTLE");
-            config.set(CONFIG_NODES_PATH + ".farming_xp_boost.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".farming_xp_boost.effects.xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".farming_xp_boost.effects.xp.target", "farming");
-            config.set(CONFIG_NODES_PATH + ".farming_xp_boost.effects.xp.value", 0.20);
-            
-            // Farming Mastery
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.name", "Farming Mastery");
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.description", "Master of agriculture");
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.point_cost", 3);
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.prerequisites", Arrays.asList("farming_harvester", "farming_xp_boost"));
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.icon", "DIAMOND_HOE");
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.type", "MASTERY");
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.effects.farming_xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.effects.farming_xp.target", "farming");
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.effects.farming_xp.value", 0.15);
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.effects.harvest.type", "ABILITY_UNLOCK");
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.effects.harvest.target", "Super Harvest Ability");
-            config.set(CONFIG_NODES_PATH + ".farming_mastery.effects.harvest.value", 1.0);
-            
-            // ==== FIGHTING TREE ====
-            // Fighting Strength
-            config.set(CONFIG_NODES_PATH + ".fighting_strength.name", "Fighting Strength");
-            config.set(CONFIG_NODES_PATH + ".fighting_strength.description", "Increase melee damage");
-            config.set(CONFIG_NODES_PATH + ".fighting_strength.point_cost", 1);
-            config.set(CONFIG_NODES_PATH + ".fighting_strength.icon", "IRON_SWORD");
-            config.set(CONFIG_NODES_PATH + ".fighting_strength.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".fighting_strength.effects.damage.type", "DAMAGE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".fighting_strength.effects.damage.target", "melee");
-            config.set(CONFIG_NODES_PATH + ".fighting_strength.effects.damage.value", 0.10);
-            
-            // Fighting Precision
-            config.set(CONFIG_NODES_PATH + ".fighting_precision.name", "Fighting Precision");
-            config.set(CONFIG_NODES_PATH + ".fighting_precision.description", "Chance for critical hits");
-            config.set(CONFIG_NODES_PATH + ".fighting_precision.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".fighting_precision.prerequisites", Arrays.asList("fighting_strength"));
-            config.set(CONFIG_NODES_PATH + ".fighting_precision.icon", "TARGET");
-            config.set(CONFIG_NODES_PATH + ".fighting_precision.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".fighting_precision.effects.critical.type", "CUSTOM_EFFECT");
-            config.set(CONFIG_NODES_PATH + ".fighting_precision.effects.critical.target", "15% chance for critical hits dealing 50% more damage");
-            config.set(CONFIG_NODES_PATH + ".fighting_precision.effects.critical.value", 0.15);
-            
-            // Fighting Agility
-            config.set(CONFIG_NODES_PATH + ".fighting_agility.name", "Fighting Agility");
-            config.set(CONFIG_NODES_PATH + ".fighting_agility.description", "Chance to dodge attacks");
-            config.set(CONFIG_NODES_PATH + ".fighting_agility.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".fighting_agility.prerequisites", Arrays.asList("fighting_strength"));
-            config.set(CONFIG_NODES_PATH + ".fighting_agility.icon", "FEATHER");
-            config.set(CONFIG_NODES_PATH + ".fighting_agility.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".fighting_agility.effects.dodge.type", "CUSTOM_EFFECT");
-            config.set(CONFIG_NODES_PATH + ".fighting_agility.effects.dodge.target", "10% chance to dodge incoming attacks");
-            config.set(CONFIG_NODES_PATH + ".fighting_agility.effects.dodge.value", 0.10);
-            
-            // Fighting XP Boost
-            config.set(CONFIG_NODES_PATH + ".fighting_xp_boost.name", "Fighting XP Boost");
-            config.set(CONFIG_NODES_PATH + ".fighting_xp_boost.description", "Gain more fighting XP");
-            config.set(CONFIG_NODES_PATH + ".fighting_xp_boost.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".fighting_xp_boost.prerequisites", Arrays.asList("fighting_strength"));
-            config.set(CONFIG_NODES_PATH + ".fighting_xp_boost.icon", "EXPERIENCE_BOTTLE");
-            config.set(CONFIG_NODES_PATH + ".fighting_xp_boost.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".fighting_xp_boost.effects.xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".fighting_xp_boost.effects.xp.target", "fighting");
-            config.set(CONFIG_NODES_PATH + ".fighting_xp_boost.effects.xp.value", 0.20);
-            
-            // Fighting Mastery
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.name", "Fighting Mastery");
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.description", "Master of combat");
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.point_cost", 3);
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.prerequisites", Arrays.asList("fighting_precision", "fighting_xp_boost"));
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.icon", "DIAMOND_SWORD");
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.type", "MASTERY");
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.effects.fighting_xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.effects.fighting_xp.target", "fighting");
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.effects.fighting_xp.value", 0.15);
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.effects.rage.type", "ABILITY_UNLOCK");
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.effects.rage.target", "Berserker Rage Ability");
-            config.set(CONFIG_NODES_PATH + ".fighting_mastery.effects.rage.value", 1.0);
-            
-            // ==== FISHING TREE ====
-            // Fishing Luck
-            config.set(CONFIG_NODES_PATH + ".fishing_luck.name", "Fishing Luck");
-            config.set(CONFIG_NODES_PATH + ".fishing_luck.description", "Improved fishing luck");
-            config.set(CONFIG_NODES_PATH + ".fishing_luck.point_cost", 1);
-            config.set(CONFIG_NODES_PATH + ".fishing_luck.icon", "FISHING_ROD");
-            config.set(CONFIG_NODES_PATH + ".fishing_luck.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".fishing_luck.effects.luck.type", "ATTRIBUTE_BOOST");
-            config.set(CONFIG_NODES_PATH + ".fishing_luck.effects.luck.target", "GENERIC_LUCK");
-            config.set(CONFIG_NODES_PATH + ".fishing_luck.effects.luck.value", 1.0);
-            
-            // Fishing Patience
-            config.set(CONFIG_NODES_PATH + ".fishing_patience.name", "Fishing Patience");
-            config.set(CONFIG_NODES_PATH + ".fishing_patience.description", "Reduced waiting time for fish to bite");
-            config.set(CONFIG_NODES_PATH + ".fishing_patience.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".fishing_patience.prerequisites", Arrays.asList("fishing_luck"));
-            config.set(CONFIG_NODES_PATH + ".fishing_patience.icon", "CLOCK");
-            config.set(CONFIG_NODES_PATH + ".fishing_patience.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".fishing_patience.effects.bite_time.type", "CUSTOM_EFFECT");
-            config.set(CONFIG_NODES_PATH + ".fishing_patience.effects.bite_time.target", "Fish bite 20% faster");
-            config.set(CONFIG_NODES_PATH + ".fishing_patience.effects.bite_time.value", 0.20);
-            
-            // Fishing Treasure Hunter
-            config.set(CONFIG_NODES_PATH + ".fishing_treasure_hunter.name", "Fishing Treasure Hunter");
-            config.set(CONFIG_NODES_PATH + ".fishing_treasure_hunter.description", "Increased chance for treasure items");
-            config.set(CONFIG_NODES_PATH + ".fishing_treasure_hunter.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".fishing_treasure_hunter.prerequisites", Arrays.asList("fishing_luck"));
-            config.set(CONFIG_NODES_PATH + ".fishing_treasure_hunter.icon", "CHEST");
-            config.set(CONFIG_NODES_PATH + ".fishing_treasure_hunter.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".fishing_treasure_hunter.effects.treasure.type", "CUSTOM_EFFECT");
-            config.set(CONFIG_NODES_PATH + ".fishing_treasure_hunter.effects.treasure.target", "25% more treasure items from fishing");
-            config.set(CONFIG_NODES_PATH + ".fishing_treasure_hunter.effects.treasure.value", 0.25);
-            
-            // Fishing XP Boost
-            config.set(CONFIG_NODES_PATH + ".fishing_xp_boost.name", "Fishing XP Boost");
-            config.set(CONFIG_NODES_PATH + ".fishing_xp_boost.description", "Gain more fishing XP");
-            config.set(CONFIG_NODES_PATH + ".fishing_xp_boost.point_cost", 2);
-            config.set(CONFIG_NODES_PATH + ".fishing_xp_boost.prerequisites", Arrays.asList("fishing_luck"));
-            config.set(CONFIG_NODES_PATH + ".fishing_xp_boost.icon", "EXPERIENCE_BOTTLE");
-            config.set(CONFIG_NODES_PATH + ".fishing_xp_boost.type", "PASSIVE");
-            config.set(CONFIG_NODES_PATH + ".fishing_xp_boost.effects.xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".fishing_xp_boost.effects.xp.target", "fishing");
-            config.set(CONFIG_NODES_PATH + ".fishing_xp_boost.effects.xp.value", 0.20);
-            
-            // Fishing Mastery
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.name", "Fishing Mastery");
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.description", "Master of fishing");
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.point_cost", 3);
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.prerequisites", Arrays.asList("fishing_treasure_hunter", "fishing_xp_boost"));
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.icon", "TROPICAL_FISH");
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.type", "MASTERY");
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.effects.fishing_xp.type", "SKILL_XP_BOOST");
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.effects.fishing_xp.target", "fishing");
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.effects.fishing_xp.value", 0.15);
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.effects.instant.type", "ABILITY_UNLOCK");
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.effects.instant.target", "Instant Catch Ability");
-            config.set(CONFIG_NODES_PATH + ".fishing_mastery.effects.instant.value", 1.0);
-            
-            plugin.saveConfig();
+            try {
+                config.save(categoryFile);
+                plugin.getLogger().info("Saved skill tree nodes for category: " + category);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Error saving skill tree category: " + category);
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    /**
+     * Determine the category for a node ID
+     */
+    private String determineNodeCategory(String nodeId) {
+        for (String category : SKILL_CATEGORIES) {
+            if (nodeId.startsWith(category + "_")) {
+                return category;
+            }
+        }
+        
+        // Default to warrior if we can't determine category
+        return "warrior";
+    }
+    
+    /**
+     * Create default nodes if no configuration exists
+     */
+    private void createDefaultNodes() {
+        plugin.getLogger().info("Creating default skill tree nodes...");
+        
+        // Create default nodes directly in separate files
+        for (String category : SKILL_CATEGORIES) {
+            createDefaultNodesForCategory(category);
+        }
+    }
+    
+    /**
+     * Create default nodes for a specific category
+     */
+    private void createDefaultNodesForCategory(String category) {
+        YamlConfiguration config = new YamlConfiguration();
+        File categoryFile = new File(new File(plugin.getDataFolder(), SKILL_TREE_FOLDER), category + ".yml");
+        
+        switch (category) {
+            case "warrior":
+                // Warrior skill tree - Combat focused abilities
+                createWarriorSkillTree(config);
+                break;
+            case "mining":
+                // Mining skill tree - Mining efficiency and special drops
+                createMiningSkillTree(config);
+                break;
+            case "logging":
+                // Logging skill tree - Woodcutting and tree-related abilities
+                createLoggingSkillTree(config);
+                break;
+            case "farming":
+                // Farming skill tree - Crop growth and harvesting abilities
+                createFarmingSkillTree(config);
+                break;
+            case "fighting":
+                // Fighting skill tree - PvP focused abilities 
+                createFightingSkillTree(config);
+                break;
+            case "fishing":
+                // Fishing skill tree - Fishing efficiency and special catches
+                createFishingSkillTree(config);
+                break;
+            case "excavation":
+                // Excavation skill tree - Digging abilities
+                createExcavationSkillTree(config);
+                break;
+            case "enchanting":
+                // Enchanting skill tree - Enchanting and magical abilities
+                createEnchantingSkillTree(config);
+                break;
+        }
+        
+        try {
+            config.save(categoryFile);
+            plugin.getLogger().info("Created default skill tree for category: " + category);
+        } catch (IOException e) {
+            plugin.getLogger().severe("Error saving default skill tree for category: " + category);
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Create default warrior skill tree
+     */
+    private void createWarriorSkillTree(YamlConfiguration config) {
+        // Tier 1 - Base abilities
+        createSkillNode(config, "warrior_strength", "Strength", "Increases melee damage by 10%", 1, 
+                new ArrayList<>(), "IRON_SWORD", "PASSIVE", 
+                new NodeEffectData("DAMAGE_MULTIPLIER", "melee", 0.1));
+        
+        createSkillNode(config, "warrior_toughness", "Toughness", "Reduces damage taken by 5%", 1, 
+                new ArrayList<>(), "IRON_CHESTPLATE", "PASSIVE", 
+                new NodeEffectData("DAMAGE_REDUCTION", "all", 0.05));
+        
+        createSkillNode(config, "warrior_health", "Vitality", "Increases max health by 2 hearts", 1, 
+                new ArrayList<>(), "APPLE", "PASSIVE", 
+                new NodeEffectData("ATTRIBUTE", "GENERIC_MAX_HEALTH", 4.0));
+        
+        // Tier 2 - Advanced abilities (require tier 1)
+        List<String> strengthPrereq = Collections.singletonList("warrior_strength");
+        createSkillNode(config, "warrior_power_strike", "Power Strike", "15% chance to deal double damage", 2, 
+                strengthPrereq, "DIAMOND_SWORD", "PASSIVE", 
+                new NodeEffectData("CRITICAL_CHANCE", "melee", 0.15));
+        
+        List<String> toughnessPrereq = Collections.singletonList("warrior_toughness");
+        createSkillNode(config, "warrior_resilience", "Resilience", "20% chance to ignore knockback", 2, 
+                toughnessPrereq, "SHIELD", "PASSIVE", 
+                new NodeEffectData("KNOCKBACK_RESISTANCE", "all", 0.2));
+        
+        List<String> healthPrereq = Collections.singletonList("warrior_health");
+        createSkillNode(config, "warrior_regeneration", "Regeneration", "Regenerate health 10% faster", 2, 
+                healthPrereq, "GOLDEN_APPLE", "PASSIVE", 
+                new NodeEffectData("REGENERATION_RATE", "health", 0.1));
+        
+        // Tier 3 - Specialized abilities (require tier 2)
+        List<String> powerStrikePrereq = Collections.singletonList("warrior_power_strike");
+        createSkillNode(config, "warrior_cleave", "Cleave", "Attacks deal 25% damage to nearby enemies", 3, 
+                powerStrikePrereq, "NETHERITE_AXE", "PASSIVE", 
+                new NodeEffectData("AOE_DAMAGE", "melee", 0.25));
+        
+        List<String> resiliencePrereq = Collections.singletonList("warrior_resilience");
+        createSkillNode(config, "warrior_deflection", "Deflection", "10% chance to reflect projectiles", 3, 
+                resiliencePrereq, "ARROW", "PASSIVE", 
+                new NodeEffectData("PROJECTILE_REFLECTION", "all", 0.1));
+        
+        List<String> regenPrereq = Collections.singletonList("warrior_regeneration");
+        createSkillNode(config, "warrior_second_wind", "Second Wind", "Gain Regeneration II for 5s when below 4 hearts", 3, 
+                regenPrereq, "TOTEM_OF_UNDYING", "PASSIVE", 
+                new NodeEffectData("LOW_HEALTH_EFFECT", "regeneration", 2.0));
+        
+        // Tier 4 - Master abilities (require multiple tier 3 prerequisites)
+        List<String> masterPrereq = Arrays.asList("warrior_cleave", "warrior_deflection", "warrior_second_wind");
+        createSkillNode(config, "warrior_battle_master", "Battle Master", "Gain Strength I for 5s after killing an enemy", 5, 
+                masterPrereq, "BEACON", "PASSIVE", 
+                new NodeEffectData("ON_KILL_EFFECT", "strength", 1.0));
+    }
+    
+    /**
+     * Create default mining skill tree
+     */
+    private void createMiningSkillTree(YamlConfiguration config) {
+        // Tier 1 - Base abilities
+        createSkillNode(config, "mining_efficiency", "Efficiency", "Mine blocks 10% faster", 1, 
+                new ArrayList<>(), "IRON_PICKAXE", "PASSIVE", 
+                new NodeEffectData("MINING_SPEED", "all", 0.1));
+        
+        createSkillNode(config, "mining_fortune", "Fortune", "5% chance to get double drops", 1, 
+                new ArrayList<>(), "GOLD_NUGGET", "PASSIVE", 
+                new NodeEffectData("DOUBLE_DROP_CHANCE", "mining", 0.05));
+        
+        createSkillNode(config, "mining_smelting", "Auto-Smelt", "5% chance to auto-smelt ores", 1, 
+                new ArrayList<>(), "FURNACE", "PASSIVE", 
+                new NodeEffectData("AUTO_SMELT_CHANCE", "ores", 0.05));
+        
+        // Tier 2 abilities
+        List<String> efficiencyPrereq = Collections.singletonList("mining_efficiency");
+        createSkillNode(config, "mining_haste", "Haste", "Mine blocks 20% faster", 2, 
+                efficiencyPrereq, "DIAMOND_PICKAXE", "PASSIVE", 
+                new NodeEffectData("MINING_SPEED", "all", 0.2));
+        
+        List<String> fortunePrereq = Collections.singletonList("mining_fortune");
+        createSkillNode(config, "mining_treasure", "Treasure Hunter", "1% chance to find gems in stone", 2, 
+                fortunePrereq, "EMERALD", "PASSIVE", 
+                new NodeEffectData("RARE_DROP_CHANCE", "stone", 0.01));
+        
+        List<String> smeltingPrereq = Collections.singletonList("mining_smelting");
+        createSkillNode(config, "mining_expert_smelter", "Expert Smelter", "15% chance to auto-smelt ores", 2, 
+                smeltingPrereq, "BLAST_FURNACE", "PASSIVE", 
+                new NodeEffectData("AUTO_SMELT_CHANCE", "ores", 0.15));
+    }
+
+    // Create nodes for the remaining skill trees in similar fashion
+    private void createLoggingSkillTree(YamlConfiguration config) {
+        // Base tier
+        createSkillNode(config, "logging_efficiency", "Lumber Efficiency", "Cut wood 10% faster", 1, 
+                new ArrayList<>(), "IRON_AXE", "PASSIVE", 
+                new NodeEffectData("WOODCUTTING_SPEED", "all", 0.1));
+                
+        createSkillNode(config, "logging_harvest", "Better Harvest", "10% chance to get extra logs", 1, 
+                new ArrayList<>(), "OAK_LOG", "PASSIVE", 
+                new NodeEffectData("EXTRA_DROPS", "logs", 0.1));
+                
+        // Advanced tier
+        List<String> efficiencyPrereq = Collections.singletonList("logging_efficiency");
+        createSkillNode(config, "logging_timber", "Timber", "5% chance to instantly cut down a tree", 3, 
+                efficiencyPrereq, "DIAMOND_AXE", "PASSIVE", 
+                new NodeEffectData("TREE_FELLER_CHANCE", "all", 0.05));
+    }
+
+    private void createFarmingSkillTree(YamlConfiguration config) {
+        // Base tier
+        createSkillNode(config, "farming_growth", "Green Thumb", "Crops grow 10% faster", 1, 
+                new ArrayList<>(), "WHEAT", "PASSIVE", 
+                new NodeEffectData("GROWTH_RATE", "crops", 0.1));
+                
+        createSkillNode(config, "farming_harvest", "Bountiful Harvest", "15% chance for extra crop drops", 1, 
+                new ArrayList<>(), "WHEAT_SEEDS", "PASSIVE", 
+                new NodeEffectData("EXTRA_DROPS", "crops", 0.15));
+                
+        // Advanced tier
+        List<String> growthPrereq = Collections.singletonList("farming_growth");
+        createSkillNode(config, "farming_fertilizer", "Natural Fertilizer", "Right-click crops to boost growth", 3, 
+                growthPrereq, "BONE_MEAL", "ACTIVE", 
+                new NodeEffectData("GROWTH_BOOST", "crops", 1.0));
+    }
+
+    private void createFightingSkillTree(YamlConfiguration config) {
+        // Base tier
+        createSkillNode(config, "fighting_damage", "Combat Training", "Deal 5% more damage to players", 1, 
+                new ArrayList<>(), "IRON_SWORD", "PASSIVE", 
+                new NodeEffectData("PVP_DAMAGE", "all", 0.05));
+                
+        createSkillNode(config, "fighting_defense", "Combat Defense", "Take 5% less damage from players", 1, 
+                new ArrayList<>(), "SHIELD", "PASSIVE", 
+                new NodeEffectData("PVP_DEFENSE", "all", 0.05));
+                
+        // Advanced tier
+        List<String> damagePrereq = Collections.singletonList("fighting_damage");
+        createSkillNode(config, "fighting_combo", "Combo Strikes", "Consecutive hits deal 2% more damage (stacking)", 3, 
+                damagePrereq, "DIAMOND_SWORD", "PASSIVE", 
+                new NodeEffectData("COMBO_DAMAGE", "melee", 0.02));
+    }
+
+    private void createFishingSkillTree(YamlConfiguration config) {
+        // Base tier
+        createSkillNode(config, "fishing_luck", "Fishing Luck", "10% better chance for good loot", 1, 
+                new ArrayList<>(), "FISHING_ROD", "PASSIVE", 
+                new NodeEffectData("FISHING_LUCK", "all", 0.1));
+                
+        createSkillNode(config, "fishing_speed", "Quick Catch", "Fish bite 15% faster", 1, 
+                new ArrayList<>(), "COD", "PASSIVE", 
+                new NodeEffectData("FISHING_SPEED", "all", 0.15));
+                
+        // Advanced tier
+        List<String> luckPrereq = Collections.singletonList("fishing_luck");
+        createSkillNode(config, "fishing_treasure", "Treasure Hunter", "5% chance to catch treasure items", 3, 
+                luckPrereq, "GOLDEN_APPLE", "PASSIVE", 
+                new NodeEffectData("TREASURE_CHANCE", "fishing", 0.05));
+    }
+
+    private void createExcavationSkillTree(YamlConfiguration config) {
+        // Base tier
+        createSkillNode(config, "excavation_efficiency", "Efficient Digging", "Dig 10% faster", 1, 
+                new ArrayList<>(), "IRON_SHOVEL", "PASSIVE", 
+                new NodeEffectData("DIGGING_SPEED", "all", 0.1));
+                
+        createSkillNode(config, "excavation_treasure", "Treasure Seeker", "1% chance to find items while digging", 1, 
+                new ArrayList<>(), "GOLD_NUGGET", "PASSIVE", 
+                new NodeEffectData("EXCAVATION_TREASURE", "all", 0.01));
+                
+        // Advanced tier
+        List<String> efficiencyPrereq = Collections.singletonList("excavation_efficiency");
+        createSkillNode(config, "excavation_archeologist", "Archeologist", "5% chance to find rare items in certain biomes", 3, 
+                efficiencyPrereq, "DIAMOND", "PASSIVE", 
+                new NodeEffectData("BIOME_TREASURE", "special", 0.05));
+    }
+
+    private void createEnchantingSkillTree(YamlConfiguration config) {
+        // Base tier
+        createSkillNode(config, "enchanting_experience", "Arcane Knowledge", "Gain 10% more enchanting XP", 1, 
+                new ArrayList<>(), "ENCHANTING_TABLE", "PASSIVE", 
+                new NodeEffectData("ENCHANTING_XP", "all", 0.1));
+                
+        createSkillNode(config, "enchanting_cost", "Efficient Enchanter", "Enchanting costs 10% less levels", 1, 
+                new ArrayList<>(), "EXPERIENCE_BOTTLE", "PASSIVE", 
+                new NodeEffectData("ENCHANTING_COST", "all", -0.1));
+                
+        // Advanced tier
+        List<String> experiencePrereq = Collections.singletonList("enchanting_experience");
+        createSkillNode(config, "enchanting_quality", "Quality Enchanter", "5% chance for higher level enchantments", 3, 
+                experiencePrereq, "BOOKSHELF", "PASSIVE", 
+                new NodeEffectData("ENCHANTMENT_QUALITY", "all", 0.05));
+    }
+    
+    /**
+     * Helper class to store node effect data
+     */
+    private static class NodeEffectData {
+        final String type;
+        final String target;
+        final double value;
+        
+        NodeEffectData(String type, String target, double value) {
+            this.type = type;
+            this.target = target;
+            this.value = value;
+        }
+    }
+    
+    /**
+     * Helper method to create a skill node in the configuration
+     */
+    private void createSkillNode(YamlConfiguration config, String nodeId, String name, String description, 
+                              int pointCost, List<String> prerequisites, String icon, String type, 
+                              NodeEffectData... effects) {
+        config.set(nodeId + ".name", name);
+        config.set(nodeId + ".description", description);
+        config.set(nodeId + ".point_cost", pointCost);
+        config.set(nodeId + ".prerequisites", prerequisites);
+        config.set(nodeId + ".icon", icon);
+        config.set(nodeId + ".type", type);
+        
+        // Add effects
+        for (int i = 0; i < effects.length; i++) {
+            NodeEffectData effect = effects[i];
+            config.set(nodeId + ".effects.effect" + i + ".type", effect.type);
+            config.set(nodeId + ".effects.effect" + i + ".target", effect.target);
+            config.set(nodeId + ".effects.effect" + i + ".value", effect.value);
         }
     }
     
@@ -581,21 +735,55 @@ public class SkillTreeManager implements Listener {
             return false;
         }
         
-        // Check available points
+        // Special case: If this is a base node (no prerequisites) and the player has no unlocked nodes in 
+        // this category, allow unlocking it even without points to ensure new players can start
+        String category = getCategoryFromNodeId(nodeId);
+        boolean isBaseNode = node.getPrerequisites().isEmpty();
+        boolean hasNodesInThisCategory = false;
+        
+        // Check if player has any nodes in this category
+        for (String unlockedNodeId : unlockedNodes.getOrDefault(playerUUID, Collections.emptySet())) {
+            if (unlockedNodeId.startsWith(category + "_")) {
+                hasNodesInThisCategory = true;
+                break;
+            }
+        }
+        
+        // First node in each category is free for new players
+        if (isBaseNode && !hasNodesInThisCategory) {
+            // Still check prerequisites (should be none for base nodes, but just in case)
+            for (String prerequisite : node.getPrerequisites()) {
+                if (!hasUnlockedNode(player, prerequisite)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        // Check available points (for non-base nodes)
         int availablePoints = getAvailableSkillPoints(player);
         if (availablePoints < node.getPointCost()) {
             return false;
         }
         
         // Check prerequisites
-        Set<String> playerNodes = unlockedNodes.getOrDefault(playerUUID, Collections.emptySet());
         for (String prerequisite : node.getPrerequisites()) {
-            if (!playerNodes.contains(prerequisite)) {
+            if (!hasUnlockedNode(player, prerequisite)) {
                 return false;
             }
         }
         
         return true;
+    }
+    
+    /**
+     * Extract category from node ID (e.g., "warrior_strength" -> "warrior")
+     */
+    private String getCategoryFromNodeId(String nodeId) {
+        if (nodeId.contains("_")) {
+            return nodeId.substring(0, nodeId.indexOf("_"));
+        }
+        return "unknown";
     }
     
     /**
@@ -618,10 +806,27 @@ public class SkillTreeManager implements Listener {
         playerNodes.add(nodeId);
         unlockedNodes.put(playerUUID, playerNodes);
         
-        // Deduct points
-        int spent = spentPoints.getOrDefault(playerUUID, 0);
-        spent += node.getPointCost();
-        spentPoints.put(playerUUID, spent);
+        // Check if this is a free base node (first in category)
+        String category = getCategoryFromNodeId(nodeId);
+        boolean isBaseNode = node.getPrerequisites().isEmpty();
+        boolean hasOtherNodesInCategory = false;
+        
+        // Count nodes in this category (excluding the one we just added)
+        for (String unlockedNodeId : playerNodes) {
+            if (unlockedNodeId.equals(nodeId)) continue; // Skip the node we just added
+            if (unlockedNodeId.startsWith(category + "_")) {
+                hasOtherNodesInCategory = true;
+                break;
+            }
+        }
+        
+        // Deduct points, but not for free base nodes
+        if (!(isBaseNode && !hasOtherNodesInCategory)) {
+            // Deduct points for non-free nodes
+            int spent = spentPoints.getOrDefault(playerUUID, 0);
+            spent += node.getPointCost();
+            spentPoints.put(playerUUID, spent);
+        }
         
         // Apply effects
         node.applyEffects(player);
@@ -724,6 +929,62 @@ public class SkillTreeManager implements Listener {
     }
     
     /**
+     * Handler for when a player dies
+     * This ensures attributes and effects are properly removed before respawn
+     */
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        UUID playerUUID = player.getUniqueId();
+        Set<String> playerNodes = unlockedNodes.getOrDefault(playerUUID, new HashSet<>());
+        
+        // Remove all effects to prevent them from persisting through death
+        for (String nodeId : playerNodes) {
+            SkillTreeNode node = nodes.get(nodeId);
+            if (node != null) {
+                node.removeEffects(player);
+            }
+        }
+        
+        plugin.getLogger().info("Removed skill tree effects for " + player.getName() + " on death");
+    }
+    
+    /**
+     * Handler for when a player respawns after death
+     * This ensures attributes and effects are properly reapplied
+     */
+    @EventHandler
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        // Schedule task to run 1 tick after respawn to ensure all vanilla attributes are reset
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Player player = event.getPlayer();
+            
+            // Clear and reapply all effects
+            UUID playerUUID = player.getUniqueId();
+            Set<String> playerNodes = unlockedNodes.getOrDefault(playerUUID, new HashSet<>());
+            
+            for (String nodeId : playerNodes) {
+                SkillTreeNode node = nodes.get(nodeId);
+                if (node != null) {
+                    // Make sure to first remove any lingering effects
+                    node.removeEffects(player);
+                }
+            }
+            
+            // Now apply all effects freshly
+            for (String nodeId : playerNodes) {
+                SkillTreeNode node = nodes.get(nodeId);
+                if (node != null) {
+                    node.applyEffects(player);
+                }
+            }
+            
+            // Debug message to help track effect application
+            plugin.getLogger().info("Reapplied skill tree effects for " + player.getName() + " after respawn");
+        }, 1L); // 1 tick delay
+    }
+    
+    /**
      * Reload skill tree configuration from config
      */
     public void reloadSkillTreeConfig() {
@@ -759,5 +1020,29 @@ public class SkillTreeManager implements Listener {
      */
     public PlayerLevel getPlayerLevel() {
         return playerLevel;
+    }
+
+    /**
+     * Get the set of unlocked nodes for a player
+     */
+    public Set<String> getUnlockedNodes(UUID playerUUID) {
+        return unlockedNodes.getOrDefault(playerUUID, Collections.emptySet());
+    }
+
+    /**
+     * Get a list of node IDs that a player can unlock
+     * @param player The player to check
+     * @return A list of node IDs that the player can unlock
+     */
+    public List<String> getUnlockableNodes(Player player) {
+        List<String> unlockableNodes = new ArrayList<>();
+        
+        for (String nodeId : nodes.keySet()) {
+            if (canUnlockNode(player, nodeId)) {
+                unlockableNodes.add(nodeId);
+            }
+        }
+        
+        return unlockableNodes;
     }
 } 

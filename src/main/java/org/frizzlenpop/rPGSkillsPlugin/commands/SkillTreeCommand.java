@@ -68,16 +68,53 @@ public class SkillTreeCommand implements CommandExecutor, TabCompleter {
                     return true;
                 case "reset":
                     // Admin command to reset a player's skill tree
-                    if (args.length < 2) {
-                        player.sendMessage(ChatColor.RED + "Usage: /skilltree reset <player>");
-                        return true;
-                    }
                     if (!player.hasPermission("rpgskills.admin")) {
                         player.sendMessage(ChatColor.RED + "You don't have permission to use this command!");
                         return true;
                     }
-                    // Implementation for reset command would go here
-                    return true;
+                    
+                    if (args.length < 2) {
+                        player.sendMessage(ChatColor.RED + "Usage: /skilltree reset <player|all>");
+                        return true;
+                    }
+                    
+                    String targetArg = args[1].toLowerCase();
+                    if (targetArg.equals("all")) {
+                        // Reset all players (only if explicitly specified)
+                        if (args.length < 3 || !args[2].equalsIgnoreCase("confirm")) {
+                            player.sendMessage(ChatColor.RED + "⚠ WARNING: This will reset ALL players' skill trees!");
+                            player.sendMessage(ChatColor.RED + "To confirm, use: /skilltree reset all confirm");
+                            return true;
+                        }
+                        
+                        int totalReset = 0;
+                        for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
+                            int nodesReset = skillTreeManager.resetAllSkills(onlinePlayer);
+                            if (nodesReset > 0) {
+                                onlinePlayer.sendMessage(ChatColor.RED + "⚠ Your skill tree has been reset by an admin!");
+                                totalReset++;
+                            }
+                        }
+                        
+                        player.sendMessage(ChatColor.GREEN + "Reset skill trees for " + totalReset + " online players.");
+                        return true;
+                    } else {
+                        // Reset a specific player
+                        Player targetPlayer = plugin.getServer().getPlayer(targetArg);
+                        if (targetPlayer == null) {
+                            player.sendMessage(ChatColor.RED + "Player not found: " + targetArg);
+                            return true;
+                        }
+                        
+                        int nodesReset = skillTreeManager.resetAllSkills(targetPlayer);
+                        if (nodesReset > 0) {
+                            player.sendMessage(ChatColor.GREEN + "Reset " + nodesReset + " skill nodes for " + targetPlayer.getName() + ".");
+                            targetPlayer.sendMessage(ChatColor.RED + "⚠ Your skill tree has been reset by an admin!");
+                        } else {
+                            player.sendMessage(ChatColor.YELLOW + targetPlayer.getName() + " has no skill nodes to reset.");
+                        }
+                        return true;
+                    }
                 case "level":
                     // Show player level information
                     showLevelInfo(player);
@@ -251,25 +288,56 @@ public class SkillTreeCommand implements CommandExecutor, TabCompleter {
         Player player = (Player) sender;
         
         if (args.length == 1) {
-            // Suggest subcommands
-            List<String> subCommands = Arrays.asList("info", "unlock", "level");
+            // First argument - subcommands
+            List<String> subCommands = new ArrayList<>(Arrays.asList("info", "level"));
             
             // Add admin commands if player has permission
             if (player.hasPermission("rpgskills.admin")) {
-                subCommands = new ArrayList<>(subCommands);
-                subCommands.add("reset");
+                subCommands.addAll(Arrays.asList("debug", "reload", "reset"));
+            }
+            
+            // Add unlock command if player has unlockable nodes
+            if (!skillTreeManager.getUnlockableNodes(player).isEmpty()) {
+                subCommands.add("unlock");
             }
             
             return subCommands.stream()
-                    .filter(s -> s.startsWith(args[0].toLowerCase()))
+                    .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
-        }
-        
-        if (args.length == 2) {
-            if (args[0].equalsIgnoreCase("unlock")) {
-                // Suggest available nodes
-                return skillTreeManager.getAvailableNodes(player).stream()
-                        .filter(s -> s.startsWith(args[1].toLowerCase()))
+        } else if (args.length == 2) {
+            // Second argument - depends on first argument
+            String subCommand = args[0].toLowerCase();
+            
+            if (subCommand.equals("unlock")) {
+                // Return list of unlockable node IDs
+                return skillTreeManager.getUnlockableNodes(player).stream()
+                        .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                        .collect(Collectors.toList());
+            } else if (subCommand.equals("reset") && player.hasPermission("rpgskills.admin")) {
+                // Return list of online players and "all" option
+                List<String> options = new ArrayList<>();
+                options.add("all");
+                
+                for (Player onlinePlayer : plugin.getServer().getOnlinePlayers()) {
+                    options.add(onlinePlayer.getName());
+                }
+                
+                return options.stream()
+                        .filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase()))
+                        .collect(Collectors.toList());
+            }
+        } else if (args.length == 3) {
+            // Third argument - depends on first and second arguments
+            String subCommand = args[0].toLowerCase();
+            String secondArg = args[1].toLowerCase();
+            
+            if (subCommand.equals("reset") && secondArg.equals("all") && player.hasPermission("rpgskills.admin")) {
+                // Return "confirm" option
+                List<String> options = new ArrayList<>();
+                options.add("confirm");
+                
+                return options.stream()
+                        .filter(s -> s.toLowerCase().startsWith(args[2].toLowerCase()))
                         .collect(Collectors.toList());
             }
         }

@@ -49,61 +49,218 @@ public class SkillTreeGUI implements Listener {
      * Initialize the layout of nodes on each page
      */
     private void initializePageLayouts() {
-        // Page 1: Warrior tree
-        Map<Integer, String> warriorPage = new HashMap<>();
-        warriorPage.put(13, "warrior_strength");
-        warriorPage.put(22, "warrior_vitality");
-        warriorPage.put(31, "warrior_toughness");
-        warriorPage.put(21, "warrior_agility");
-        warriorPage.put(23, "warrior_power");
+        // Instead of hard-coding nodes, let's organize them by category
+        Map<String, List<String>> categorizedNodes = organizeNodesByCategory();
         
-        // Page 2: Mining tree
-        Map<Integer, String> miningPage = new HashMap<>();
-        miningPage.put(13, "mining_efficiency");
-        miningPage.put(22, "mining_fortune");
-        miningPage.put(31, "mining_mastery");
-        miningPage.put(21, "mining_xp_boost");
-        miningPage.put(23, "mining_treasure_hunter");
+        // Create pages for each category
+        int pageIndex = 0;
         
-        // Page 3: Logging tree
-        Map<Integer, String> loggingPage = new HashMap<>();
-        loggingPage.put(13, "logging_efficiency");
-        loggingPage.put(22, "logging_harvester");
-        loggingPage.put(31, "logging_mastery");
-        loggingPage.put(21, "logging_naturalist");
-        loggingPage.put(23, "logging_xp_boost");
+        // Warrior tree (Page 1)
+        if (categorizedNodes.containsKey("warrior")) {
+            Map<Integer, String> warriorPage = createLayoutForCategory("warrior", categorizedNodes.get("warrior"));
+            pageLayouts.put(pageIndex++, warriorPage);
+        }
         
-        // Page 4: Farming tree
-        Map<Integer, String> farmingPage = new HashMap<>();
-        farmingPage.put(13, "farming_green_thumb");
-        farmingPage.put(22, "farming_harvester");
-        farmingPage.put(31, "farming_mastery");
-        farmingPage.put(21, "farming_animal_whisperer");
-        farmingPage.put(23, "farming_xp_boost");
+        // Mining tree (Page 2)
+        if (categorizedNodes.containsKey("mining")) {
+            Map<Integer, String> miningPage = createLayoutForCategory("mining", categorizedNodes.get("mining"));
+            pageLayouts.put(pageIndex++, miningPage);
+        }
         
-        // Page 5: Fighting tree
-        Map<Integer, String> fightingPage = new HashMap<>();
-        fightingPage.put(13, "fighting_strength");
-        fightingPage.put(22, "fighting_precision");
-        fightingPage.put(31, "fighting_mastery");
-        fightingPage.put(21, "fighting_agility");
-        fightingPage.put(23, "fighting_xp_boost");
+        // Logging tree (Page 3)
+        if (categorizedNodes.containsKey("logging")) {
+            Map<Integer, String> loggingPage = createLayoutForCategory("logging", categorizedNodes.get("logging"));
+            pageLayouts.put(pageIndex++, loggingPage);
+        }
         
-        // Page 6: Fishing tree
-        Map<Integer, String> fishingPage = new HashMap<>();
-        fishingPage.put(13, "fishing_luck");
-        fishingPage.put(22, "fishing_patience");
-        fishingPage.put(31, "fishing_mastery");
-        fishingPage.put(21, "fishing_treasure_hunter");
-        fishingPage.put(23, "fishing_xp_boost");
+        // Farming tree (Page 4)
+        if (categorizedNodes.containsKey("farming")) {
+            Map<Integer, String> farmingPage = createLayoutForCategory("farming", categorizedNodes.get("farming"));
+            pageLayouts.put(pageIndex++, farmingPage);
+        }
         
-        // Add pages to the layout map
-        pageLayouts.put(0, warriorPage);
-        pageLayouts.put(1, miningPage);
-        pageLayouts.put(2, loggingPage);
-        pageLayouts.put(3, farmingPage);
-        pageLayouts.put(4, fightingPage);
-        pageLayouts.put(5, fishingPage);
+        // Fighting tree (Page 5)
+        if (categorizedNodes.containsKey("fighting")) {
+            Map<Integer, String> fightingPage = createLayoutForCategory("fighting", categorizedNodes.get("fighting"));
+            pageLayouts.put(pageIndex++, fightingPage);
+        }
+        
+        // Fishing tree (Page 6)
+        if (categorizedNodes.containsKey("fishing")) {
+            Map<Integer, String> fishingPage = createLayoutForCategory("fishing", categorizedNodes.get("fishing"));
+            pageLayouts.put(pageIndex++, fishingPage);
+        }
+        
+        // Excavation tree
+        if (categorizedNodes.containsKey("excavation")) {
+            Map<Integer, String> excavationPage = createLayoutForCategory("excavation", categorizedNodes.get("excavation"));
+            pageLayouts.put(pageIndex++, excavationPage);
+        }
+        
+        // Enchanting tree
+        if (categorizedNodes.containsKey("enchanting")) {
+            Map<Integer, String> enchantingPage = createLayoutForCategory("enchanting", categorizedNodes.get("enchanting"));
+            pageLayouts.put(pageIndex, enchantingPage);
+        }
+        
+        // If no pages were created, create a default page
+        if (pageLayouts.isEmpty()) {
+            Map<Integer, String> defaultPage = new HashMap<>();
+            pageLayouts.put(0, defaultPage);
+        }
+    }
+    
+    /**
+     * Organize skill tree nodes by category
+     */
+    private Map<String, List<String>> organizeNodesByCategory() {
+        Map<String, List<String>> categorizedNodes = new HashMap<>();
+        
+        // Get all nodes from the skill tree manager
+        Map<String, SkillTreeNode> allNodes = skillTreeManager.getAllNodes();
+        
+        // Organize nodes by category
+        for (String nodeId : allNodes.keySet()) {
+            String category = getCategoryFromNodeId(nodeId);
+            
+            if (!categorizedNodes.containsKey(category)) {
+                categorizedNodes.put(category, new ArrayList<>());
+            }
+            
+            categorizedNodes.get(category).add(nodeId);
+        }
+        
+        return categorizedNodes;
+    }
+    
+    /**
+     * Extract category from node ID (e.g., "warrior_strength" -> "warrior")
+     */
+    private String getCategoryFromNodeId(String nodeId) {
+        if (nodeId.contains("_")) {
+            return nodeId.substring(0, nodeId.indexOf("_"));
+        }
+        return "unknown";
+    }
+    
+    /**
+     * Create a layout for a specific category
+     */
+    private Map<Integer, String> createLayoutForCategory(String category, List<String> nodes) {
+        Map<Integer, String> layout = new HashMap<>();
+        
+        // Get the nodes sorted by tier (based on prerequisites)
+        Map<Integer, List<String>> tierNodes = organizeTiersByPrerequisites(nodes);
+        
+        // Calculate slots for each tier - expanded to handle up to 30 skills
+        int[] tierSlots = {
+            // Center slots for Tier 1 (base skills)
+            13, 22, 31, 4, 40,
+            // Slots around the center for Tier 2
+            12, 14, 21, 23, 30, 32, 3, 5, 39, 41,
+            // Slots for Tier 3
+            2, 6, 11, 15, 20, 24, 29, 33, 38, 42,
+            // Additional slots for Tier 4+
+            1, 7, 10, 16, 19, 25, 28, 34, 37, 43
+        };
+        
+        int slotIndex = 0;
+        
+        // If we have more than 30 nodes, create multiple pages
+        if (nodes.size() > tierSlots.length) {
+            // First page - first 30 nodes
+            for (int tier = 1; tier <= tierNodes.size() && slotIndex < tierSlots.length; tier++) {
+                List<String> tierNodeList = tierNodes.getOrDefault(tier, new ArrayList<>());
+                
+                for (String nodeId : tierNodeList) {
+                    if (slotIndex < tierSlots.length) {
+                        layout.put(tierSlots[slotIndex++], nodeId);
+                    }
+                }
+            }
+            
+            // If we need more pages, they'll be created in a separate method
+            // This would require refactoring the page system, which is beyond the scope of this edit
+        } else {
+            // Standard layout for up to 30 nodes
+            for (int tier = 1; tier <= tierNodes.size(); tier++) {
+                List<String> tierNodeList = tierNodes.getOrDefault(tier, new ArrayList<>());
+                
+                for (String nodeId : tierNodeList) {
+                    if (slotIndex < tierSlots.length) {
+                        layout.put(tierSlots[slotIndex++], nodeId);
+                    }
+                }
+            }
+        }
+        
+        return layout;
+    }
+    
+    /**
+     * Organize nodes into tiers based on prerequisites
+     */
+    private Map<Integer, List<String>> organizeTiersByPrerequisites(List<String> nodes) {
+        Map<Integer, List<String>> tierNodes = new HashMap<>();
+        Map<String, SkillTreeNode> allNodes = skillTreeManager.getAllNodes();
+        
+        // First, identify tier 1 nodes (no prerequisites)
+        List<String> processed = new ArrayList<>();
+        
+        for (String nodeId : nodes) {
+            SkillTreeNode node = allNodes.get(nodeId);
+            if (node != null && node.getPrerequisites().isEmpty()) {
+                // This is a tier 1 node
+                if (!tierNodes.containsKey(1)) {
+                    tierNodes.put(1, new ArrayList<>());
+                }
+                tierNodes.get(1).add(nodeId);
+                processed.add(nodeId);
+            }
+        }
+        
+        // Then process the rest of the nodes
+        int currentTier = 2;
+        boolean anyProcessed;
+        
+        do {
+            anyProcessed = false;
+            List<String> newlyProcessed = new ArrayList<>();
+            
+            for (String nodeId : nodes) {
+                if (processed.contains(nodeId)) continue;
+                
+                SkillTreeNode node = allNodes.get(nodeId);
+                if (node == null) continue;
+                
+                // Check if all prerequisites are in previous tiers
+                boolean allPrereqsProcessed = true;
+                for (String prereq : node.getPrerequisites()) {
+                    if (!processed.contains(prereq)) {
+                        allPrereqsProcessed = false;
+                        break;
+                    }
+                }
+                
+                if (allPrereqsProcessed) {
+                    // All prerequisites are in previous tiers, so this node is in current tier
+                    if (!tierNodes.containsKey(currentTier)) {
+                        tierNodes.put(currentTier, new ArrayList<>());
+                    }
+                    tierNodes.get(currentTier).add(nodeId);
+                    newlyProcessed.add(nodeId);
+                    anyProcessed = true;
+                }
+            }
+            
+            processed.addAll(newlyProcessed);
+            
+            if (anyProcessed) {
+                currentTier++;
+            }
+        } while (anyProcessed);
+        
+        return tierNodes;
     }
     
     /**
@@ -121,6 +278,14 @@ public class SkillTreeGUI implements Listener {
         int maxPages = pageLayouts.size();
         if (page < 0) page = 0;
         if (page >= maxPages) page = maxPages - 1;
+        
+        // Add debug logging
+        int availablePoints = skillTreeManager.getAvailableSkillPoints(player);
+        int totalPoints = skillTreeManager.getTotalSkillPoints(player);
+        int spentPoints = skillTreeManager.getSpentSkillPoints(player);
+        player.sendMessage("§7[Debug] Available Points: §e" + availablePoints + 
+                           "§7, Total Points: §e" + totalPoints + 
+                           "§7, Spent Points: §e" + spentPoints);
         
         // Create inventory
         Inventory inv = Bukkit.createInventory(null, GUI_SIZE, GUI_TITLE + " - Page " + (page + 1));
@@ -140,7 +305,28 @@ public class SkillTreeGUI implements Listener {
                     boolean unlocked = skillTreeManager.hasUnlockedNode(player, nodeId);
                     boolean available = skillTreeManager.canUnlockNode(player, nodeId);
                     
-                    ItemStack icon = node.createIcon(unlocked, available);
+                    // Add more detailed debug for each node
+                    if (!unlocked && !available) {
+                        // Check why it's not available
+                        boolean hasPoints = availablePoints >= node.getPointCost();
+                        boolean hasPrereqs = true;
+                        for (String prereq : node.getPrerequisites()) {
+                            if (!skillTreeManager.hasUnlockedNode(player, prereq)) {
+                                hasPrereqs = false;
+                                break;
+                            }
+                        }
+                        
+                        if (!hasPoints) {
+                            player.sendMessage("§7[Debug] Node §e" + nodeId + "§7 requires §e" + node.getPointCost() + 
+                                               "§7 points, but you only have §e" + availablePoints);
+                        }
+                        if (!hasPrereqs) {
+                            player.sendMessage("§7[Debug] Node §e" + nodeId + "§7 has prerequisites you haven't unlocked");
+                        }
+                    }
+                    
+                    ItemStack icon = createItem(player, node, unlocked);
                     inv.setItem(slot, icon);
                 }
             }
@@ -205,15 +391,23 @@ public class SkillTreeGUI implements Listener {
      * Get the name of a specific page
      */
     private String getPageName(int page) {
-        switch (page) {
-            case 0: return "Warrior Tree";
-            case 1: return "Mining Tree";
-            case 2: return "Logging Tree";
-            case 3: return "Farming Tree";
-            case 4: return "Fighting Tree";
-            case 5: return "Fishing Tree";
-            default: return "Unknown Tree";
+        if (page < 0 || page >= pageLayouts.size()) {
+            return "Unknown Tree";
         }
+        
+        // Get a sample node ID from the page to determine its category
+        Map<Integer, String> pageLayout = pageLayouts.get(page);
+        if (pageLayout == null || pageLayout.isEmpty()) {
+            return "Empty Tree";
+        }
+        
+        // Get the first node ID to determine category
+        String sampleNodeId = pageLayout.values().iterator().next();
+        String category = getCategoryFromNodeId(sampleNodeId);
+        
+        // Format the category name
+        String formattedCategory = category.substring(0, 1).toUpperCase() + category.substring(1);
+        return formattedCategory + " Tree";
     }
     
     /**
@@ -321,5 +515,30 @@ public class SkillTreeGUI implements Listener {
                 player.sendMessage(ChatColor.RED + "You cannot unlock this node yet. Check the requirements.");
             }
         }
+    }
+    
+    private ItemStack createItem(Player player, SkillTreeNode node, boolean unlocked) {
+        boolean canUnlock = skillTreeManager.canUnlockNode(player, node.getId());
+        boolean isFreeBaseNode = false;
+        
+        // Check if this is a free base node (first node in category with no prerequisites)
+        if (!unlocked && node.getPrerequisites().isEmpty()) {
+            // Extract category from node ID (e.g., "warrior" from "warrior_strength")
+            String category = node.getId().split("_")[0];
+            
+            // Check if player has any nodes in this category
+            boolean hasNodesInCategory = false;
+            for (String unlockedNodeId : skillTreeManager.getUnlockedNodes(player.getUniqueId())) {
+                if (unlockedNodeId.startsWith(category + "_")) {
+                    hasNodesInCategory = true;
+                    break;
+                }
+            }
+            
+            isFreeBaseNode = !hasNodesInCategory;
+        }
+        
+        ItemStack item = node.createIcon(unlocked, canUnlock, isFreeBaseNode);
+        return item;
     }
 } 

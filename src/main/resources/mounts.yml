@@ -11,151 +11,156 @@ settings:
   summon-cooldown: 10
   # Whether to disable mounts in certain worlds
   disabled-worlds:
-    - "disabled_world_1"
-    - "disabled_world_2"
+    - "world_nether"
+    - "world_the_end"
+    - "pvp_disabled_world"
   # Whether to enable mount particle effects
   enable-particles: true
   # Maximum upgrade level for each upgrade path
   max-upgrade-level: 5
+  # Whether to enable projectile attacks on left-click with empty hand
+  enable-projectile-attacks: true
 
 # Mount types configuration
 mounts:
-  phoenix_blaze:
+  celestial_horse:
     # Display name shown to players
-    display-name: "&6Phoenix Blaze"
+    display-name: "&b&lCelestial Charger"
     # Description of the mount
-    description: "&7A majestic fiery bird that grants its rider flame-based powers."
+    description: "&7A majestic horse descended from the stars, trailing cosmic energy and wielding powerful star magic."
     # Base cost to purchase the mount
-    base-cost: 25000
+    base-cost: 50000
     # Entity type used for the mount
     entity-type: HORSE
     # Base stats
     stats:
-      speed: 0.3
-      jump: 0.8
-      health: 20.0
-    # Specific customization options
-    customization:
-      horse-color: CHESTNUT
-      horse-style: WHITE
-    # Mount abilities
-    abilities:
-      flame_trail:
-        enabled: true
-        cooldown: 5
-        min-level: 1
-      thermal_updraft:
-        enabled: true
-        cooldown: 30
-        min-level: 2
-      fire_immunity:
-        enabled: true
-        passive: true
-        min-level: 1
-
-  shadow_steed:
-    display-name: "&5Shadow Steed"
-    description: "&7A mysterious horse born from shadows with stealth abilities."
-    base-cost: 25000
-    entity-type: HORSE
-    stats:
-      speed: 0.28
-      jump: 0.75
-      health: 25.0
-    customization:
-      horse-color: BLACK
-      horse-style: BLACK_DOTS
-    abilities:
-      shadow_dash:
-        enabled: true
-        cooldown: 20
-        min-level: 1
-      stealth:
-        enabled: true
-        cooldown: 60
-        min-level: 2
-      night_vision:
-        enabled: true
-        passive: true
-        min-level: 1
-
-  crystal_drake:
-    display-name: "&bCrystal Drake"
-    description: "&7A crystalline dragon with teleportation and damage reflection abilities."
-    base-cost: 25000
-    entity-type: HORSE
-    stats:
-      speed: 0.25
-      jump: 1.0
+      speed: 0.35
+      jump: 1.2
       health: 30.0
+    # Specific customization options
     customization:
       horse-color: WHITE
       horse-style: WHITE_DOTS
+      horse-armor: DIAMOND
+    # Mount abilities
     abilities:
-      crystal_teleport:
+      stellar_blast:
+        enabled: true
+        cooldown: 10
+        min-level: 1
+        description: "Fire a powerful beam of cosmic energy"
+        projectile-type: CRYSTAL_SHARD
+      astral_dash:
+        enabled: true
+        cooldown: 20
+        min-level: 3
+        description: "Dash forward with incredible speed, leaving a trail of stars"
+      gravity_well:
         enabled: true
         cooldown: 45
-        min-level: 2
-      crystal_shield:
+        min-level: 5
+        description: "Create a gravitational field that pulls enemies toward you"
+      starfall:
         enabled: true
-        cooldown: 90
-        min-level: 3
-      light_body:
-        enabled: true
-        passive: true
-        min-level: 1
+        cooldown: 60
+        min-level: 10
+        description: "Call down a shower of stars on your enemies"
+        projectile-type: LIGHTNING_BOLT
+    # Visual effects
+    visuals:
+      main-particle: "END_ROD"
+      secondary-particle: "PORTAL"
+      trail-effect: true
+      idle-effect: "cosmic_pulse"
+      ability-effect: "star_burst"
+      sound-effect: "ENTITY_LIGHTNING_BOLT_THUNDER"
 
-  storm_charger:
-    display-name: "&9Storm Charger"
-    description: "&7An electric steed with lightning and speed abilities."
-    base-cost: 25000
-    entity-type: HORSE
+  infernal_wolf:
+    display-name: "&c&lInfernal Alpha"
+    description: "&7A fearsome dire wolf from the deepest pits of the Nether, with molten veins and eyes of flame."
+    base-cost: 45000
+    entity-type: WOLF
     stats:
-      speed: 0.35
-      jump: 0.6
-      health: 20.0
+      speed: 0.4
+      jump: 0.8
+      health: 25.0
     customization:
-      horse-color: GRAY
-      horse-style: WHITE
+      wolf-collar-color: RED
+      wolf-angry: true
+      wolf-size: 1.5
     abilities:
-      lightning_strike:
+      hellfire_breath:
+        enabled: true
+        cooldown: 8
+        min-level: 1
+        description: "Breathe a cone of fire that burns enemies"
+        projectile-type: FIREBALL
+      pack_call:
         enabled: true
         cooldown: 30
-        min-level: 2
-      speed_boost:
+        min-level: 3
+        description: "Summon spectral wolves to fight alongside you"
+      infernal_leap:
+        enabled: true
+        cooldown: 15
+        min-level: 5
+        description: "Leap forward with explosive force, creating a shockwave on landing"
+      soul_harvest:
         enabled: true
         cooldown: 45
-        min-level: 1
-      static_aura:
-        enabled: true
-        passive: true
-        min-level: 3
+        min-level: 10
+        description: "Drain life from nearby enemies to heal yourself"
+        projectile-type: SHADOW_BOLT
+    visuals:
+      main-particle: "FLAME"
+      secondary-particle: "SMOKE_NORMAL"
+      trail-effect: true
+      idle-effect: "ember_aura"
+      ability-effect: "fire_explosion"
+      sound-effect: "ENTITY_WOLF_GROWL"
 
-  ancient_golem:
-    display-name: "&8Ancient Golem"
-    description: "&7A massive stone construct with immense strength and durability."
-    base-cost: 25000
-    entity-type: HORSE
+  arcane_pig:
+    display-name: "&d&lArcane Harbinger"
+    description: "&7What appears to be an ordinary pig is actually a vessel of immense arcane power, capable of devastating magic and flight."
+    base-cost: 40000
+    entity-type: PIG
     stats:
-      speed: 0.2
-      jump: 0.9
-      health: 40.0
+      speed: 0.3
+      jump: 1.0
+      health: 20.0
     customization:
-      horse-color: DARK_BROWN
-      horse-style: NONE
+      pig-saddle: true
+      pig-size: 1.3
     abilities:
-      ground_pound:
+      mystic_flight:
+        enabled: true
+        cooldown: 30
+        min-level: 1
+        description: "Gain the ability to fly for 10 seconds and glide for 20 seconds"
+      arcane_bolt:
+        enabled: true
+        cooldown: 5
+        min-level: 1
+        description: "Fire magical bolts that seek out enemies"
+        projectile-type: CRYSTAL_SHARD
+      polymorph_blast:
         enabled: true
         cooldown: 25
-        min-level: 1
-      stone_skin:
+        min-level: 5
+        description: "Transform nearby enemies into harmless critters temporarily"
+      reality_warp:
         enabled: true
-        passive: true
-        min-level: 2
-      mountain_climber:
-        enabled: true
-        passive: true
-        min-level: 3
+        cooldown: 60
+        min-level: 10
+        description: "Teleport yourself and nearby allies to a safe location"
+        projectile-type: ROCK_THROW
+    visuals:
+      main-particle: "SPELL_WITCH"
+      secondary-particle: "ENCHANTMENT_TABLE"
+      trail-effect: true
+      idle-effect: "magic_aura"
+      ability-effect: "arcane_explosion"
+      sound-effect: "ENTITY_ILLUSIONER_CAST_SPELL"
 
 # Upgrade costs and multipliers
 upgrades:
@@ -214,6 +219,10 @@ messages:
     no-mount-active: "&cYou must be on a mount to use mount abilities!"
     no-ability-specified: "&cYou must specify an ability to activate!"
     activation-failed: "&cCouldn't activate the ability!"
+    
+  attack:
+    cooldown: "&cYour mount's attack is on cooldown for %time% more seconds!"
+    success: "&aYour mount unleashed a %attack_name%!"
   
   unknown-command: "&cUnknown mount command: %command%"
 
@@ -229,6 +238,8 @@ general:
   use_database: false
   # Whether to save mounted state when players log out
   persistent_mounts: false
+  # Enable attack abilities with left-click while holding empty hand
+  enable_attack_abilities: true
 
 # Worlds where mounts are disabled
 disabled_worlds:
@@ -244,11 +255,9 @@ economy:
   use_permission_mounts: true
   # Permission-based mount unlocks (format: permission: mountId)
   permission_mounts:
-    rpgskills.mount.phoenix: phoenix_blaze
-    rpgskills.mount.shadow: shadow_steed
-    rpgskills.mount.crystal: crystal_drake
-    rpgskills.mount.storm: storm_charger
-    rpgskills.mount.golem: ancient_golem
+    rpgskills.mount.celestial: celestial_horse
+    rpgskills.mount.infernal: infernal_wolf
+    rpgskills.mount.arcane: arcane_pig
 
 # Mount abilities settings
 abilities:
@@ -273,122 +282,101 @@ upgrades:
   # Cost multiplier per level (exponential growth)
   cost_multiplier: 2.0
   # Maximum upgrade level
-  max_level: 5
+  max_level: 10
 
-# Mount specifics
-mounts:
-  phoenix_blaze:
-    name: "&6Phoenix Blaze"
-    description: "A majestic mount born from eternal flames"
-    entity_type: HORSE
-    base_stats:
-      speed: 0.28
-      jump: 1.1
-      health: 30.0
-    base_cost: 25000
-    abilities:
-      flame_burst:
-        cooldown: 45
-        description: "Create a burst of flame around you"
-      updraft:
-        cooldown: 60
-        description: "Gain a temporary boost of levitation"
-      reignite:
-        cooldown: 180
-        description: "Restore health and apply fire resistance"
-    
-  shadow_steed:
-    name: "&8Shadow Steed"
-    description: "A dark horse that moves through shadows"
-    entity_type: HORSE
-    base_stats:
-      speed: 0.32
-      jump: 0.9
-      health: 25.0
-    base_cost: 25000
-    abilities:
-      shadow_dash:
-        cooldown: 30
-        description: "Dash forward with increased speed"
-      stealth:
-        cooldown: 90
-        description: "Become partially invisible for a short time"
-      fear:
-        cooldown: 120
-        description: "Cause nearby enemies to flee in terror"
-  
-  crystal_drake:
-    name: "&bCrystal Drake"
-    description: "A crystalline dragon with teleportation abilities"
-    entity_type: HORSE
-    base_stats:
-      speed: 0.25
-      jump: 1.0
-      health: 30.0
-    base_cost: 25000
-    abilities:
-      crystal_teleport:
-        cooldown: 45
-        description: "Teleport to a location you're looking at"
-      crystal_shield:
-        cooldown: 90
-        description: "Create a protective shield that reduces damage"
-      light_body:
-        cooldown: 0
-        description: "Passive ability that grants slow falling"
-  
-  storm_charger:
-    name: "&9Storm Charger"
-    description: "A mount infused with the power of lightning"
-    entity_type: HORSE
-    base_stats:
-      speed: 0.3
-      jump: 0.8
-      health: 25.0
-    base_cost: 25000
-    abilities:
-      lightning_strike:
-        cooldown: 60
-        description: "Call lightning to strike nearby enemies"
-      speed_surge:
-        cooldown: 45
-        description: "Gain a temporary boost of speed"
-      static_aura:
-        cooldown: 90
-        description: "Create a damaging aura of electricity"
-  
-  ancient_golem:
-    name: "&7Ancient Golem"
-    description: "A massive stone construct with incredible strength"
-    entity_type: HORSE
-    base_stats:
-      speed: 0.2
-      jump: 1.2
-      health: 40.0
-    base_cost: 25000
-    abilities:
-      ground_pound:
-        cooldown: 40
-        description: "Slam the ground, damaging and knocking back enemies"
-      stone_armor:
-        cooldown: 90
-        description: "Gain resistance to damage for a short time"
-      earth_path:
-        cooldown: 120
-        description: "Create temporary blocks to cross gaps"
-
-# Visual settings
+# Visual effects settings
 visuals:
-  # Whether to show particle effects for mounts
-  enable_particles: true
-  # Whether to show mount names
-  show_names: true
-  # Whether to enable custom sounds
-  enable_sounds: true
-  # Particle density (1-10, higher = more particles)
+  # Whether visual effects are enabled
+  enabled: true
+  # Default particle density
   particle_density: 5
-  # Maximum particle render distance
-  particle_distance: 32
+  # Custom effects
+  custom_effects:
+    cosmic_pulse:
+      particles: ["END_ROD", "PORTAL"]
+      radius: 1.5
+      height: 2.0
+      frequency: 10
+    ember_aura:
+      particles: ["FLAME", "SMOKE_NORMAL"]
+      radius: 1.0
+      height: 1.5
+      frequency: 15
+    magic_aura:
+      particles: ["SPELL_WITCH", "ENCHANTMENT_TABLE"]
+      radius: 1.2
+      height: 1.7
+      frequency: 12
+    star_burst:
+      particles: ["END_ROD", "FIREWORK"]
+      radius: 3.0
+      height: 3.0
+      frequency: 20
+    fire_explosion:
+      particles: ["FLAME", "LAVA"]
+      radius: 2.5
+      height: 2.0
+      frequency: 25
+    arcane_explosion:
+      particles: ["SPELL_WITCH", "ENCHANTMENT_TABLE", "PORTAL"]
+      radius: 2.8
+      height: 2.5
+      frequency: 22
+
+# Projectile settings
+projectiles:
+  # Whether projectile attacks are enabled
+  enabled: true
+  # Default projectile speed
+  default_speed: 1.5
+  # Default projectile range
+  default_range: 20.0
+  # Default projectile damage
+  default_damage: 5.0
+  # Cooldown between projectile attacks (seconds)
+  cooldown: 5
+  # Projectile types
+  types:
+    FIREBALL:
+      display_name: "Fireball"
+      damage_multiplier: 1.0
+      speed_multiplier: 1.0
+      range_multiplier: 1.0
+      particles: ["FLAME", "SMOKE_NORMAL"]
+      impact_sound: "ENTITY_GENERIC_EXPLODE"
+      damage_type: "FIRE"
+    SHADOW_BOLT:
+      display_name: "Shadow Bolt"
+      damage_multiplier: 1.2
+      speed_multiplier: 1.0
+      range_multiplier: 1.25
+      particles: ["SMOKE_NORMAL", "PORTAL"]
+      impact_sound: "ENTITY_WITHER_HURT"
+      damage_type: "MAGIC"
+    CRYSTAL_SHARD:
+      display_name: "Crystal Shard"
+      damage_multiplier: 0.8
+      speed_multiplier: 1.5
+      range_multiplier: 0.75
+      particles: ["CRIT", "PORTAL"]
+      impact_sound: "BLOCK_GLASS_BREAK"
+      damage_type: "MAGIC"
+    LIGHTNING_BOLT:
+      display_name: "Lightning Bolt"
+      damage_multiplier: 1.6
+      speed_multiplier: 1.2
+      range_multiplier: 1.5
+      particles: ["CRIT", "FLAME"]
+      impact_sound: "ENTITY_LIGHTNING_BOLT_IMPACT"
+      damage_type: "LIGHTNING"
+    ROCK_THROW:
+      display_name: "Rock Throw"
+      damage_multiplier: 1.4
+      speed_multiplier: 0.8
+      range_multiplier: 0.75
+      particles: ["BLOCK_CRACK", "EXPLOSION_NORMAL"]
+      impact_sound: "BLOCK_STONE_BREAK"
+      damage_type: "FALLING_BLOCK"
 
 # Commands settings
 commands:

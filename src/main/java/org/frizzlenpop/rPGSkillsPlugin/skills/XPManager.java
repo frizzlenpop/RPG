@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class XPManager {
@@ -26,6 +27,11 @@ public class XPManager {
     private final Map<String, Integer> fishingXPValues;
     private final Map<Material, Integer> excavationXPValues; // Added for excavation
     private final RPGSkillsPlugin plugin;
+    
+    // Track total XP earned for each player
+    private final Map<UUID, Map<String, Integer>> totalSkillXPEarned = new ConcurrentHashMap<>();
+    // Track highest level reached for each skill
+    private final Map<UUID, Map<String, Integer>> highestSkillLevels = new ConcurrentHashMap<>();
 
     // Updated constructor to include plugin
     public XPManager(PlayerDataManager dataManager, RPGSkillsPlugin plugin) {
@@ -46,9 +52,7 @@ public class XPManager {
     }
 
     public void setPartyManager(PartyManager partyManager) {
-        if (this.partyManager == null) {
-            this.partyManager = partyManager;
-        }
+        this.partyManager = partyManager;
     }
 
     private void handleSkillRewards(Player player, String skill, int level) {
@@ -163,6 +167,15 @@ public class XPManager {
      */
     private void addXPToPlayer(Player player, String skill, int xpGained, int currentXP, int currentLevel) {
         UUID playerUUID = player.getUniqueId();
+        
+        // Get the highest level achieved for this skill
+        int highestLevel = dataManager.getHighestSkillLevel(playerUUID, skill);
+        
+        // Make sure current level isn't below highest level
+        if (currentLevel < highestLevel) {
+            currentLevel = highestLevel;
+        }
+        
         int newXP = currentXP + xpGained;
         int requiredXP = getRequiredXP(currentLevel);
 
@@ -171,6 +184,12 @@ public class XPManager {
             currentLevel++;
             newXP -= requiredXP;
             requiredXP = getRequiredXP(currentLevel);
+
+            // Update highest level if needed
+            if (currentLevel > highestLevel) {
+                highestLevel = currentLevel;
+                dataManager.setHighestSkillLevel(playerUUID, skill, highestLevel);
+            }
 
             // Update level in data manager
             dataManager.setSkillLevel(playerUUID, skill, currentLevel);
@@ -181,6 +200,11 @@ public class XPManager {
 
         // Update XP in data manager
         dataManager.setSkillXP(playerUUID, skill, newXP);
+        
+        // Final check to ensure level is never below highest level
+        if (currentLevel < highestLevel) {
+            dataManager.setSkillLevel(playerUUID, skill, highestLevel);
+        }
     }
     
     /**
@@ -421,6 +445,22 @@ public class XPManager {
         xpValues.put(Material.NETHER_QUARTZ_ORE, 10);
         xpValues.put(Material.ANCIENT_DEBRIS, 50);
         
+        // Additional Nether blocks
+        xpValues.put(Material.NETHERRACK, 1);
+        xpValues.put(Material.NETHER_BRICKS, 2);
+        xpValues.put(Material.RED_NETHER_BRICKS, 2);
+        xpValues.put(Material.BLACKSTONE, 3);
+        xpValues.put(Material.GILDED_BLACKSTONE, 15);
+        xpValues.put(Material.POLISHED_BLACKSTONE, 3);
+        xpValues.put(Material.POLISHED_BLACKSTONE_BRICKS, 4);
+        xpValues.put(Material.CRACKED_POLISHED_BLACKSTONE_BRICKS, 4);
+        xpValues.put(Material.CHISELED_POLISHED_BLACKSTONE, 5);
+        xpValues.put(Material.BASALT, 2);
+        xpValues.put(Material.POLISHED_BASALT, 3);
+        xpValues.put(Material.CRYING_OBSIDIAN, 20);
+        xpValues.put(Material.GLOWSTONE, 8);
+        xpValues.put(Material.MAGMA_BLOCK, 5);
+        
         return xpValues;
     }
 
@@ -504,52 +544,77 @@ public class XPManager {
 
     private Map<String, Integer> initializeFishingXP() {
         Map<String, Integer> xpValues = new HashMap<>();
-        xpValues.put("COD", 5);
-        xpValues.put("SALMON", 7);
-        xpValues.put("PUFFERFISH", 10);
-        xpValues.put("TROPICAL_FISH", 15);
-        // Add more modern item types
-        xpValues.put("FISHING_ROD", 2);
-        xpValues.put("BOW", 5);
-        xpValues.put("ENCHANTED_BOOK", 20);
-        xpValues.put("NAME_TAG", 25);
-        xpValues.put("NAUTILUS_SHELL", 30);
-        xpValues.put("SADDLE", 15);
+        // Increased fishing XP by 300% (multiplied by 4)
+        xpValues.put("COD", 20); // Was 5
+        xpValues.put("SALMON", 28); // Was 7
+        xpValues.put("PUFFERFISH", 40); // Was 10
+        xpValues.put("TROPICAL_FISH", 60); // Was 15
+        // Add more modern item types (also increased by 300%)
+        xpValues.put("FISHING_ROD", 8); // Was 2
+        xpValues.put("BOW", 20); // Was 5
+        xpValues.put("ENCHANTED_BOOK", 80); // Was 20
+        xpValues.put("NAME_TAG", 100); // Was 25
+        xpValues.put("NAUTILUS_SHELL", 120); // Was 30
+        xpValues.put("SADDLE", 60); // Was 15
         return xpValues;
     }
 
     private Map<Material, Integer> initializeExcavationXP() {
         Map<Material, Integer> excavationXP = new HashMap<>();
         
+        // Reduced excavation XP by 75% (multiplied by 0.25)
         // Basic dirt blocks
-        excavationXP.put(Material.DIRT, 10);
-        excavationXP.put(Material.COARSE_DIRT, 10);
-        excavationXP.put(Material.FARMLAND, 10);
-        excavationXP.put(Material.GRASS_BLOCK, 10);
-        excavationXP.put(Material.DIRT_PATH, 10);
+        excavationXP.put(Material.DIRT, 2); // Was 10
+        excavationXP.put(Material.COARSE_DIRT, 2); // Was 10
+        excavationXP.put(Material.FARMLAND, 2); // Was 10
+        excavationXP.put(Material.GRASS_BLOCK, 2); // Was 10
+        excavationXP.put(Material.DIRT_PATH, 2); // Was 10
         
         // Sand materials
-        excavationXP.put(Material.SAND, 15);
-        excavationXP.put(Material.RED_SAND, 15);
+        excavationXP.put(Material.SAND, 3); // Was 15
+        excavationXP.put(Material.RED_SAND, 3); // Was 15
         
         // Gravel
-        excavationXP.put(Material.GRAVEL, 20);
+        excavationXP.put(Material.GRAVEL, 5); // Was 20
         
         // Clay
-        excavationXP.put(Material.CLAY, 25);
+        excavationXP.put(Material.CLAY, 6); // Was 25
         
         // Soul materials
-        excavationXP.put(Material.SOUL_SAND, 30);
-        excavationXP.put(Material.SOUL_SOIL, 30);
+        excavationXP.put(Material.SOUL_SAND, 7); // Was 30
+        excavationXP.put(Material.SOUL_SOIL, 7); // Was 30
         
         // Special dirt types
-        excavationXP.put(Material.MYCELIUM, 40);
-        excavationXP.put(Material.PODZOL, 40);
+        excavationXP.put(Material.MYCELIUM, 10); // Was 40
+        excavationXP.put(Material.PODZOL, 10); // Was 40
         
         // Snow
-        excavationXP.put(Material.SNOW_BLOCK, 15);
-        excavationXP.put(Material.SNOW, 15);
+        excavationXP.put(Material.SNOW_BLOCK, 3); // Was 15
+        excavationXP.put(Material.SNOW, 3); // Was 15
         
         return excavationXP;
+    }
+
+    /**
+     * Get total XP earned for a player in a specific skill
+     * This includes all XP earned, even after level ups
+     */
+    public int getTotalXPEarned(UUID playerUUID, String skill) {
+        Map<String, Integer> playerTotalXP = totalSkillXPEarned.get(playerUUID);
+        if (playerTotalXP == null) {
+            return 0;
+        }
+        return playerTotalXP.getOrDefault(skill, 0);
+    }
+    
+    /**
+     * Get total XP earned across all skills
+     */
+    public int getTotalXPEarnedAllSkills(UUID playerUUID) {
+        Map<String, Integer> playerTotalXP = totalSkillXPEarned.get(playerUUID);
+        if (playerTotalXP == null) {
+            return 0;
+        }
+        return playerTotalXP.values().stream().mapToInt(Integer::intValue).sum();
     }
 }
