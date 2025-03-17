@@ -569,4 +569,37 @@ public class MountKeyManager {
             return null;
         }
     }
+    
+    /**
+     * Gets all keys for a player
+     * 
+     * @param playerUUID The player's UUID
+     * @return Map of key tiers to counts
+     */
+    public Map<KeyTier, Integer> getPlayerKeys(UUID playerUUID) {
+        loadPlayerKeysData(playerUUID);
+        return getAllPlayerKeys(playerUUID);
+    }
+    
+    /**
+     * Checks if a player has a key of the specified tier
+     * 
+     * @param playerUUID The player's UUID
+     * @param tier The key tier
+     * @return True if the player has at least one key of the tier
+     */
+    public boolean hasKey(UUID playerUUID, KeyTier tier) {
+        return getPlayerKeyCount(playerUUID, tier) > 0;
+    }
+    
+    /**
+     * Uses a key of the specified tier
+     * 
+     * @param playerUUID The player's UUID
+     * @param tier The key tier
+     * @return True if the key was successfully used
+     */
+    public boolean useKey(UUID playerUUID, KeyTier tier) {
+        return removePlayerKeys(playerUUID, tier, 1);
+    }
 } 

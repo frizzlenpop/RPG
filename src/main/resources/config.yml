@@ -1,25 +1,182 @@
-# Add this section to your existing config.yml
+# RPG Skills Plugin Configuration
+
+# Database settings
+database:
+  # MySQL configuration
+  mysql:
+    enabled: false
+    host: localhost
+    port: 3306
+    database: rpgskills
+    username: root
+    password: ""
+  
+  # SQLite configuration (used as fallback if MySQL is disabled or fails)
+  sqlite:
+    enabled: true
+  
+  # Migration settings
+  migrate_on_startup: false
+
+# XP settings
+xp:
+  # XP multiplier for all skills
+  global_multiplier: 1.0
+  
+  # XP multiplier for specific skills
+  skill_multipliers:
+    mining: 1.0
+    logging: 1.0
+    farming: 1.0
+    fighting: 1.0
+    fishing: 1.0
+    enchanting: 1.0
+    excavation: 1.0
+    repair: 1.0
+
+# Skill settings
+skills:
+  # Maximum level for skills
+  max_level: 100
+  
+  # XP formula settings
+  xp_formula:
+    base: 100
+    multiplier: 1.5
+
+# Passive abilities settings
 passives:
+  # Mining passives
   mining:
-    fortune_boost:
-      chance: 0.25
-      bonus_amount: 2
-    auto_smelt_upgrade:
-      bonus_chance: 0.5
-  logging:
-    tree_growth_boost:
-      radius: 3
-      growth_multiplier: 2.0
-    triple_log_drop:
+    auto_smelt:
       enabled: true
+      description: "Automatically smelts ores when mining"
+    double_drop:
+      enabled: true
+      description: "Chance to get double drops from mining"
+  
+  # Logging passives
+  logging:
+    timber:
+      enabled: true
+      description: "Chance to break entire tree at once"
+    double_logs:
+      enabled: true
+      description: "Chance to get double logs from trees"
+  
+  # Farming passives
   farming:
-    instant_growth:
-      chance: 0.15
-      radius: 2
-    auto_harvest:
-      radius: 2
+    auto_replant:
+      enabled: true
+      description: "Automatically replants crops when harvesting"
+    double_crops:
+      enabled: true
+      description: "Chance to get double crops when harvesting"
+  
+  # Fighting passives
   fighting:
+    double_damage:
+      enabled: true
+      description: "Chance to deal double damage"
     lifesteal:
-      heal_percent: 0.15
-    damage_reduction:
-      reduction_percent: 0.25
+      enabled: true
+      description: "Chance to heal when dealing damage"
+  
+  # Fishing passives
+  fishing:
+    better_loot:
+      enabled: true
+      description: "Chance to get better loot from fishing"
+    double_fish:
+      enabled: true
+      description: "Chance to get double fish from fishing"
+  
+  # Enchanting passives
+  enchanting:
+    better_enchants:
+      enabled: true
+      description: "Chance to get better enchantments"
+    xp_discount:
+      enabled: true
+      description: "Reduces XP cost for enchanting"
+  
+  # Excavation passives
+  excavation:
+    double_drop:
+      enabled: true
+      description: "Chance to get double drops from excavation"
+    rare_finds:
+      enabled: true
+      description: "Chance to find rare items when excavating"
+  
+  # Repair passives
+  repair:
+    material_discount:
+      enabled: true
+      description: "Reduces material cost for repairs"
+    better_repairs:
+      enabled: true
+      description: "Repairs more durability per material"
+
+# Mount system settings
+mounts:
+  # Enable mount system
+  enabled: true
+  
+  # Mount chest settings
+  chest:
+    # Chance to get a mount from a chest (0.0 - 1.0)
+    mount_chance: 0.1
+    
+    # Chance to get a rare mount from a chest (0.0 - 1.0)
+    rare_mount_chance: 0.05
+    
+    # Chance to get an epic mount from a chest (0.0 - 1.0)
+    epic_mount_chance: 0.01
+    
+    # Chance to get a legendary mount from a chest (0.0 - 1.0)
+    legendary_mount_chance: 0.005
+  
+  # Mount shop settings
+  shop:
+    # Enable mount shop
+    enabled: true
+    
+    # Mount prices
+    prices:
+      common: 1000
+      rare: 5000
+      epic: 25000
+      legendary: 100000
+
+# Party system settings
+party:
+  # Maximum party size
+  max_size: 5
+  
+  # XP sharing settings
+  xp_sharing:
+    # Enable XP sharing
+    enabled: true
+    
+    # XP sharing range (blocks)
+    range: 50
+    
+    # XP sharing multiplier
+    multiplier: 0.5
+
+# Scoreboard settings
+scoreboard:
+  # Enable scoreboard by default
+  enabled: true
+  
+  # Scoreboard update interval (ticks)
+  update_interval: 20
+
+# Debug settings
+debug:
+  # Enable debug mode
+  enabled: false
+  
+  # Log level (INFO, WARNING, SEVERE)
+  log_level: INFO

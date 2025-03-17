@@ -1,5 +1,6 @@
 package org.frizzlenpop.rPGSkillsPlugin.skills;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -8,6 +9,8 @@ import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.data.PartyManager;
 import org.frizzlenpop.rPGSkillsPlugin.data.XPBoosterManager;
+import org.frizzlenpop.rPGSkillsPlugin.api.events.SkillLevelUpEvent;
+import org.frizzlenpop.rPGSkillsPlugin.api.events.SkillXPGainEvent;
 
 import java.util.HashMap;
 import java.util.List;
@@ -110,6 +113,18 @@ public class XPManager {
             xpGained = baseXP + bonusXP;
         }
         
+        // Fire the SkillXPGainEvent
+        SkillXPGainEvent xpEvent = new SkillXPGainEvent(player, skill, xpGained);
+        Bukkit.getPluginManager().callEvent(xpEvent);
+        
+        // Check if the event was cancelled
+        if (xpEvent.isCancelled()) {
+            return;
+        }
+        
+        // Get the potentially modified XP amount
+        xpGained = xpEvent.getXPGained();
+        
         // Calculate amount to share with party members
         int sharedAmount = 0;
         Map<UUID, Integer> sharedXp = null;
@@ -180,6 +195,9 @@ public class XPManager {
         int requiredXP = getRequiredXP(currentLevel);
 
         while (newXP >= requiredXP) {
+            // Store the old level before leveling up
+            int oldLevel = currentLevel;
+            
             // Level up
             currentLevel++;
             newXP -= requiredXP;
@@ -196,6 +214,10 @@ public class XPManager {
 
             // Handle rewards
             handleSkillRewards(player, skill, currentLevel);
+            
+            // Fire the SkillLevelUpEvent
+            SkillLevelUpEvent levelEvent = new SkillLevelUpEvent(player, skill, oldLevel, currentLevel);
+            Bukkit.getPluginManager().callEvent(levelEvent);
         }
 
         // Update XP in data manager

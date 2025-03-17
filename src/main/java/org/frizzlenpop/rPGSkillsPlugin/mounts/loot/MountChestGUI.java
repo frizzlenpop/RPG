@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.gui.InventoryManager;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountManager;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountRarity;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountType;
@@ -28,9 +29,15 @@ public class MountChestGUI {
     private final RPGSkillsPlugin plugin;
     private final MountKeyManager keyManager;
     private final MountManager mountManager;
+    private final InventoryManager inventoryManager;
     private final Map<UUID, Inventory> activeGUIs = new HashMap<>();
     private final Map<UUID, MountKeyManager.KeyTier> openingChests = new HashMap<>();
     private final Random random = new Random();
+    
+    // GUI titles
+    private static final String MAIN_GUI_TITLE = ChatColor.DARK_PURPLE + "Mount Chests";
+    private static final String OPENING_GUI_TITLE = ChatColor.DARK_PURPLE + "Opening Chest...";
+    private static final String RESULT_GUI_TITLE = ChatColor.DARK_PURPLE + "Chest Result";
     
     /**
      * Creates a new mount chest GUI manager
@@ -43,6 +50,7 @@ public class MountChestGUI {
         this.plugin = plugin;
         this.keyManager = keyManager;
         this.mountManager = mountManager;
+        this.inventoryManager = plugin.getInventoryManager();
     }
     
     /**
@@ -51,409 +59,363 @@ public class MountChestGUI {
      * @param player The player
      */
     public void openMainGUI(Player player) {
-        Inventory inventory = Bukkit.createInventory(null, 54, ChatColor.DARK_PURPLE + "Mount Chests");
+        Inventory inventory = Bukkit.createInventory(null, 54, MAIN_GUI_TITLE);
         UUID playerUUID = player.getUniqueId();
         
         // Load player key data
-        keyManager.loadPlayerKeysData(playerUUID);
-        Map<MountKeyManager.KeyTier, Integer> playerKeys = keyManager.getAllPlayerKeys(playerUUID);
+        Map<MountKeyManager.KeyTier, Integer> playerKeys = keyManager.getPlayerKeys(playerUUID);
         
-        // Add key items to inventory
-        int slot = 10;
-        for (MountKeyManager.KeyTier tier : MountKeyManager.KeyTier.values()) {
-            int count = playerKeys.getOrDefault(tier, 0);
-            
-            // Create key display item
-            ItemStack keyItem = createKeyDisplayItem(tier, count);
-            inventory.setItem(slot, keyItem);
-            
-            // Increment slot, handling row wrapping
-            slot += 2;
-            if (slot % 9 == 8) {
-                slot += 2; // Skip to next row
-            }
-        }
+        // Add key items
+        inventory.setItem(20, createKeyItem(MountKeyManager.KeyTier.COMMON, playerKeys.getOrDefault(MountKeyManager.KeyTier.COMMON, 0)));
+        inventory.setItem(22, createKeyItem(MountKeyManager.KeyTier.RARE, playerKeys.getOrDefault(MountKeyManager.KeyTier.RARE, 0)));
+        inventory.setItem(24, createKeyItem(MountKeyManager.KeyTier.EPIC, playerKeys.getOrDefault(MountKeyManager.KeyTier.EPIC, 0)));
         
         // Add chest items
-        slot = 11;
-        for (MountKeyManager.KeyTier tier : MountKeyManager.KeyTier.values()) {
-            // Create chest display item
-            ItemStack chestItem = createChestDisplayItem(tier);
-            inventory.setItem(slot, chestItem);
-            
-            // Increment slot, handling row wrapping
-            slot += 2;
-            if (slot % 9 == 8) {
-                slot += 2; // Skip to next row
+        inventory.setItem(38, createChestItem(MountKeyManager.KeyTier.COMMON));
+        inventory.setItem(40, createChestItem(MountKeyManager.KeyTier.RARE));
+        inventory.setItem(42, createChestItem(MountKeyManager.KeyTier.EPIC));
+        
+        // Add info item
+        inventory.setItem(4, createGuiItem(
+                Material.BOOK,
+                ChatColor.GOLD + "Mount Chests",
+                ChatColor.GRAY + "Use keys to open chests and",
+                ChatColor.GRAY + "obtain new mounts!",
+                "",
+                ChatColor.YELLOW + "Instructions:",
+                ChatColor.WHITE + "1. Click on a chest to open it",
+                ChatColor.WHITE + "2. You must have a matching key",
+                ChatColor.WHITE + "3. Higher tier chests give better mounts"
+        ));
+        
+        // Add back button
+        inventory.setItem(49, createGuiItem(
+                Material.ARROW,
+                ChatColor.GOLD + "« Back to RPG Hub",
+                ChatColor.GRAY + "Return to the main RPG Hub"
+        ));
+        
+        // Add decorative glass panes
+        for (int i = 0; i < 54; i++) {
+            if (inventory.getItem(i) == null) {
+                if (i % 9 == 0 || i % 9 == 8 || i < 9 || i >= 45) {
+                    inventory.setItem(i, createGuiItem(Material.PURPLE_STAINED_GLASS_PANE, " "));
+                }
             }
         }
         
-        // Add decorative and info items
-        inventory.setItem(4, createGuiItem(Material.ENDER_CHEST, 
-                ChatColor.GOLD + "Mount Chest System",
-                ChatColor.GRAY + "Open chests to get special mounts",
-                "",
-                ChatColor.YELLOW + "Click on a chest to open it",
-                ChatColor.YELLOW + "with the corresponding key."));
-        
-        inventory.setItem(49, createGuiItem(Material.PAPER, 
-                ChatColor.AQUA + "Your Key Collection",
-                "",
-                ChatColor.WHITE + "Common: " + ChatColor.YELLOW + playerKeys.getOrDefault(MountKeyManager.KeyTier.COMMON, 0),
-                ChatColor.GREEN + "Uncommon: " + ChatColor.YELLOW + playerKeys.getOrDefault(MountKeyManager.KeyTier.UNCOMMON, 0),
-                ChatColor.BLUE + "Rare: " + ChatColor.YELLOW + playerKeys.getOrDefault(MountKeyManager.KeyTier.RARE, 0),
-                ChatColor.LIGHT_PURPLE + "Epic: " + ChatColor.YELLOW + playerKeys.getOrDefault(MountKeyManager.KeyTier.EPIC, 0),
-                ChatColor.GOLD + "Legendary: " + ChatColor.YELLOW + playerKeys.getOrDefault(MountKeyManager.KeyTier.LEGENDARY, 0)));
-        
-        inventory.setItem(53, createGuiItem(Material.BARRIER, ChatColor.RED + "Close", 
-                "Click to close this menu"));
-        
-        // Store active GUI reference
+        // Store active GUI
         activeGUIs.put(playerUUID, inventory);
         
-        // Open inventory for player
+        // Open inventory
         player.openInventory(inventory);
+        
+        // Register this inventory with the inventory manager to prevent item theft
+        inventoryManager.registerInventory(player, MAIN_GUI_TITLE);
+        
+        // Play sound
+        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.5f, 1.0f);
     }
     
     /**
-     * Handles the chest opening process
+     * Opens a chest for a player
      * 
      * @param player The player
-     * @param tier The key tier to use
+     * @param tier The chest tier
+     * @return True if the chest was opened, false otherwise
      */
-    public void openChest(Player player, MountKeyManager.KeyTier tier) {
+    public boolean openChest(Player player, MountKeyManager.KeyTier tier) {
         UUID playerUUID = player.getUniqueId();
         
-        // Check if the player has a key of this tier
-        if (keyManager.getPlayerKeyCount(playerUUID, tier) < 1) {
-            player.sendMessage(ChatColor.RED + "You don't have any " + tier.getFormattedName() + 
-                    ChatColor.RED + " keys!");
-            return;
+        // Check if player has a key
+        if (!keyManager.hasKey(playerUUID, tier)) {
+            player.sendMessage(ChatColor.RED + "You don't have a " + tier.getDisplayName() + " key!");
+            return false;
         }
         
-        // Create the chest opening GUI
-        Inventory inventory = Bukkit.createInventory(null, 27, 
-                ChatColor.GOLD + "Opening " + tier.getFormattedName() + ChatColor.GOLD + " Chest");
+        // Use key
+        keyManager.useKey(playerUUID, tier);
         
-        // Fill with glass panes
-        ItemStack glassFiller = createGuiItem(Material.BLACK_STAINED_GLASS_PANE, " ");
-        for (int i = 0; i < inventory.getSize(); i++) {
-            inventory.setItem(i, glassFiller);
-        }
-        
-        // Add closed chest in the middle
-        inventory.setItem(13, createGuiItem(Material.CHEST, 
-                ChatColor.GOLD + "Mount Chest",
-                ChatColor.GRAY + "Opening..."));
-        
-        // Remove the key from the player
-        keyManager.removePlayerKeys(playerUUID, tier, 1);
-        
-        // Store reference to opening process
-        activeGUIs.put(playerUUID, inventory);
-        openingChests.put(playerUUID, tier);
-        
-        // Open inventory for player
-        player.openInventory(inventory);
-        
-        // Start the opening animation
+        // Start chest opening animation
         startChestOpeningAnimation(player, tier);
+        
+        return true;
     }
     
     /**
-     * Plays the chest opening animation and gives rewards
+     * Starts the chest opening animation
      * 
      * @param player The player
-     * @param tier The key tier
+     * @param tier The chest tier
      */
     private void startChestOpeningAnimation(Player player, MountKeyManager.KeyTier tier) {
         UUID playerUUID = player.getUniqueId();
-        Inventory inventory = activeGUIs.get(playerUUID);
         
-        // Pre-determine the reward
-        MountRarity rarity = tier.rollRarity();
-        String mountId = keyManager.rollMountType(tier);
+        // Create animation inventory
+        Inventory inventory = Bukkit.createInventory(null, 27, OPENING_GUI_TITLE);
         
-        // Get mount type
-        MountType mountType = mountManager.getMountType(mountId);
-        if (mountType == null) {
-            // Fallback to phoenix_blaze if the mount type doesn't exist
-            mountId = "phoenix_blaze";
-            mountType = mountManager.getMountType(mountId);
+        // Fill with glass panes
+        for (int i = 0; i < 27; i++) {
+            inventory.setItem(i, createGuiItem(Material.BLACK_STAINED_GLASS_PANE, " "));
         }
         
-        // Final references for the runnable
-        final MountType finalMountType = mountType;
-        final String finalMountId = mountId;
+        // Add chest in the middle
+        inventory.setItem(13, createGuiItem(
+                Material.CHEST,
+                ChatColor.GOLD + "Opening " + tier.getDisplayName() + " Chest...",
+                ChatColor.GRAY + "Please wait..."
+        ));
         
-        // Start animation sequence
+        // Store active GUI and opening chest
+        activeGUIs.put(playerUUID, inventory);
+        openingChests.put(playerUUID, tier);
+        
+        // Open inventory
+        player.openInventory(inventory);
+        
+        // Register this inventory with the inventory manager to prevent item theft
+        inventoryManager.registerInventory(player, OPENING_GUI_TITLE);
+        
+        // Play sound
+        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 0.5f, 0.8f);
+        
+        // Start animation
         new BukkitRunnable() {
-            private int step = 0;
-            private final int totalSteps = 10;
+            private int tick = 0;
+            private final Material[] materials = {
+                    Material.BLACK_STAINED_GLASS_PANE,
+                    Material.BLUE_STAINED_GLASS_PANE,
+                    Material.LIGHT_BLUE_STAINED_GLASS_PANE,
+                    Material.CYAN_STAINED_GLASS_PANE,
+                    Material.GREEN_STAINED_GLASS_PANE,
+                    Material.LIME_STAINED_GLASS_PANE,
+                    Material.YELLOW_STAINED_GLASS_PANE,
+                    Material.ORANGE_STAINED_GLASS_PANE,
+                    Material.RED_STAINED_GLASS_PANE,
+                    Material.MAGENTA_STAINED_GLASS_PANE,
+                    Material.PURPLE_STAINED_GLASS_PANE
+            };
             
             @Override
             public void run() {
-                if (step >= totalSteps) {
-                    // Animation complete, show reward
-                    completeChestOpening(player, tier, finalMountType, finalMountId, rarity);
-                    cancel();
-                    return;
-                }
-                
                 // Check if player still has GUI open
-                if (!activeGUIs.containsKey(playerUUID) || !openingChests.containsKey(playerUUID)) {
-                    cancel();
+                if (!activeGUIs.containsKey(playerUUID) || tick >= 40) {
+                    // Animation complete, show result
+                    showChestResult(player, tier);
+                    this.cancel();
                     return;
                 }
                 
                 // Update animation
-                updateChestAnimation(inventory, step, totalSteps, tier);
+                Inventory inv = activeGUIs.get(playerUUID);
                 
-                // Play sound effects
-                player.playSound(player.getLocation(), getAnimationSound(step, totalSteps), 1.0f, getAnimationPitch(step));
+                // Update border
+                Material material = materials[tick % materials.length];
+                for (int i = 0; i < 27; i++) {
+                    if (i != 13) { // Skip the chest
+                        inv.setItem(i, createGuiItem(material, " "));
+                    }
+                }
                 
-                step++;
+                // Play sound every few ticks
+                if (tick % 5 == 0) {
+                    player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5f, 0.5f + (tick / 40f));
+                }
+                
+                tick++;
             }
-        }.runTaskTimer(plugin, 10L, 10L);
+        }.runTaskTimer(plugin, 5L, 2L);
     }
     
     /**
-     * Updates the chest animation in the GUI
-     * 
-     * @param inventory The inventory
-     * @param step Current animation step
-     * @param totalSteps Total animation steps
-     * @param tier Key tier
-     */
-    private void updateChestAnimation(Inventory inventory, int step, int totalSteps, MountKeyManager.KeyTier tier) {
-        if (step < totalSteps / 2) {
-            // Early animation: Chest opening sequence
-            Material chestMaterial;
-            if (step == 0) {
-                chestMaterial = Material.CHEST;
-            } else if (step == 1) {
-                chestMaterial = Material.CHEST;
-            } else {
-                chestMaterial = Material.ENDER_CHEST;
-            }
-            
-            inventory.setItem(13, createGuiItem(chestMaterial, 
-                    ChatColor.GOLD + "Opening Mount Chest",
-                    ChatColor.GRAY + "Wait for the reward..."));
-            
-            // Glass pane colors changing
-            Material glassMaterial = getColoredGlass(step);
-            ItemStack glass = createGuiItem(glassMaterial, " ");
-            
-            for (int i = 0; i < inventory.getSize(); i++) {
-                if (i != 13) { // Keep the center slot with the chest
-                    inventory.setItem(i, glass);
-                }
-            }
-        } else {
-            // Later animation: Particles and anticipation
-            inventory.setItem(13, createGuiItem(Material.ENDER_CHEST, 
-                    ChatColor.GOLD + "Mount Chest",
-                    ChatColor.GRAY + "Almost there..."));
-            
-            // Flashing effect
-            boolean flash = (step % 2 == 0);
-            Material glassMaterial = flash ? 
-                    getKeyGlassColor(tier) : Material.BLACK_STAINED_GLASS_PANE;
-            
-            ItemStack glass = createGuiItem(glassMaterial, " ");
-            for (int i = 0; i < inventory.getSize(); i++) {
-                if (i != 13) { // Keep the center slot
-                    inventory.setItem(i, glass);
-                }
-            }
-        }
-    }
-    
-    /**
-     * Completes the chest opening and gives rewards
+     * Shows the chest opening result
      * 
      * @param player The player
-     * @param tier The key tier
-     * @param mountType The mount type
-     * @param mountId The mount ID
-     * @param rarity The mount rarity
+     * @param tier The chest tier
      */
-    private void completeChestOpening(Player player, MountKeyManager.KeyTier tier, 
-                                     MountType mountType, String mountId, MountRarity rarity) {
+    private void showChestResult(Player player, MountKeyManager.KeyTier tier) {
         UUID playerUUID = player.getUniqueId();
-        Inventory inventory = activeGUIs.get(playerUUID);
         
-        if (inventory == null) {
-            return;
+        // Determine mount reward
+        MountType rewardMount = determineReward(tier);
+        MountRarity rewardRarity = determineRewardRarity(tier);
+        
+        // Add mount to player
+        mountManager.addMountToPlayer(playerUUID, rewardMount.getId());
+        
+        // Create result inventory
+        Inventory inventory = Bukkit.createInventory(null, 27, RESULT_GUI_TITLE);
+        
+        // Fill with glass panes based on rarity
+        Material glassMaterial;
+        switch (rewardRarity) {
+            case LEGENDARY:
+                glassMaterial = Material.YELLOW_STAINED_GLASS_PANE;
+                break;
+            case EPIC:
+                glassMaterial = Material.PURPLE_STAINED_GLASS_PANE;
+                break;
+            case RARE:
+                glassMaterial = Material.BLUE_STAINED_GLASS_PANE;
+                break;
+            case UNCOMMON:
+                glassMaterial = Material.GREEN_STAINED_GLASS_PANE;
+                break;
+            default:
+                glassMaterial = Material.WHITE_STAINED_GLASS_PANE;
+                break;
         }
         
-        // Play reward sound
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        
-        // Check if player already owns the mount
-        boolean alreadyOwned = mountManager.ownsMount(playerUUID, mountId);
-        
-        if (!alreadyOwned) {
-            // Give the mount to the player
-            mountManager.addMountToPlayer(playerUUID, mountId);
-            
-            // Update the GUI with the reward
-            inventory.setItem(13, createMountRewardItem(mountType, rarity, false));
-            
-            // Send message
-            player.sendMessage(ChatColor.GREEN + "You received a " + rarity.getFormattedName() + " " + 
-                    mountType.getDisplayName() + ChatColor.GREEN + "!");
-        } else {
-            // Player already owns this mount - give alternative reward
-            handleDuplicateMount(player, tier, mountType, rarity);
-            
-            // Update the GUI with the duplicate info
-            inventory.setItem(13, createMountRewardItem(mountType, rarity, true));
-            
-            // Send message
-            player.sendMessage(ChatColor.YELLOW + "You already own the " + mountType.getDisplayName() + 
-                    ChatColor.YELLOW + ". You received an alternative reward instead.");
+        for (int i = 0; i < 27; i++) {
+            inventory.setItem(i, createGuiItem(glassMaterial, " "));
         }
         
-        // Update surrounding slots
-        Material glassMaterial = getKeyGlassColor(tier);
-        ItemStack glass = createGuiItem(glassMaterial, " ");
-        for (int i = 0; i < inventory.getSize(); i++) {
-            if (i != 13) { // Keep the center slot
-                inventory.setItem(i, glass);
+        // Add mount item in the middle
+        ItemStack mountItem = createMountRewardItem(rewardMount, rewardRarity);
+        inventory.setItem(13, mountItem);
+        
+        // Add continue button
+        inventory.setItem(22, createGuiItem(
+                Material.ARROW,
+                ChatColor.GREEN + "Continue",
+                ChatColor.GRAY + "Click to return to the chest menu"
+        ));
+        
+        // Store active GUI
+        activeGUIs.put(playerUUID, inventory);
+        openingChests.remove(playerUUID);
+        
+        // Open inventory
+        player.openInventory(inventory);
+        
+        // Register this inventory with the inventory manager to prevent item theft
+        inventoryManager.registerInventory(player, RESULT_GUI_TITLE);
+        
+        // Play sound based on rarity
+        Sound sound;
+        float pitch;
+        
+        switch (rewardRarity) {
+            case LEGENDARY:
+                sound = Sound.UI_TOAST_CHALLENGE_COMPLETE;
+                pitch = 1.0f;
+                break;
+            case EPIC:
+                sound = Sound.ENTITY_PLAYER_LEVELUP;
+                pitch = 1.2f;
+                break;
+            case RARE:
+                sound = Sound.ENTITY_PLAYER_LEVELUP;
+                pitch = 1.0f;
+                break;
+            case UNCOMMON:
+                sound = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
+                pitch = 1.2f;
+                break;
+            default:
+                sound = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
+                pitch = 1.0f;
+                break;
+        }
+        
+        player.playSound(player.getLocation(), sound, 1.0f, pitch);
+        
+        // Announce legendary mounts to all players
+        if (rewardRarity == MountRarity.LEGENDARY) {
+            Bukkit.broadcastMessage(ChatColor.GOLD + "✦ " + ChatColor.YELLOW + player.getName() + 
+                    ChatColor.GOLD + " has obtained a " + ChatColor.YELLOW + "LEGENDARY " + 
+                    rewardMount.getDisplayName() + ChatColor.GOLD + "! ✦");
+        }
+    }
+    
+    /**
+     * Handles inventory click events
+     * 
+     * @param player The player
+     * @param inventoryTitle The title of the clicked inventory
+     * @param slot The clicked slot
+     * @return True if the click was handled
+     */
+    public boolean handleInventoryClick(Player player, String inventoryTitle, int slot) {
+        UUID playerUUID = player.getUniqueId();
+        
+        // Check if this is the main GUI
+        if (inventoryTitle.equals(MAIN_GUI_TITLE)) {
+            // Handle chest clicks
+            if (slot == 38) {
+                return openChest(player, MountKeyManager.KeyTier.COMMON);
+            } else if (slot == 40) {
+                return openChest(player, MountKeyManager.KeyTier.RARE);
+            } else if (slot == 42) {
+                return openChest(player, MountKeyManager.KeyTier.EPIC);
+            }
+            
+            // Handle back button
+            if (slot == 49) {
+                player.closeInventory();
+                player.performCommand("rpghub");
+                return true;
+            }
+        }
+        // Check if this is the result GUI
+        else if (inventoryTitle.equals(RESULT_GUI_TITLE)) {
+            // Handle continue button
+            if (slot == 22) {
+                player.closeInventory();
+                openMainGUI(player);
+                return true;
             }
         }
         
-        // Add close button
-        inventory.setItem(26, createGuiItem(Material.BARRIER, ChatColor.RED + "Close", 
-                "Click to close this menu"));
-        
-        // Remove from opening chests map
-        openingChests.remove(playerUUID);
+        return false;
     }
     
     /**
-     * Handles the case when a player receives a duplicate mount
+     * Handles inventory close events
      * 
      * @param player The player
-     * @param tier The key tier
-     * @param mountType The mount type
-     * @param rarity The mount rarity
+     * @param inventoryTitle The title of the closed inventory
      */
-    private void handleDuplicateMount(Player player, MountKeyManager.KeyTier tier, 
-                                     MountType mountType, MountRarity rarity) {
-        // Options for duplicate handling:
-        // 1. Give upgrade materials
-        // 2. Give customization tokens
-        // 3. Give partial coin refund
+    public void handleInventoryClose(Player player, String inventoryTitle) {
+        UUID playerUUID = player.getUniqueId();
         
-        // For now, implement a simple coin refund
-        int refundAmount = calculateRefundAmount(tier, rarity);
+        // Clean up
+        activeGUIs.remove(playerUUID);
         
-        // Give coins to the player
-        plugin.getEconomyManager().depositMoney(player, refundAmount);
-        
-        // Send message
-        player.sendMessage(ChatColor.YELLOW + "You received " + refundAmount + " coins as compensation.");
-    }
-    
-    /**
-     * Calculates the refund amount for a duplicate mount
-     * 
-     * @param tier The key tier
-     * @param rarity The mount rarity
-     * @return The refund amount
-     */
-    private int calculateRefundAmount(MountKeyManager.KeyTier tier, MountRarity rarity) {
-        // Base refund based on key tier
-        int baseRefund;
-        switch (tier) {
-            case COMMON -> baseRefund = 1000;
-            case UNCOMMON -> baseRefund = 2000;
-            case RARE -> baseRefund = 4000;
-            case EPIC -> baseRefund = 8000;
-            case LEGENDARY -> baseRefund = 15000;
-            default -> baseRefund = 1000;
+        // If closing during animation, complete it immediately
+        if (openingChests.containsKey(playerUUID)) {
+            MountKeyManager.KeyTier tier = openingChests.get(playerUUID);
+            showChestResult(player, tier);
         }
         
-        // Multiply by rarity factor
-        double rarityMultiplier;
-        switch (rarity) {
-            case COMMON -> rarityMultiplier = 1.0;
-            case UNCOMMON -> rarityMultiplier = 1.5;
-            case RARE -> rarityMultiplier = 2.0;
-            case EPIC -> rarityMultiplier = 3.0;
-            case LEGENDARY -> rarityMultiplier = 5.0;
-            case MYTHIC -> rarityMultiplier = 10.0;
-            default -> rarityMultiplier = 1.0;
-        }
+        // Unregister this inventory with the inventory manager
+        inventoryManager.unregisterInventory(player, inventoryTitle);
         
-        return (int)(baseRefund * rarityMultiplier);
+        // Play sound
+        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 0.5f, 1.0f);
     }
     
     /**
-     * Get a colored glass material based on animation step
+     * Handles inventory close events (alternative method for UUID parameter)
      * 
-     * @param step The animation step
-     * @return The glass material
+     * @param playerUUID The player's UUID
      */
-    private Material getColoredGlass(int step) {
-        return switch (step % 6) {
-            case 0 -> Material.RED_STAINED_GLASS_PANE;
-            case 1 -> Material.ORANGE_STAINED_GLASS_PANE;
-            case 2 -> Material.YELLOW_STAINED_GLASS_PANE;
-            case 3 -> Material.GREEN_STAINED_GLASS_PANE;
-            case 4 -> Material.BLUE_STAINED_GLASS_PANE;
-            case 5 -> Material.PURPLE_STAINED_GLASS_PANE;
-            default -> Material.WHITE_STAINED_GLASS_PANE;
-        };
-    }
-    
-    /**
-     * Get a glass color based on key tier
-     * 
-     * @param tier The key tier
-     * @return The glass material
-     */
-    private Material getKeyGlassColor(MountKeyManager.KeyTier tier) {
-        return switch (tier) {
-            case COMMON -> Material.WHITE_STAINED_GLASS_PANE;
-            case UNCOMMON -> Material.LIME_STAINED_GLASS_PANE;
-            case RARE -> Material.BLUE_STAINED_GLASS_PANE;
-            case EPIC -> Material.PURPLE_STAINED_GLASS_PANE;
-            case LEGENDARY -> Material.ORANGE_STAINED_GLASS_PANE;
-            default -> Material.WHITE_STAINED_GLASS_PANE;
-        };
-    }
-    
-    /**
-     * Get a sound for the animation step
-     * 
-     * @param step The animation step
-     * @param totalSteps Total steps
-     * @return The sound
-     */
-    private Sound getAnimationSound(int step, int totalSteps) {
-        if (step == 0) {
-            return Sound.BLOCK_CHEST_OPEN;
-        } else if (step == totalSteps - 1) {
-            return Sound.ENTITY_PLAYER_LEVELUP;
-        } else if (step > totalSteps / 2) {
-            return Sound.BLOCK_NOTE_BLOCK_CHIME;
-        } else {
-            return Sound.BLOCK_NOTE_BLOCK_BELL;
+    public void handleInventoryClose(UUID playerUUID) {
+        // Clean up
+        activeGUIs.remove(playerUUID);
+        openingChests.remove(playerUUID);
+        
+        // Get player and title if possible
+        Player player = Bukkit.getPlayer(playerUUID);
+        if (player != null) {
+            // Unregister all possible inventories
+            inventoryManager.unregisterInventory(player, MAIN_GUI_TITLE);
+            inventoryManager.unregisterInventory(player, OPENING_GUI_TITLE);
+            inventoryManager.unregisterInventory(player, RESULT_GUI_TITLE);
+            
+            // Play sound
+            player.playSound(player.getLocation(), Sound.BLOCK_CHEST_CLOSE, 0.5f, 1.0f);
         }
-    }
-    
-    /**
-     * Get a pitch value for the animation sound
-     * 
-     * @param step The animation step
-     * @return The pitch
-     */
-    private float getAnimationPitch(int step) {
-        return 0.5f + ((float) step / 10);
     }
     
     /**
@@ -488,7 +450,7 @@ public class MountChestGUI {
      * @param count The number of keys the player has
      * @return The created ItemStack
      */
-    private ItemStack createKeyDisplayItem(MountKeyManager.KeyTier tier, int count) {
+    private ItemStack createKeyItem(MountKeyManager.KeyTier tier, int count) {
         ItemStack item = new ItemStack(tier.getMaterial());
         ItemMeta meta = item.getItemMeta();
         
@@ -524,7 +486,7 @@ public class MountChestGUI {
      * @param tier The key tier
      * @return The created ItemStack
      */
-    private ItemStack createChestDisplayItem(MountKeyManager.KeyTier tier) {
+    private ItemStack createChestItem(MountKeyManager.KeyTier tier) {
         Material chestMaterial;
         switch (tier) {
             case COMMON -> chestMaterial = Material.CHEST;
@@ -567,10 +529,9 @@ public class MountChestGUI {
      * 
      * @param mountType The mount type
      * @param rarity The mount rarity
-     * @param isDuplicate Whether this is a duplicate mount
      * @return The created ItemStack
      */
-    private ItemStack createMountRewardItem(MountType mountType, MountRarity rarity, boolean isDuplicate) {
+    private ItemStack createMountRewardItem(MountType mountType, MountRarity rarity) {
         Material material;
         switch (mountType.getId()) {
             case "phoenix_blaze" -> material = Material.BLAZE_POWDER;
@@ -586,29 +547,15 @@ public class MountChestGUI {
         
         if (meta != null) {
             // Set display name
-            String displayName;
-            if (isDuplicate) {
-                displayName = ChatColor.YELLOW + "Duplicate: " + rarity.getColor() + mountType.getDisplayName();
-            } else {
-                displayName = rarity.getColor() + mountType.getDisplayName();
-            }
-            meta.setDisplayName(displayName);
+            meta.setDisplayName(rarity.getColor() + mountType.getDisplayName());
             
             // Add lore
             List<String> lore = new ArrayList<>();
-            if (isDuplicate) {
-                lore.add(ChatColor.GRAY + "You already own this mount");
-                lore.add(ChatColor.GRAY + "You received compensation instead.");
-                lore.add("");
-            }
-            
             lore.add(ChatColor.GRAY + mountType.getDescription());
             lore.add("");
             lore.add(rarity.getColor() + "Rarity: " + rarity.getFormattedName());
             lore.add("");
-            if (!isDuplicate) {
-                lore.add(ChatColor.GREEN + "Use '/mount summon " + mountType.getId() + "' to ride it!");
-            }
+            lore.add(ChatColor.GREEN + "Use '/mount summon " + mountType.getId() + "' to ride it!");
             
             meta.setLore(lore);
             item.setItemMeta(meta);
@@ -618,66 +565,39 @@ public class MountChestGUI {
     }
     
     /**
-     * Handles a click in the mount chest GUI
+     * Determines the reward mount based on the chest tier
      * 
-     * @param player The player who clicked
-     * @param inventoryTitle The title of the clicked inventory
-     * @param slot The clicked slot
-     * @return true if the click was handled
+     * @param tier The chest tier
+     * @return The reward mount
      */
-    public boolean handleInventoryClick(Player player, String inventoryTitle, int slot) {
-        UUID playerUUID = player.getUniqueId();
+    private MountType determineReward(MountKeyManager.KeyTier tier) {
+        // Get all available mount types from the mount manager
+        Map<String, MountType> availableMounts = mountManager.getMountTypes();
         
-        // Check if this is one of our GUIs
-        if (!activeGUIs.containsKey(playerUUID)) {
-            return false;
+        // If no mounts are available, return null (this should never happen)
+        if (availableMounts.isEmpty()) {
+            plugin.getLogger().warning("No mount types available for chest rewards!");
+            return null;
         }
         
-        // Handle main menu
-        if (inventoryTitle.equals(ChatColor.DARK_PURPLE + "Mount Chests")) {
-            // Handle chest slots (11, 13, 15, 17, 19, 21, 23, 25)
-            int[] chestSlots = {11, 13, 15, 17, 19};
-            for (int i = 0; i < chestSlots.length; i++) {
-                if (slot == chestSlots[i] && i < MountKeyManager.KeyTier.values().length) {
-                    MountKeyManager.KeyTier tier = MountKeyManager.KeyTier.values()[i];
-                    openChest(player, tier);
-                    return true;
-                }
-            }
-            
-            // Close button
-            if (slot == 53) {
-                player.closeInventory();
-                return true;
-            }
-        }
-        // Handle chest opening GUI
-        else if (inventoryTitle.contains("Opening") && inventoryTitle.contains("Chest")) {
-            // Prevent all clicks during opening animation
-            if (openingChests.containsKey(playerUUID)) {
-                return true;
-            }
-            
-            // Close button (only available after opening is complete)
-            if (slot == 26) {
-                player.closeInventory();
-                return true;
-            }
-        }
+        // Get a list of mount IDs
+        List<String> mountIds = new ArrayList<>(availableMounts.keySet());
         
-        return false;
+        // Select a random mount ID
+        String randomMountId = mountIds.get(random.nextInt(mountIds.size()));
+        
+        // Return the corresponding mount type
+        return availableMounts.get(randomMountId);
     }
     
     /**
-     * Removes a player's GUI reference when they close the inventory
+     * Determines the reward rarity based on the chest tier
      * 
-     * @param playerUUID The player's UUID
+     * @param tier The chest tier
+     * @return The reward rarity
      */
-    public void handleInventoryClose(UUID playerUUID) {
-        activeGUIs.remove(playerUUID);
-        
-        // If the player closes during opening, they still lose their key
-        // but the animation is canceled
-        openingChests.remove(playerUUID);
+    private MountRarity determineRewardRarity(MountKeyManager.KeyTier tier) {
+        // Use the key tier's built-in rarity roll method
+        return tier.rollRarity();
     }
 } 

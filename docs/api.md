@@ -1,384 +1,646 @@
-# API Documentation
+# RPG Skills Plugin API Documentation
 
-## Overview
+This document provides comprehensive documentation for the RPG Skills Plugin API, which allows other plugins to interact with the RPG Skills system.
 
-The RPG Skills Plugin provides an extensive API that allows other plugins to interact with its systems, listen for events, and extend its functionality. This documentation outlines the available classes, methods, and events that developers can use.
+## Table of Contents
 
-## Accessing the API
+1. [Getting Started](#getting-started)
+2. [API Methods](#api-methods)
+   - [Skill Methods](#skill-methods)
+   - [XP Methods](#xp-methods)
+   - [Passive Ability Methods](#passive-ability-methods)
+3. [Events](#events)
+   - [SkillLevelUpEvent](#skilllevelupevent)
+   - [SkillXPGainEvent](#skillxpgainevent)
+   - [PassiveAbilityUnlockEvent](#passiveabilityunlockevent)
+4. [Examples](#examples)
+   - [Basic Integration](#basic-integration)
+   - [Listening to Events](#listening-to-events)
+   - [Custom XP Sources](#custom-xp-sources)
+   - [Rewarding Passive Abilities](#rewarding-passive-abilities)
+5. [Best Practices](#best-practices)
+6. [Party System API](#party-system-api)
+   - [Accessing the Party API](#accessing-the-party-api)
+   - [Party Management Methods](#party-management-methods)
+   - [Party Information Methods](#party-information-methods)
+   - [Party Events](#party-events)
 
-To access the RPG Skills Plugin API, add it as a dependency in your plugin.yml:
+## Getting Started
+
+To use the RPG Skills API in your plugin, you need to add the RPG Skills Plugin as a dependency in your `plugin.yml`:
 
 ```yaml
-depend: [RPGSkills]
+depend: [RPGSkillsPlugin]
 ```
 
-Then, in your code, get the API instance:
+Then, you can access the API in your code:
 
 ```java
-import org.frizzlenpop.rpgskills.api.RPGSkillsAPI;
+import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.api.RPGSkillsAPI;
+
+public class YourPlugin extends JavaPlugin {
+    private RPGSkillsAPI rpgSkillsAPI;
+
+    @Override
+    public void onEnable() {
+        // Get the RPG Skills Plugin
+        RPGSkillsPlugin rpgSkillsPlugin = (RPGSkillsPlugin) Bukkit.getPluginManager().getPlugin("RPGSkillsPlugin");
+        
+        // Get the API instance
+        rpgSkillsAPI = RPGSkillsAPI.getInstance(rpgSkillsPlugin);
+        
+        // Now you can use the API
+    }
+}
+```
+
+## API Methods
+
+### Skill Methods
+
+#### Getting Skill Levels
+
+```java
+// Get a player's skill level
+int level = rpgSkillsAPI.getSkillLevel(player, "mining");
+
+// Get a player's skill level by UUID
+int level = rpgSkillsAPI.getSkillLevel(playerUUID, "mining");
+
+// Get the highest level a player has achieved in a skill
+int highestLevel = rpgSkillsAPI.getHighestSkillLevel(player, "mining");
+```
+
+#### Setting Skill Levels
+
+```java
+// Set a player's skill level
+rpgSkillsAPI.setSkillLevel(player, "mining", 10);
+
+// Set a player's skill level by UUID
+rpgSkillsAPI.setSkillLevel(playerUUID, "mining", 10);
+```
+
+### XP Methods
+
+#### Getting XP
+
+```java
+// Get a player's current XP in a skill
+int xp = rpgSkillsAPI.getSkillXP(player, "mining");
+
+// Get a player's current XP in a skill by UUID
+int xp = rpgSkillsAPI.getSkillXP(playerUUID, "mining");
+
+// Get the total XP a player has earned in a skill
+int totalXP = rpgSkillsAPI.getTotalSkillXPEarned(player, "mining");
+
+// Get the XP required for a specific level
+int requiredXP = rpgSkillsAPI.getRequiredXP(10); // XP required for level 10
+```
+
+#### Setting and Adding XP
+
+```java
+// Set a player's XP in a skill
+rpgSkillsAPI.setSkillXP(player, "mining", 500);
+
+// Set a player's XP in a skill by UUID
+rpgSkillsAPI.setSkillXP(playerUUID, "mining", 500);
+
+// Add XP to a player's skill (handles level ups and passive ability unlocks)
+rpgSkillsAPI.addXP(player, "mining", 100);
+```
+
+### Passive Ability Methods
+
+#### Checking Passive Abilities
+
+```java
+// Check if a player has a specific passive ability
+boolean hasPassive = rpgSkillsAPI.hasPassive(player, "mining", "autoSmelt");
+
+// Check if a player has a specific passive ability by UUID
+boolean hasPassive = rpgSkillsAPI.hasPassive(playerUUID, "mining", "autoSmelt");
+
+// Get all passive abilities for a player and skill
+Set<String> passives = rpgSkillsAPI.getPassives(player, "mining");
+
+// Get all passive abilities for a player
+Map<String, Set<String>> allPassives = rpgSkillsAPI.getAllPassives(player);
+```
+
+#### Adding and Removing Passive Abilities
+
+```java
+// Add a passive ability to a player
+rpgSkillsAPI.addPassive(player, "mining", "autoSmelt");
+
+// Add a passive ability to a player by UUID
+rpgSkillsAPI.addPassive(playerUUID, "mining", "autoSmelt");
+
+// Remove a passive ability from a player
+rpgSkillsAPI.removePassive(player, "mining", "autoSmelt");
+
+// Remove a passive ability from a player by UUID
+rpgSkillsAPI.removePassive(playerUUID, "mining", "autoSmelt");
+```
+
+## Events
+
+The RPG Skills Plugin provides several events that your plugin can listen to.
+
+### SkillLevelUpEvent
+
+This event is fired when a player levels up a skill.
+
+```java
+@EventHandler
+public void onSkillLevelUp(SkillLevelUpEvent event) {
+    Player player = event.getPlayer();
+    String skill = event.getSkill();
+    int oldLevel = event.getOldLevel();
+    int newLevel = event.getNewLevel();
+    int levelsGained = event.getLevelsGained();
+    
+    // Do something when a player levels up
+}
+```
+
+### SkillXPGainEvent
+
+This event is fired when a player gains XP in a skill. It is cancellable, allowing you to prevent XP gain.
+
+```java
+@EventHandler
+public void onSkillXPGain(SkillXPGainEvent event) {
+    Player player = event.getPlayer();
+    String skill = event.getSkill();
+    int xpGained = event.getXPGained();
+    
+    // Modify the XP gained
+    event.setXPGained(xpGained * 2); // Double the XP
+    
+    // Or cancel the XP gain
+    // event.setCancelled(true);
+}
+```
+
+### PassiveAbilityUnlockEvent
+
+This event is fired when a player unlocks a passive ability.
+
+```java
+@EventHandler
+public void onPassiveAbilityUnlock(PassiveAbilityUnlockEvent event) {
+    Player player = event.getPlayer();
+    String skill = event.getSkill();
+    String passive = event.getPassive();
+    
+    // Do something when a player unlocks a passive ability
+}
+```
+
+## Examples
+
+### Basic Integration
+
+Here's a simple example of integrating with the RPG Skills Plugin:
+
+```java
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.api.RPGSkillsAPI;
+
+public class YourPlugin extends JavaPlugin {
+    private RPGSkillsAPI rpgSkillsAPI;
+
+    @Override
+    public void onEnable() {
+        // Get the RPG Skills Plugin
+        RPGSkillsPlugin rpgSkillsPlugin = (RPGSkillsPlugin) Bukkit.getPluginManager().getPlugin("RPGSkillsPlugin");
+        
+        // Get the API instance
+        rpgSkillsAPI = RPGSkillsAPI.getInstance(rpgSkillsPlugin);
+        
+        // Register commands and listeners
+        getCommand("checkskill").setExecutor(new CheckSkillCommand(this));
+    }
+    
+    public RPGSkillsAPI getRpgSkillsAPI() {
+        return rpgSkillsAPI;
+    }
+}
+
+class CheckSkillCommand implements CommandExecutor {
+    private final YourPlugin plugin;
+    
+    public CheckSkillCommand(YourPlugin plugin) {
+        this.plugin = plugin;
+    }
+    
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("This command can only be used by players.");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        
+        if (args.length < 1) {
+            player.sendMessage("Usage: /checkskill <skill>");
+            return true;
+        }
+        
+        String skill = args[0].toLowerCase();
+        
+        // Get the player's skill level and XP
+        int level = plugin.getRpgSkillsAPI().getSkillLevel(player, skill);
+        int xp = plugin.getRpgSkillsAPI().getSkillXP(player, skill);
+        int requiredXP = plugin.getRpgSkillsAPI().getRequiredXP(level);
+        
+        player.sendMessage("Your " + skill + " level is " + level + " (" + xp + "/" + requiredXP + " XP)");
+        
+        // Get the player's passive abilities for this skill
+        Set<String> passives = plugin.getRpgSkillsAPI().getPassives(player, skill);
+        
+        if (!passives.isEmpty()) {
+            player.sendMessage("Passive abilities: " + String.join(", ", passives));
+        }
+        
+        return true;
+    }
+}
+```
+
+### Listening to Events
+
+Here's an example of listening to RPG Skills events:
+
+```java
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.frizzlenpop.rPGSkillsPlugin.api.events.SkillLevelUpEvent;
+import org.frizzlenpop.rPGSkillsPlugin.api.events.SkillXPGainEvent;
+import org.frizzlenpop.rPGSkillsPlugin.api.events.PassiveAbilityUnlockEvent;
+
+public class RPGSkillsListener implements Listener {
+    private final YourPlugin plugin;
+    
+    public RPGSkillsListener(YourPlugin plugin) {
+        this.plugin = plugin;
+    }
+    
+    @EventHandler
+    public void onSkillLevelUp(SkillLevelUpEvent event) {
+        Player player = event.getPlayer();
+        String skill = event.getSkill();
+        int newLevel = event.getNewLevel();
+        
+        // Give the player a reward for leveling up
+        if (newLevel % 10 == 0) { // Every 10 levels
+            player.sendMessage("Congratulations! You've reached level " + newLevel + " in " + skill + "!");
+            player.getInventory().addItem(new ItemStack(Material.DIAMOND, newLevel / 10));
+        }
+    }
+    
+    @EventHandler
+    public void onSkillXPGain(SkillXPGainEvent event) {
+        Player player = event.getPlayer();
+        String skill = event.getSkill();
+        
+        // Double XP for VIP players
+        if (player.hasPermission("yourplugin.vip")) {
+            event.setXPGained(event.getXPGained() * 2);
+            player.sendMessage("VIP bonus: Double XP!");
+        }
+    }
+    
+    @EventHandler
+    public void onPassiveAbilityUnlock(PassiveAbilityUnlockEvent event) {
+        Player player = event.getPlayer();
+        String skill = event.getSkill();
+        String passive = event.getPassive();
+        
+        // Announce when a player unlocks a rare passive ability
+        if (passive.equals("autoSmeltUpgrade") || passive.equals("masterFortune")) {
+            Bukkit.broadcastMessage(player.getName() + " has unlocked the rare " + passive + " ability!");
+        }
+    }
+}
+```
+
+### Custom XP Sources
+
+Here's an example of adding custom XP sources:
+
+```java
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerMoveEvent;
+
+public class CustomXPSource implements Listener {
+    private final YourPlugin plugin;
+    private final Map<UUID, Location> lastLocations = new HashMap<>();
+    
+    public CustomXPSource(YourPlugin plugin) {
+        this.plugin = plugin;
+    }
+    
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+        Location currentLocation = player.getLocation();
+        
+        // Only process if the player has moved at least 1 block
+        if (lastLocations.containsKey(playerUUID)) {
+            Location lastLocation = lastLocations.get(playerUUID);
+            
+            if (lastLocation.getWorld().equals(currentLocation.getWorld())) {
+                double distance = lastLocation.distance(currentLocation);
+                
+                // Award XP for traveling distance (1 XP per 100 blocks)
+                if (distance >= 100) {
+                    int xpToAward = (int) (distance / 100);
+                    
+                    // Add XP to the player's "exploration" skill
+                    plugin.getRpgSkillsAPI().addXP(player, "exploration", xpToAward);
+                    
+                    // Update the last location
+                    lastLocations.put(playerUUID, currentLocation);
+                }
+            }
+        } else {
+            // First time seeing this player, just store their location
+            lastLocations.put(playerUUID, currentLocation);
+        }
+    }
+}
+```
+
+### Rewarding Passive Abilities
+
+Here's an example of rewarding passive abilities for completing custom tasks:
+
+```java
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerInteractEvent;
+
+public class CustomPassiveReward implements Listener {
+    private final YourPlugin plugin;
+    private final Map<UUID, Integer> specialBlockInteractions = new HashMap<>();
+    
+    public CustomPassiveReward(YourPlugin plugin) {
+        this.plugin = plugin;
+    }
+    
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+        
+        // Check if the player is interacting with a special block
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && 
+            event.getClickedBlock() != null && 
+            event.getClickedBlock().getType() == Material.DRAGON_EGG) {
+            
+            // Increment the counter for this player
+            int interactions = specialBlockInteractions.getOrDefault(playerUUID, 0) + 1;
+            specialBlockInteractions.put(playerUUID, interactions);
+            
+            // Check if the player has reached the threshold for a reward
+            if (interactions >= 10) {
+                // Reset the counter
+                specialBlockInteractions.put(playerUUID, 0);
+                
+                // Check if the player already has the passive ability
+                if (!plugin.getRpgSkillsAPI().hasPassive(player, "mining", "dragonMiner")) {
+                    // Award the passive ability
+                    plugin.getRpgSkillsAPI().addPassive(player, "mining", "dragonMiner");
+                    
+                    player.sendMessage("You have unlocked the Dragon Miner passive ability!");
+                }
+            } else {
+                player.sendMessage("Dragon Egg interactions: " + interactions + "/10");
+            }
+        }
+    }
+}
+```
+
+## Best Practices
+
+1. **Always check if the RPG Skills Plugin is available before using the API.**
+   ```java
+   if (Bukkit.getPluginManager().getPlugin("RPGSkillsPlugin") != null) {
+       // Use the API
+   }
+   ```
+
+2. **Cache the API instance instead of getting it every time you need it.**
+   ```java
+   private RPGSkillsAPI rpgSkillsAPI;
+   
+   @Override
+   public void onEnable() {
+       RPGSkillsPlugin rpgSkillsPlugin = (RPGSkillsPlugin) Bukkit.getPluginManager().getPlugin("RPGSkillsPlugin");
+       rpgSkillsAPI = RPGSkillsAPI.getInstance(rpgSkillsPlugin);
+   }
+   ```
+
+3. **Use the appropriate methods for your needs.**
+   - Use `getSkillLevel` and `getSkillXP` for displaying information to players.
+   - Use `addXP` instead of `setSkillXP` when awarding XP to ensure level ups and passive abilities are handled correctly.
+   - Use `hasPassive` to check if a player has a specific passive ability before applying its effects.
+
+4. **Be mindful of performance.**
+   - Cache results when appropriate to avoid excessive database queries.
+   - Avoid calling API methods in tight loops or frequently executed code.
+   - Consider using async tasks for operations that don't need to be immediate.
+
+5. **Respect the plugin's design.**
+   - Don't set skill levels or XP excessively high.
+   - Don't add passive abilities that the player wouldn't normally be able to unlock.
+   - Use the events provided by the plugin to integrate with it rather than overriding its behavior.
+
+6. **Handle errors gracefully.**
+   - Check for null values when getting data from the API.
+   - Catch exceptions when calling API methods.
+   - Provide meaningful error messages to players when something goes wrong.
+
+7. **Document your integration.**
+   - Let your users know that your plugin integrates with the RPG Skills Plugin.
+   - Explain how your plugin interacts with the RPG Skills system.
+   - Provide examples of how your plugin enhances the RPG Skills experience.
+
+## Party System API
+
+The RPG Skills Plugin provides a comprehensive API for interacting with the party system. This allows other plugins to create, manage, and monitor parties.
+
+### Accessing the Party API
+
+```java
+import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.api.RPGSkillsAPI;
 
 public class YourPlugin extends JavaPlugin {
     private RPGSkillsAPI rpgSkillsAPI;
     
     @Override
     public void onEnable() {
-        // Get the API instance
+        // Get the RPG Skills Plugin
         Plugin plugin = getServer().getPluginManager().getPlugin("RPGSkills");
-        if (plugin != null) {
-            rpgSkillsAPI = ((RPGSkills) plugin).getAPI();
+        
+        if (plugin instanceof RPGSkillsPlugin) {
+            // Get the API
+            rpgSkillsAPI = ((RPGSkillsPlugin) plugin).getAPI();
+            getLogger().info("Successfully hooked into RPG Skills Plugin!");
+        } else {
+            getLogger().warning("Failed to hook into RPG Skills Plugin!");
         }
     }
 }
 ```
 
-## Core API Methods
-
-### Player Skills
-
-```java
-// Get a player's skill level
-int getSkillLevel(Player player, String skillName);
-
-// Get a player's skill XP
-double getSkillXP(Player player, String skillName);
-
-// Get XP needed for next level
-double getXPForNextLevel(Player player, String skillName);
-
-// Set a player's skill level
-void setSkillLevel(Player player, String skillName, int level);
-
-// Add XP to a player's skill
-void addSkillXP(Player player, String skillName, double amount, XPSource source);
-
-// Check if a player has a certain skill level
-boolean hasSkillLevel(Player player, String skillName, int level);
-
-// Get all skill data for a player
-Map<String, SkillData> getAllSkillData(Player player);
-```
-
-### Player XP
-
-```java
-// Add XP with custom source and multiplier
-void addXP(Player player, String skillName, double amount, XPSource source, double multiplier);
-
-// Get global XP multiplier
-double getGlobalXPMultiplier();
-
-// Set global XP multiplier 
-void setGlobalXPMultiplier(double multiplier);
-
-// Get skill-specific multiplier
-double getSkillMultiplier(String skillName);
-```
-
-### XP Boosters
-
-```java
-// Apply an XP booster to a player's item
-boolean applyBooster(Player player, String skillName, double multiplier, long duration);
-
-// Remove a booster from a player's item
-boolean removeBooster(Player player);
-
-// Check if a player's current item has a booster
-boolean hasBooster(Player player);
-
-// Get booster details
-BoosterData getBoosterData(Player player);
-```
-
-### Passive Abilities
-
-```java
-// Check if a player has unlocked a passive ability
-boolean hasPassiveAbility(Player player, String abilityName);
-
-// Get passive ability trigger chance
-double getPassiveTriggerChance(Player player, String abilityName);
-
-// Manually trigger a passive ability (for testing)
-boolean triggerPassiveAbility(Player player, String abilityName, Event triggeringEvent);
-
-// Get all unlocked passive abilities for a player
-List<String> getUnlockedPassiveAbilities(Player player);
-```
-
-### Active Abilities
-
-```java
-// Check if a player has unlocked an active ability
-boolean hasActiveAbility(Player player, String abilityName);
-
-// Get ability cooldown time remaining
-long getAbilityCooldown(Player player, String abilityName);
-
-// Execute an active ability
-boolean executeAbility(Player player, String abilityName);
-
-// Get all unlocked active abilities for a player
-List<String> getUnlockedActiveAbilities(Player player);
-```
-
-### Skill Tree
-
-```java
-// Get available skill points
-int getSkillPoints(Player player);
-
-// Set skill points
-void setSkillPoints(Player player, int points);
-
-// Add skill points
-void addSkillPoints(Player player, int points);
-
-// Check if a node is unlocked
-boolean isNodeUnlocked(Player player, String nodeId);
-
-// Unlock a node
-boolean unlockNode(Player player, String nodeId);
-
-// Get all unlocked nodes
-Set<String> getUnlockedNodes(Player player);
-```
-
-### Party System
+### Party Management Methods
 
 ```java
 // Check if a player is in a party
-boolean isInParty(Player player);
+boolean isInParty = rpgSkillsAPI.isInParty(player);
 
-// Get a player's party
-Party getParty(Player player);
+// Check if a player is the leader of their party
+boolean isLeader = rpgSkillsAPI.isPartyLeader(player);
 
-// Create a party
-Party createParty(Player leader, String partyName);
+// Get the party leader's UUID
+UUID leaderUUID = rpgSkillsAPI.getPartyLeader(player);
 
-// Add player to party
-boolean addToParty(Party party, Player player);
+// Get all members of a party
+Set<UUID> members = rpgSkillsAPI.getPartyMembers(leaderUUID);
 
-// Remove player from party
-boolean removeFromParty(Party party, Player player);
+// Get all online members of a party
+List<Player> onlineMembers = rpgSkillsAPI.getOnlinePartyMembers(leaderUUID);
 
-// Get party XP sharing percentage
-double getXPSharePercentage(Party party);
+// Create a new party
+boolean created = rpgSkillsAPI.createParty(player);
+
+// Invite a player to join a party
+boolean invited = rpgSkillsAPI.invitePlayer(leader, invitee);
+
+// Accept a party invitation
+boolean accepted = rpgSkillsAPI.acceptInvitation(player);
+
+// Leave a party
+rpgSkillsAPI.leaveParty(player);
+
+// Disband a party
+boolean disbanded = rpgSkillsAPI.disbandParty(leader);
+
+// Kick a player from a party
+boolean kicked = rpgSkillsAPI.kickPlayer(leader, target);
 ```
 
-## Custom Events
-
-You can listen for the following events in your plugin:
-
-### Skill Events
+### Party Information Methods
 
 ```java
-// When a player gains XP
-SkillXPGainEvent
+// Get the party level
+int level = rpgSkillsAPI.getPartyLevel(leaderUUID);
 
-// When a player levels up a skill
-SkillLevelUpEvent
+// Get the party's total shared XP
+long totalXP = rpgSkillsAPI.getPartyTotalSharedXp(leaderUUID);
 
-// When a player uses an active ability
-AbilityUseEvent
+// Get the XP required for the party to reach the next level
+long xpForNextLevel = rpgSkillsAPI.getXpForNextLevel(leaderUUID);
 
-// When a passive ability triggers
-PassiveAbilityTriggerEvent
+// Get the party's XP sharing percentage
+double sharePercent = rpgSkillsAPI.getXpSharePercent(leaderUUID);
+
+// Get the party's bonus XP percentage based on party level
+double bonusPercent = rpgSkillsAPI.getPartyBonusPercent(leaderUUID);
+
+// Get the maximum party size
+int maxSize = rpgSkillsAPI.getMaxPartySize(leaderUUID);
+
+// Get formatted information about a party
+String partyInfo = rpgSkillsAPI.getPartyInfo(player);
 ```
 
 ### Party Events
 
-```java
-// When a party is created
-PartyCreateEvent
+The RPG Skills Plugin provides several events that other plugins can listen to:
 
-// When a player joins a party
-PartyJoinEvent
+#### PartyCreateEvent
 
-// When a player leaves a party
-PartyLeaveEvent
-
-// When a party gains a level
-PartyLevelUpEvent
-```
-
-### Skill Tree Events
+Fired when a party is created.
 
 ```java
-// When a player unlocks a node
-NodeUnlockEvent
-
-// When skill points are added
-SkillPointsChangeEvent
-```
-
-### XP Booster Events
-
-```java
-// When a booster is applied
-BoosterApplyEvent
-
-// When a booster expires
-BoosterExpireEvent
-```
-
-## Event Listening Example
-
-```java
-public class ExampleListener implements Listener {
-    @EventHandler
-    public void onSkillLevelUp(SkillLevelUpEvent event) {
-        Player player = event.getPlayer();
-        String skillName = event.getSkillName();
-        int newLevel = event.getNewLevel();
-        
-        player.sendMessage("Congratulations from MyPlugin on reaching " + 
-                           skillName + " level " + newLevel + "!");
-        
-        // Do something special at certain milestones
-        if (newLevel == 50) {
-            // Give a reward
-        }
-    }
+@EventHandler
+public void onPartyCreate(PartyCreateEvent event) {
+    Player leader = event.getLeader();
     
-    @EventHandler
-    public void onPassiveAbilityTrigger(PassiveAbilityTriggerEvent event) {
-        // Do something when passive abilities trigger
+    // You can cancel the event to prevent the party from being created
+    // event.setCancelled(true);
+    
+    getLogger().info(leader.getName() + " created a new party!");
+}
+```
+
+#### PartyJoinEvent
+
+Fired when a player joins a party.
+
+```java
+@EventHandler
+public void onPartyJoin(PartyJoinEvent event) {
+    Player player = event.getPlayer();
+    UUID leaderUUID = event.getPartyLeaderUUID();
+    
+    // You can cancel the event to prevent the player from joining the party
+    // event.setCancelled(true);
+    
+    getLogger().info(player.getName() + " joined a party!");
+}
+```
+
+#### PartyLeaveEvent
+
+Fired when a player leaves a party.
+
+```java
+@EventHandler
+public void onPartyLeave(PartyLeaveEvent event) {
+    UUID playerUUID = event.getPlayerUUID();
+    UUID leaderUUID = event.getPartyLeaderUUID();
+    boolean isKicked = event.isKicked();
+    boolean isDisband = event.isDisband();
+    
+    if (isKicked) {
+        getLogger().info("A player was kicked from a party!");
+    } else if (isDisband) {
+        getLogger().info("A party was disbanded!");
+    } else {
+        getLogger().info("A player left a party!");
     }
 }
 ```
 
-## Integration Example
+#### PartyLevelUpEvent
 
-Here's a complete example of integrating with the RPG Skills API:
-
-```java
-public class MyRPGSkillsIntegration {
-    private final RPGSkillsAPI api;
-    
-    public MyRPGSkillsIntegration(Plugin rpgSkillsPlugin) {
-        this.api = ((RPGSkills) rpgSkillsPlugin).getAPI();
-    }
-    
-    // Give bonus XP for completing a quest
-    public void giveQuestReward(Player player, String skillName, double xpAmount) {
-        api.addXP(player, skillName, xpAmount, XPSource.CUSTOM, 1.0);
-        player.sendMessage("You received " + xpAmount + " bonus XP in " + skillName + " for completing the quest!");
-    }
-    
-    // Check if player meets skill requirements for an item
-    public boolean meetsItemRequirements(Player player, Map<String, Integer> requiredSkills) {
-        for (Map.Entry<String, Integer> entry : requiredSkills.entrySet()) {
-            String skill = entry.getKey();
-            int requiredLevel = entry.getValue();
-            
-            if (!api.hasSkillLevel(player, skill, requiredLevel)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    // Create a custom party
-    public void createGuildParty(Player leader, List<Player> members, String guildName) {
-        Party party = api.createParty(leader, guildName + " Party");
-        for (Player member : members) {
-            if (member != leader) {
-                api.addToParty(party, member);
-            }
-        }
-    }
-}
-```
-
-## Extending the Plugin
-
-For more extensive integrations, you can extend the plugin's capabilities:
-
-### Custom Skills
-
-You can register custom skills:
+Fired when a party levels up.
 
 ```java
-api.registerCustomSkill("alchemy", "Alchemy", Material.BREWING_STAND);
-```
-
-### Custom XP Sources
-
-You can create custom XP sources:
-
-```java
-// Register XP values for custom actions
-api.registerCustomXPSource("CUSTOM_QUEST", "questName", 50.0);
-```
-
-## Maven/Gradle Integration
-
-### Maven
-
-```xml
-<repositories>
-    <repository>
-        <id>rpgskills-repo</id>
-        <url>https://repo.frizzlenpop.org/rpgskills</url>
-    </repository>
-</repositories>
-
-<dependencies>
-    <dependency>
-        <groupId>org.frizzlenpop</groupId>
-        <artifactId>rpgskills</artifactId>
-        <version>1.0.0</version>
-        <scope>provided</scope>
-    </dependency>
-</dependencies>
-```
-
-### Gradle
-
-```gradle
-repositories {
-    maven { url = 'https://repo.frizzlenpop.org/rpgskills' }
+@EventHandler
+public void onPartyLevelUp(PartyLevelUpEvent event) {
+    UUID leaderUUID = event.getPartyLeaderUUID();
+    int oldLevel = event.getOldLevel();
+    int newLevel = event.getNewLevel();
+    int levelsGained = event.getLevelsGained();
+    
+    getLogger().info("A party leveled up from " + oldLevel + " to " + newLevel + "!");
 }
-
-dependencies {
-    compileOnly 'org.frizzlenpop:rpgskills:1.0.0'
-}
-```
-
-## API Class Reference
-
-The API includes these main classes:
-
-- **RPGSkillsAPI** - Main API access point
-- **SkillData** - Contains skill level and XP information
-- **Party** - Represents a player party
-- **BoosterData** - Contains XP booster information
-- **XPSource** - Enum of XP sources (MINING, LOGGING, CUSTOM, etc.)
-
-## Best Practices
-
-1. **Always check if the API is available** before using it
-2. **Handle exceptions** that might occur during API calls
-3. **Don't override core functionality** without understanding the consequences
-4. **Consider performance impact** of frequent API calls
-5. **Update your integration** when new API versions are released
-
-## API Version Compatibility
-
-| Plugin Version | API Version | Minecraft Versions |
-|----------------|-------------|-------------------|
-| 1.0.0 - 1.5.0  | 1.0         | 1.16.5 - 1.17.1   |
-| 1.6.0+         | 2.0         | 1.18+             |
-
-## Support & Issues
-
-If you encounter issues with the API or have questions:
-
-1. Check the [GitHub repository](https://github.com/frizzlenpop/RPGSkillsPlugin) for the latest updates
-2. Join our [Discord server](https://discord.gg/rpgskills) for developer support
-3. Submit an issue on GitHub with detailed information about your integration
-
----
-
-*This API documentation is subject to change as the plugin evolves. Always refer to the latest documentation for the most up-to-date information.* 
+``` 

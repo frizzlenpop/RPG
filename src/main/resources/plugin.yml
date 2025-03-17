@@ -85,6 +85,11 @@ commands:
     usage: /rpghub
     aliases: [hub, rpg]
     permission: rpgskills.hub
+  rpgdb:
+    description: Database management commands
+    usage: /rpgdb [status|migrate|help]
+    aliases: [db]
+    permission: rpgskills.admin
 
 permissions:
   rpgskills.mount.use:
@@ -98,3 +103,7 @@ permissions:
   rpgskills.hub:
     description: Allows access to the RPG Hub menu
     default: true
+    
+  rpgskills.admin:
+    description: Allows access to admin commands
+    default: op

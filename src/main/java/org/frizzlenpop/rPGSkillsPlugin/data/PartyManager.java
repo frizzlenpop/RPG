@@ -8,6 +8,10 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.gui.PartyPerksGUI;
+import org.frizzlenpop.rPGSkillsPlugin.api.events.PartyCreateEvent;
+import org.frizzlenpop.rPGSkillsPlugin.api.events.PartyJoinEvent;
+import org.frizzlenpop.rPGSkillsPlugin.api.events.PartyLeaveEvent;
+import org.frizzlenpop.rPGSkillsPlugin.api.events.PartyLevelUpEvent;
 
 import java.io.File;
 import java.io.IOException;
@@ -196,26 +200,40 @@ public class PartyManager {
         
         // Check if player is already in a party
         if (isInParty(leaderUUID)) {
+            leader.sendMessage(ChatColor.RED + "You are already in a party!");
             return false;
         }
         
-        // Create new party with leader as the only member
+        // Fire the PartyCreateEvent
+        PartyCreateEvent event = new PartyCreateEvent(leader);
+        Bukkit.getPluginManager().callEvent(event);
+        
+        // Check if the event was cancelled
+        if (event.isCancelled()) {
+            return false;
+        }
+        
+        // Create a new party with the leader as the only member
         Set<UUID> members = new HashSet<>();
         members.add(leaderUUID);
         parties.put(leaderUUID, members);
         
-        // Add leader to playerParties map
+        // Add the leader to the player parties map
         playerParties.put(leaderUUID, leaderUUID);
         
         // Set default XP share percentage
         partyXpSharePercent.put(leaderUUID, DEFAULT_XP_SHARE_PERCENT);
         
-        // Initialize party XP and level
+        // Initialize total shared XP
         partyTotalSharedXp.put(leaderUUID, 0L);
+        
+        // Initialize party level
         partyLevels.put(leaderUUID, 1);
         
         // Save party data
         savePartyData();
+        
+        leader.sendMessage(ChatColor.GREEN + "You have created a new party!");
         
         return true;
     }
@@ -282,35 +300,72 @@ public class PartyManager {
     public boolean acceptInvitation(Player player) {
         UUID playerUUID = player.getUniqueId();
         
-        // Check if player has pending invitation
+        // Check if player has an invitation
         if (!pendingInvites.containsKey(playerUUID)) {
+            player.sendMessage(ChatColor.RED + "You don't have any pending party invitations!");
             return false;
         }
         
-        UUID leaderUUID = pendingInvites.get(playerUUID);
+        // Get the inviter's UUID
+        UUID inviterUUID = pendingInvites.get(playerUUID);
         
-        // Check if party still exists
-        if (!parties.containsKey(leaderUUID)) {
+        // Check if the inviter is still a party leader
+        if (!parties.containsKey(inviterUUID)) {
+            player.sendMessage(ChatColor.RED + "The party no longer exists!");
             pendingInvites.remove(playerUUID);
             return false;
         }
         
-        // Check if party is full
-        if (getPartyMembers(leaderUUID).size() >= getMaxPartySize(leaderUUID)) {
+        // Check if player is already in a party
+        if (isInParty(playerUUID)) {
+            player.sendMessage(ChatColor.RED + "You are already in a party! Leave your current party first.");
             pendingInvites.remove(playerUUID);
-            player.sendMessage(ChatColor.RED + "This party is now full and cannot accept new members.");
             return false;
         }
         
-        // Add player to party
-        parties.get(leaderUUID).add(playerUUID);
-        playerParties.put(playerUUID, leaderUUID);
+        // Check if the party is full
+        if (parties.get(inviterUUID).size() >= getMaxPartySize(inviterUUID)) {
+            player.sendMessage(ChatColor.RED + "The party is full!");
+            pendingInvites.remove(playerUUID);
+            return false;
+        }
         
-        // Remove invitation
+        // Fire the PartyJoinEvent
+        PartyJoinEvent event = new PartyJoinEvent(player, inviterUUID);
+        Bukkit.getPluginManager().callEvent(event);
+        
+        // Check if the event was cancelled
+        if (event.isCancelled()) {
+            return false;
+        }
+        
+        // Add player to the party
+        parties.get(inviterUUID).add(playerUUID);
+        
+        // Add player to the player parties map
+        playerParties.put(playerUUID, inviterUUID);
+        
+        // Remove the invitation
         pendingInvites.remove(playerUUID);
         
         // Save party data
         savePartyData();
+        
+        // Get the inviter's name
+        String inviterName = Bukkit.getOfflinePlayer(inviterUUID).getName();
+        if (inviterName == null) {
+            inviterName = "Unknown";
+        }
+        
+        // Notify the player
+        player.sendMessage(ChatColor.GREEN + "You have joined " + inviterName + "'s party!");
+        
+        // Notify all online party members
+        for (Player member : getOnlinePartyMembers(inviterUUID)) {
+            if (!member.equals(player)) {
+                member.sendMessage(ChatColor.GREEN + player.getName() + " has joined the party!");
+            }
+        }
         
         return true;
     }
@@ -320,100 +375,91 @@ public class PartyManager {
      * @param playerUUID The UUID of the player to leave the party
      */
     public void leaveParty(UUID playerUUID) {
+        // Check if player is in a party
         if (!isInParty(playerUUID)) {
+            Player player = Bukkit.getPlayer(playerUUID);
+            if (player != null) {
+                player.sendMessage(ChatColor.RED + "You are not in a party!");
+            }
             return;
         }
         
+        // Get the party leader's UUID
         UUID leaderUUID = getPartyLeader(playerUUID);
-        Player player = Bukkit.getPlayer(playerUUID);
-
-        // If this player is the party leader
-        if (playerUUID.equals(leaderUUID)) {
-            Set<UUID> partyMembers = getPartyMembers(leaderUUID);
+        
+        // Check if the player is the party leader
+        boolean isLeader = playerUUID.equals(leaderUUID);
+        
+        // Fire the PartyLeaveEvent
+        PartyLeaveEvent event = new PartyLeaveEvent(playerUUID, leaderUUID, false, false);
+        Bukkit.getPluginManager().callEvent(event);
+        
+        if (isLeader) {
+            // If the leader is leaving, find a new leader or disband the party
+            Set<UUID> members = new HashSet<>(parties.get(leaderUUID));
+            members.remove(playerUUID);
             
-            // Remove the leaving player
-            partyMembers.remove(playerUUID);
-            
-            // If there are no other members, disband the party
-            if (partyMembers.isEmpty()) {
-                parties.remove(leaderUUID);
-                partyLevels.remove(leaderUUID);
-                partyXpSharePercent.remove(leaderUUID);
-                partyTotalSharedXp.remove(leaderUUID);
+            if (members.isEmpty()) {
+                // If there are no other members, disband the party
+                disbandParty(Bukkit.getPlayer(playerUUID));
+            } else {
+                // Find a new leader
+                UUID newLeaderUUID = findNewLeader(members);
                 
+                // Transfer leadership
+                transferPartyLeadership(leaderUUID, newLeaderUUID);
+                
+                // Remove the old leader from the party
+                parties.get(newLeaderUUID).remove(playerUUID);
+                playerParties.remove(playerUUID);
+                
+                // Save party data
+                savePartyData();
+                
+                // Notify the player
+                Player player = Bukkit.getPlayer(playerUUID);
                 if (player != null) {
-                    player.sendMessage(ChatColor.RED + "Your party has been disbanded because you left and there were no other members.");
+                    player.sendMessage(ChatColor.GREEN + "You have left the party!");
                 }
-                return;
-            }
-            
-            // Choose a new leader from remaining members
-            UUID newLeaderUUID = findNewLeader(partyMembers);
-            Player newLeader = Bukkit.getPlayer(newLeaderUUID);
-            
-            // Transfer party to new leader
-            Set<UUID> members = new HashSet<>(partyMembers); // copy to avoid concurrent modification
-            parties.remove(leaderUUID);
-            parties.put(newLeaderUUID, members);
-            
-            // Transfer party level data
-            if (partyLevels.containsKey(leaderUUID)) {
-                int level = partyLevels.getOrDefault(leaderUUID, 1);
-                partyLevels.put(newLeaderUUID, level);
-                partyLevels.remove(leaderUUID);
-            }
-            
-            // Transfer party XP data
-            if (partyXpSharePercent.containsKey(leaderUUID)) {
-                double xpSharePercent = partyXpSharePercent.getOrDefault(leaderUUID, DEFAULT_XP_SHARE_PERCENT);
-                partyXpSharePercent.put(newLeaderUUID, xpSharePercent);
-                partyXpSharePercent.remove(leaderUUID);
-            }
-            
-            // Transfer party total shared XP data
-            if (partyTotalSharedXp.containsKey(leaderUUID)) {
-                long totalSharedXp = partyTotalSharedXp.getOrDefault(leaderUUID, 0L);
-                partyTotalSharedXp.put(newLeaderUUID, totalSharedXp);
-                partyTotalSharedXp.remove(leaderUUID);
-            }
-            
-            // Update all members about the leadership change
-            for (UUID memberUUID : members) {
-                Player member = Bukkit.getPlayer(memberUUID);
-                if (member != null) {
-                    member.sendMessage(ChatColor.GOLD + "Party leadership has been transferred to " + 
-                            (newLeader != null ? newLeader.getName() : "another player") + 
-                            " because the previous leader left.");
+                
+                // Notify all online party members
+                String playerName = Bukkit.getOfflinePlayer(playerUUID).getName();
+                if (playerName == null) {
+                    playerName = "Unknown";
                 }
-            }
-            
-            if (player != null) {
-                player.sendMessage(ChatColor.YELLOW + "You have left the party. Leadership has been transferred to " + 
-                        (newLeader != null ? newLeader.getName() : "another player") + ".");
-            }
-        } else {
-            // If player is not the leader, just remove them from the party
-            Set<UUID> partyMembers = parties.get(leaderUUID);
-            partyMembers.remove(playerUUID);
-            
-            if (player != null) {
-                player.sendMessage(ChatColor.YELLOW + "You have left the party.");
-            }
-            
-            // Notify other party members
-            for (UUID memberUUID : partyMembers) {
-                Player member = Bukkit.getPlayer(memberUUID);
-                if (member != null) {
-                    if (player != null) {
-                        member.sendMessage(ChatColor.YELLOW + player.getName() + " has left the party.");
-                    } else {
-                        member.sendMessage(ChatColor.YELLOW + "A player has left the party.");
+                
+                for (Player member : getOnlinePartyMembers(newLeaderUUID)) {
+                    member.sendMessage(ChatColor.YELLOW + playerName + " has left the party!");
+                    
+                    if (member.getUniqueId().equals(newLeaderUUID)) {
+                        member.sendMessage(ChatColor.GREEN + "You are now the party leader!");
                     }
                 }
             }
+        } else {
+            // If a regular member is leaving, just remove them from the party
+            parties.get(leaderUUID).remove(playerUUID);
+            playerParties.remove(playerUUID);
+            
+            // Save party data
+            savePartyData();
+            
+            // Notify the player
+            Player player = Bukkit.getPlayer(playerUUID);
+            if (player != null) {
+                player.sendMessage(ChatColor.GREEN + "You have left the party!");
+            }
+            
+            // Notify all online party members
+            String playerName = Bukkit.getOfflinePlayer(playerUUID).getName();
+            if (playerName == null) {
+                playerName = "Unknown";
+            }
+            
+            for (Player member : getOnlinePartyMembers(leaderUUID)) {
+                member.sendMessage(ChatColor.YELLOW + playerName + " has left the party!");
+            }
         }
-        
-        savePartyData();
     }
     
     /**
@@ -474,25 +520,47 @@ public class PartyManager {
         
         // Check if player is a party leader
         if (!isPartyLeader(leaderUUID)) {
+            leader.sendMessage(ChatColor.RED + "You are not a party leader!");
             return false;
         }
         
         // Get all party members
         Set<UUID> members = new HashSet<>(parties.get(leaderUUID));
         
-        // Remove all members from playerParties map
+        // Fire the PartyLeaveEvent for each member
+        for (UUID memberUUID : members) {
+            PartyLeaveEvent event = new PartyLeaveEvent(memberUUID, leaderUUID, false, true);
+            Bukkit.getPluginManager().callEvent(event);
+        }
+        
+        // Remove the party
+        parties.remove(leaderUUID);
+        
+        // Remove all members from the player parties map
         for (UUID memberUUID : members) {
             playerParties.remove(memberUUID);
         }
         
-        // Remove party data
-        parties.remove(leaderUUID);
+        // Remove party settings
         partyXpSharePercent.remove(leaderUUID);
         partyTotalSharedXp.remove(leaderUUID);
         partyLevels.remove(leaderUUID);
         
         // Save party data
         savePartyData();
+        
+        // Notify the leader
+        leader.sendMessage(ChatColor.GREEN + "You have disbanded the party!");
+        
+        // Notify all online party members
+        for (UUID memberUUID : members) {
+            if (!memberUUID.equals(leaderUUID)) {
+                Player member = Bukkit.getPlayer(memberUUID);
+                if (member != null) {
+                    member.sendMessage(ChatColor.RED + "The party has been disbanded by the leader!");
+                }
+            }
+        }
         
         return true;
     }
@@ -509,20 +577,45 @@ public class PartyManager {
         
         // Check if player is a party leader
         if (!isPartyLeader(leaderUUID)) {
+            leader.sendMessage(ChatColor.RED + "You are not a party leader!");
             return false;
         }
         
-        // Check if target is in leader's party
-        if (!playerParties.getOrDefault(targetUUID, UUID.randomUUID()).equals(leaderUUID)) {
+        // Check if target is in the leader's party
+        if (!parties.get(leaderUUID).contains(targetUUID)) {
+            leader.sendMessage(ChatColor.RED + target.getName() + " is not in your party!");
             return false;
         }
         
-        // Remove target from party
+        // Check if target is the leader (can't kick yourself)
+        if (targetUUID.equals(leaderUUID)) {
+            leader.sendMessage(ChatColor.RED + "You cannot kick yourself from the party!");
+            return false;
+        }
+        
+        // Fire the PartyLeaveEvent
+        PartyLeaveEvent event = new PartyLeaveEvent(targetUUID, leaderUUID, true, false);
+        Bukkit.getPluginManager().callEvent(event);
+        
+        // Remove target from the party
         parties.get(leaderUUID).remove(targetUUID);
         playerParties.remove(targetUUID);
         
         // Save party data
         savePartyData();
+        
+        // Notify the leader
+        leader.sendMessage(ChatColor.GREEN + "You have kicked " + target.getName() + " from the party!");
+        
+        // Notify the target
+        target.sendMessage(ChatColor.RED + "You have been kicked from the party by " + leader.getName() + "!");
+        
+        // Notify all online party members
+        for (Player member : getOnlinePartyMembers(leaderUUID)) {
+            if (!member.equals(leader)) {
+                member.sendMessage(ChatColor.YELLOW + target.getName() + " has been kicked from the party by " + leader.getName() + "!");
+            }
+        }
         
         return true;
     }
@@ -598,32 +691,36 @@ public class PartyManager {
     private void checkPartyLevelUp(UUID partyLeaderUUID, long oldXp, long newXp) {
         int currentLevel = partyLevels.getOrDefault(partyLeaderUUID, 1);
         
-        // Don't process if already at max level
+        // Check if the party is already at max level
         if (currentLevel >= MAX_PARTY_LEVEL) {
             return;
         }
         
-        // Check if the party has leveled up
+        // Calculate XP required for next level
         long xpForNextLevel = getXpForLevel(currentLevel + 1);
         
-        while (newXp >= xpForNextLevel && currentLevel < MAX_PARTY_LEVEL) {
-            // Level up party
-            currentLevel++;
+        // Check if the party has enough XP to level up
+        if (newXp >= xpForNextLevel && oldXp < xpForNextLevel) {
+            // Level up the party
+            int oldLevel = currentLevel;
+            int newLevel = currentLevel + 1;
             
-            // Notify online party members
-            notifyPartyLevelUp(partyLeaderUUID, currentLevel);
+            // Update party level
+            partyLevels.put(partyLeaderUUID, newLevel);
             
-            // Check if party has reached max level
-            if (currentLevel >= MAX_PARTY_LEVEL) {
-                break;
-            }
+            // Fire the PartyLevelUpEvent
+            PartyLevelUpEvent event = new PartyLevelUpEvent(partyLeaderUUID, oldLevel, newLevel);
+            Bukkit.getPluginManager().callEvent(event);
             
-            // Calculate XP for next level
-            xpForNextLevel = getXpForLevel(currentLevel + 1);
+            // Save party data
+            savePartyData();
+            
+            // Notify party members
+            notifyPartyLevelUp(partyLeaderUUID, newLevel);
+            
+            // Check for additional level ups
+            checkPartyLevelUp(partyLeaderUUID, newXp, newXp);
         }
-        
-        // Update party level
-        partyLevels.put(partyLeaderUUID, currentLevel);
     }
     
     /**

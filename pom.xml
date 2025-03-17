@@ -38,6 +38,19 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <relocations>
+                                <!-- Relocate MySQL and SQLite to avoid conflicts with other plugins -->
+                                <relocation>
+                                    <pattern>com.mysql</pattern>
+                                    <shadedPattern>org.frizzlenpop.rPGSkillsPlugin.libs.mysql</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.sqlite</pattern>
+                                    <shadedPattern>org.frizzlenpop.rPGSkillsPlugin.libs.sqlite</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -87,6 +100,26 @@
             <artifactId>ProtocolLib</artifactId>
             <version>5.1.0</version>
             <scope>provided</scope>
+        </dependency>
+        
+        <!-- Database dependencies -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.33</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.45.1.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.1.0</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>

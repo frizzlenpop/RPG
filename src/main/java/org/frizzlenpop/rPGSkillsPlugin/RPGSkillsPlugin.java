@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.frizzlenpop.rPGSkillsPlugin.commands.*;
+import org.frizzlenpop.rPGSkillsPlugin.data.DatabaseManager;
 import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.gui.InventoryManager;
 import org.frizzlenpop.rPGSkillsPlugin.gui.RPGHubGUI;
@@ -42,7 +43,10 @@ import org.frizzlenpop.rPGSkillsPlugin.mounts.MountInteractionListener;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.listeners.MountProjectileListener;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.abilities.MountAbilityManager;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.effects.ProtocolLibEffectManager;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.fusion.MountCombinationListener;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.gui.MountShopListener;
 import org.bukkit.Bukkit;
+import org.frizzlenpop.rPGSkillsPlugin.api.RPGSkillsAPI;
 
 public class RPGSkillsPlugin extends JavaPlugin {
     private PlayerDataManager playerDataManager;
@@ -72,6 +76,9 @@ public class RPGSkillsPlugin extends JavaPlugin {
     private MountAbilityManager mountAbilityManager;
     private RPGHubGUI rpgHubGUI;
     private InventoryManager inventoryManager;
+    private DatabaseManager databaseManager;
+    private boolean databaseEnabled = false;
+    private RPGSkillsAPI api;
 
     @Override
     public void onEnable() {
@@ -83,20 +90,35 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Set up configuration
         saveDefaultConfig();
         this.config = getConfig();
+        
+        // Add default database configuration if it doesn't exist
+        addDefaultDatabaseConfig();
 
         // Add default passive configuration
         addDefaultPassiveConfig();
         saveConfig();
+        
+        // Initialize database manager if enabled
+        initializeDatabase();
 
         // Initialize inventory manager first (needed by GUIs)
         this.inventoryManager = new InventoryManager(this);
 
         // Initialize managers in the correct order
         this.playerDataManager = new PlayerDataManager(this);
+        
+        // Connect PlayerDataManager to database if enabled
+        if (databaseEnabled) {
+            playerDataManager.setDatabaseManager(databaseManager);
+        }
+        
         this.xpBoosterManager = new XPBoosterManager(this);
         this.xpManager = new XPManager(playerDataManager, this);
         this.abilityManager = new SkillAbilityManager(this);
-        this.passiveSkillManager = new PassiveSkillManager(xpManager, this);
+        
+        // Initialize PassiveSkillManager with database connection if enabled
+        initializePassiveSkillManager();
+        
         this.skillsGUI = new SkillsGUI(playerDataManager, xpManager, abilityManager, passiveSkillManager);
         this.customEnchantScroll = new CustomEnchantScroll(this);
         
@@ -161,6 +183,19 @@ public class RPGSkillsPlugin extends JavaPlugin {
         rpgHubGUI = new RPGHubGUI(this);
 
         // Register commands
+        registerCommands();
+
+        // Register all listeners
+        registerListeners();
+
+        // Initialize the API
+        this.api = RPGSkillsAPI.getInstance(this);
+
+        getLogger().info("RPGSkills plugin has been enabled!");
+    }
+
+    private void registerCommands() {
+        // Register commands
         getCommand("skills").setExecutor(new SkillsCommand(skillsGUI));
         getCommand("abilities").setExecutor(new AbilitiesCommand(this, playerDataManager));
         SkillsAdminCommand skillsAdminCommand = new SkillsAdminCommand(playerDataManager, xpManager);
@@ -193,11 +228,11 @@ public class RPGSkillsPlugin extends JavaPlugin {
         
         // Register central hub command
         getCommand("rpghub").setExecutor(new RPGHubCommand(rpgHubGUI));
-
-        // Register all listeners
-        registerListeners();
-
-        getLogger().info("RPGSkills plugin has been enabled!");
+        
+        // Register database command
+        DatabaseCommand databaseCommand = new DatabaseCommand(this);
+        getCommand("rpgdb").setExecutor(databaseCommand);
+        getCommand("rpgdb").setTabCompleter(databaseCommand);
     }
 
     private void registerListeners() {
@@ -213,6 +248,14 @@ public class RPGSkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ExcavationListener(xpManager, this, passiveSkillManager), this);
         getServer().getPluginManager().registerEvents(new RepairListener(xpManager), this);
         
+        // Register inventory manager to prevent item theft
+        getServer().getPluginManager().registerEvents(inventoryManager, this);
+        
+        // Register all GUI listeners
+        getServer().getPluginManager().registerEvents(rpgHubGUI, this);
+        getServer().getPluginManager().registerEvents(skillTreeGUI, this);
+        getServer().getPluginManager().registerEvents(partyPerksGUI, this);
+        
         // Skill tree listeners are registered in their respective classes
 
         // Register mount listeners
@@ -226,6 +269,16 @@ public class RPGSkillsPlugin extends JavaPlugin {
         // Register mount chest listeners
         if (mountChestGUI != null) {
             getServer().getPluginManager().registerEvents(new MountChestListener(mountChestGUI), this);
+        }
+        
+        // Register mount combination GUI listener
+        if (mountCombinationGUI != null) {
+            getServer().getPluginManager().registerEvents(new MountCombinationListener(mountCombinationGUI), this);
+        }
+        
+        // Register mount shop GUI listener
+        if (mountShopGUI != null) {
+            getServer().getPluginManager().registerEvents(new MountShopListener(mountShopGUI), this);
         }
     }
 
@@ -298,6 +351,12 @@ public class RPGSkillsPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // Close database connection if it's open
+        if (databaseEnabled && databaseManager != null) {
+            databaseManager.close();
+            getLogger().info("Database connection closed.");
+        }
+        
         // Save player data
         if (playerDataManager != null) {
             for (Player player : getServer().getOnlinePlayers()) {
@@ -501,5 +560,99 @@ public class RPGSkillsPlugin extends JavaPlugin {
      */
     public InventoryManager getInventoryManager() {
         return inventoryManager;
+    }
+
+    /**
+     * Adds default database configuration to config.yml
+     */
+    private void addDefaultDatabaseConfig() {
+        if (!config.contains("database")) {
+            config.createSection("database");
+            
+            // MySQL configuration
+            config.set("database.mysql.enabled", false);
+            config.set("database.mysql.host", "localhost");
+            config.set("database.mysql.port", 3306);
+            config.set("database.mysql.database", "rpgskills");
+            config.set("database.mysql.username", "root");
+            config.set("database.mysql.password", "");
+            
+            // SQLite is used as fallback if MySQL is disabled or fails
+            config.set("database.sqlite.enabled", true);
+            
+            // Migration settings
+            config.set("database.migrate_on_startup", false);
+            
+            saveConfig();
+        }
+    }
+    
+    /**
+     * Initializes the database connection
+     */
+    private void initializeDatabase() {
+        boolean mysqlEnabled = config.getBoolean("database.mysql.enabled", false);
+        boolean sqliteEnabled = config.getBoolean("database.sqlite.enabled", true);
+        
+        if (mysqlEnabled || sqliteEnabled) {
+            try {
+                this.databaseManager = new DatabaseManager(this);
+                this.databaseEnabled = true;
+                getLogger().info("Database connection established successfully!");
+                
+                // Check if we should migrate data from YAML to database
+                if (config.getBoolean("database.migrate_on_startup", false)) {
+                    getLogger().info("Data migration from YAML to database is enabled. Will migrate after startup.");
+                    Bukkit.getScheduler().runTaskLater(this, () -> {
+                        databaseManager.migrateFromYAML();
+                    }, 100L); // Wait 5 seconds after startup to begin migration
+                }
+            } catch (Exception e) {
+                getLogger().severe("Failed to initialize database: " + e.getMessage());
+                getLogger().warning("Falling back to YAML storage.");
+                this.databaseEnabled = false;
+            }
+        } else {
+            getLogger().info("Database storage is disabled. Using YAML files for data storage.");
+        }
+    }
+    
+    /**
+     * Initializes the PassiveSkillManager
+     */
+    private void initializePassiveSkillManager() {
+        this.passiveSkillManager = new PassiveSkillManager(xpManager, this);
+        
+        // Connect PassiveSkillManager to database if enabled
+        if (databaseEnabled) {
+            passiveSkillManager.setDatabaseManager(databaseManager);
+        }
+    }
+
+    /**
+     * Gets the database manager
+     * 
+     * @return The database manager
+     */
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+    
+    /**
+     * Checks if database storage is enabled
+     * 
+     * @return True if database storage is enabled, false otherwise
+     */
+    public boolean isDatabaseEnabled() {
+        return databaseEnabled;
+    }
+
+    /**
+     * Gets the API instance for other plugins to use.
+     * 
+     * @return The API instance
+     */
+    public RPGSkillsAPI getAPI() {
+        return api;
     }
 }

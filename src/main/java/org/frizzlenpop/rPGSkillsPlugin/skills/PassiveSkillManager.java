@@ -48,6 +48,15 @@ import org.bukkit.inventory.meta.Damageable;
 
 import java.util.*;
 
+import org.frizzlenpop.rPGSkillsPlugin.data.DatabaseManager;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.concurrent.CompletableFuture;
+
+import org.frizzlenpop.rPGSkillsPlugin.api.events.PassiveAbilityUnlockEvent;
+
 public class PassiveSkillManager implements Listener {
     // New system: tracking passives unlocked via config
     private final Map<UUID, Map<String, Set<String>>> playerPassives = new HashMap<>();
@@ -263,31 +272,429 @@ public class PassiveSkillManager implements Listener {
     
     private final XPManager xpManager;
     private final RPGSkillsPlugin plugin; // Needed for scheduling and config
+    
+    // Add a set to track player-placed blocks
+    private final Set<String> playerPlacedBlocks = new HashSet<>();
 
+    private DatabaseManager databaseManager;
+    private boolean useDatabase = false;
+    
     public PassiveSkillManager(XPManager xpManager, RPGSkillsPlugin plugin) {
         this.xpManager = xpManager;
         this.plugin = plugin;
         this.activePassives = new HashMap<>();
-
-        // Register events
+        
+        // Register this class as a listener
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-
+        
         // Load active passives for online players (old system)
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             loadPlayerPassives(player);
         }
         
+        // Start the growth speed task if needed
+        startGrowthSpeedTask();
+        
         // Start the tree growth booster task
         startTreeGrowthBooster();
         
-        // Start the farming growth speed task
-        startGrowthSpeedTask();
+        // Start the player-placed blocks cleanup task
+        startPlacedBlocksCleanupTask();
+        
+        // Load passives from config
+        loadPassives();
+    }
+    
+    /**
+     * Sets the database manager and enables database storage
+     * 
+     * @param databaseManager The database manager to use
+     */
+    public void setDatabaseManager(DatabaseManager databaseManager) {
+        this.databaseManager = databaseManager;
+        this.useDatabase = true;
+    }
+    
+    /**
+     * Checks if database storage is enabled
+     * 
+     * @return True if database storage is enabled, false otherwise
+     */
+    public boolean isDatabaseEnabled() {
+        return useDatabase && databaseManager != null;
+    }
+    
+    /**
+     * Loads a player's passive abilities from the database or YAML file
+     * 
+     * @param playerUUID The player's UUID
+     */
+    public void loadPlayerPassives(UUID playerUUID) {
+        if (isDatabaseEnabled()) {
+            loadPlayerPassivesFromDatabase(playerUUID);
+        } else {
+            loadPlayerPassivesFromFile(playerUUID);
+        }
+    }
+    
+    /**
+     * Loads a player's passive abilities from the database
+     * 
+     * @param playerUUID The player's UUID
+     */
+    private void loadPlayerPassivesFromDatabase(UUID playerUUID) {
+        // Clear existing passives for this player
+        playerPassives.remove(playerUUID);
+        
+        // Create a new map for this player's passives
+        Map<String, Set<String>> skillPassives = new HashMap<>();
+        playerPassives.put(playerUUID, skillPassives);
+        
+        // Load passives from database
+        databaseManager.executeAsyncVoid(conn -> {
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT skill_name, passive_name FROM player_passives WHERE player_uuid = ?")) {
+                stmt.setString(1, playerUUID.toString());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        String skillName = rs.getString("skill_name");
+                        String passiveName = rs.getString("passive_name");
+                        
+                        // Add to the player's passives map
+                        skillPassives.computeIfAbsent(skillName, k -> new HashSet<>()).add(passiveName);
+                        
+                        // Apply the passive effect
+                        applyPassiveEffect(playerUUID, skillName, passiveName);
+                    }
+                } catch (SQLException e) {
+                    plugin.getLogger().severe("Error executing query: " + e.getMessage());
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Error preparing statement: " + e.getMessage());
+            }
+        });
+    }
+    
+    /**
+     * Loads a player's passive abilities from YAML file
+     * 
+     * @param playerUUID The player's UUID
+     */
+    private void loadPlayerPassivesFromFile(UUID playerUUID) {
+        // Clear existing passives for this player
+        playerPassives.remove(playerUUID);
+        
+        // Create a new map for this player's passives
+        Map<String, Set<String>> skillPassives = new HashMap<>();
+        playerPassives.put(playerUUID, skillPassives);
+        
+        // Load from file
+        FileConfiguration playerData = plugin.getPlayerDataManager().getPlayerData(playerUUID);
+        ConfigurationSection passivesSection = playerData.getConfigurationSection("passiveAbilities");
+        
+        if (passivesSection != null) {
+            for (String skillName : passivesSection.getKeys(false)) {
+                List<String> passives = playerData.getStringList("passiveAbilities." + skillName);
+                
+                // Add to the player's passives map
+                Set<String> skillPassiveSet = new HashSet<>(passives);
+                skillPassives.put(skillName, skillPassiveSet);
+                
+                // Apply each passive effect
+                for (String passiveName : passives) {
+                    applyPassiveEffect(playerUUID, skillName, passiveName);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Saves a player's passive abilities to the database or YAML file
+     * 
+     * @param playerUUID The player's UUID
+     */
+    public void savePlayerPassives(UUID playerUUID) {
+        if (isDatabaseEnabled()) {
+            savePlayerPassivesToDatabase(playerUUID);
+        } else {
+            savePlayerPassivesToFile(playerUUID);
+        }
+    }
+    
+    /**
+     * Saves a player's passive abilities to the database
+     * 
+     * @param playerUUID The player's UUID
+     */
+    private void savePlayerPassivesToDatabase(UUID playerUUID) {
+        Map<String, Set<String>> skillPassives = playerPassives.get(playerUUID);
+        if (skillPassives == null) {
+            return;
+        }
+        
+        databaseManager.executeAsyncVoid(conn -> {
+            try {
+                // First, delete all existing passives for this player
+                try (PreparedStatement deleteStmt = conn.prepareStatement(
+                        "DELETE FROM player_passives WHERE player_uuid = ?")) {
+                    try {
+                        deleteStmt.setString(1, playerUUID.toString());
+                        deleteStmt.executeUpdate();
+                    } catch (SQLException e) {
+                        plugin.getLogger().severe("Error deleting player passives: " + e.getMessage());
+                    }
+                } catch (SQLException e) {
+                    plugin.getLogger().severe("Error preparing delete statement: " + e.getMessage());
+                }
+                
+                // Then, insert all current passives
+                try (PreparedStatement insertStmt = conn.prepareStatement(
+                        "INSERT INTO player_passives (player_uuid, skill_name, passive_name) VALUES (?, ?, ?)")) {
+                    for (Map.Entry<String, Set<String>> entry : skillPassives.entrySet()) {
+                        String skillName = entry.getKey();
+                        Set<String> passives = entry.getValue();
+                        
+                        for (String passiveName : passives) {
+                            try {
+                                insertStmt.setString(1, playerUUID.toString());
+                                insertStmt.setString(2, skillName);
+                                insertStmt.setString(3, passiveName);
+                                insertStmt.executeUpdate();
+                            } catch (SQLException e) {
+                                plugin.getLogger().severe("Error inserting passive " + passiveName + " for skill " + skillName + ": " + e.getMessage());
+                            }
+                        }
+                    }
+                } catch (SQLException e) {
+                    plugin.getLogger().severe("Error preparing insert statement: " + e.getMessage());
+                }
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error saving player passives: " + e.getMessage());
+            }
+        });
+    }
+    
+    /**
+     * Saves a player's passive abilities to YAML file
+     * 
+     * @param playerUUID The player's UUID
+     */
+    private void savePlayerPassivesToFile(UUID playerUUID) {
+        Map<String, Set<String>> skillPassives = playerPassives.get(playerUUID);
+        if (skillPassives == null) {
+            return;
+        }
+        
+        FileConfiguration playerData = plugin.getPlayerDataManager().getPlayerData(playerUUID);
+        
+        // Clear existing passives section
+        playerData.set("passiveAbilities", null);
+        
+        // Create a new passives section
+        for (Map.Entry<String, Set<String>> entry : skillPassives.entrySet()) {
+            String skillName = entry.getKey();
+            Set<String> passives = entry.getValue();
+            
+            playerData.set("passiveAbilities." + skillName, new ArrayList<>(passives));
+        }
+        
+        // Save the player data
+        plugin.getPlayerDataManager().savePlayerData(playerUUID, playerData);
+    }
+    
+    /**
+     * Adds a passive ability to a player
+     * 
+     * @param playerUUID The player's UUID
+     * @param skillName The skill name
+     * @param passiveName The passive ability name
+     */
+    public void addPassive(UUID playerUUID, String skillName, String passiveName) {
+        // Add to the player's passives map
+        playerPassives.computeIfAbsent(playerUUID, k -> new HashMap<>())
+                     .computeIfAbsent(skillName, k -> new HashSet<>())
+                     .add(passiveName);
+        
+        // Apply the passive effect
+        applyPassiveEffect(playerUUID, skillName, passiveName);
+        
+        // Fire the PassiveAbilityUnlockEvent if the player is online
+        Player player = Bukkit.getPlayer(playerUUID);
+        if (player != null) {
+            PassiveAbilityUnlockEvent event = new PassiveAbilityUnlockEvent(player, skillName, passiveName);
+            Bukkit.getPluginManager().callEvent(event);
+        }
+        
+        // Save the player's passives
+        savePlayerPassives(playerUUID);
+    }
+    
+    /**
+     * Removes a passive ability from a player
+     * 
+     * @param playerUUID The player's UUID
+     * @param skillName The skill name
+     * @param passiveName The passive ability name
+     */
+    public void removePassive(UUID playerUUID, String skillName, String passiveName) {
+        // Remove from the player's passives map
+        Map<String, Set<String>> skillPassives = playerPassives.get(playerUUID);
+        if (skillPassives != null) {
+            Set<String> passives = skillPassives.get(skillName);
+            if (passives != null) {
+                passives.remove(passiveName);
+                
+                // Remove the skill entry if it's empty
+                if (passives.isEmpty()) {
+                    skillPassives.remove(skillName);
+                }
+                
+                // Remove the player entry if it's empty
+                if (skillPassives.isEmpty()) {
+                    playerPassives.remove(playerUUID);
+                }
+            }
+        }
+        
+        // Remove the passive effect
+        removePassiveEffect(playerUUID, skillName, passiveName);
+        
+        // Save the player's passives
+        savePlayerPassives(playerUUID);
+    }
+    
+    /**
+     * Checks if a player has a specific passive ability
+     * 
+     * @param playerUUID The player's UUID
+     * @param skillName The skill name
+     * @param passiveName The passive ability name
+     * @return True if the player has the passive ability, false otherwise
+     */
+    public boolean hasPassive(UUID playerUUID, String skillName, String passiveName) {
+        Map<String, Set<String>> skillPassives = playerPassives.get(playerUUID);
+        if (skillPassives != null) {
+            Set<String> passives = skillPassives.get(skillName);
+            return passives != null && passives.contains(passiveName);
+        }
+        return false;
+    }
+    
+    /**
+     * Gets all passive abilities for a player and skill
+     * 
+     * @param playerUUID The player's UUID
+     * @param skillName The skill name
+     * @return A set of passive ability names
+     */
+    public Set<String> getPassives(UUID playerUUID, String skillName) {
+        Map<String, Set<String>> skillPassives = playerPassives.get(playerUUID);
+        if (skillPassives != null) {
+            Set<String> passives = skillPassives.get(skillName);
+            if (passives != null) {
+                return new HashSet<>(passives); // Return a copy to prevent modification
+            }
+        }
+        return new HashSet<>();
+    }
+    
+    /**
+     * Gets all passive abilities for a player
+     * 
+     * @param playerUUID The player's UUID
+     * @return A map of skill names to sets of passive ability names
+     */
+    public Map<String, Set<String>> getAllPassives(UUID playerUUID) {
+        Map<String, Set<String>> skillPassives = playerPassives.get(playerUUID);
+        if (skillPassives != null) {
+            // Create a deep copy to prevent modification
+            Map<String, Set<String>> copy = new HashMap<>();
+            for (Map.Entry<String, Set<String>> entry : skillPassives.entrySet()) {
+                copy.put(entry.getKey(), new HashSet<>(entry.getValue()));
+            }
+            return copy;
+        }
+        return new HashMap<>();
+    }
+    
+    /**
+     * Applies a passive effect to a player
+     * 
+     * @param playerUUID The player's UUID
+     * @param skillName The skill name
+     * @param passiveName The passive ability name
+     */
+    private void applyPassiveEffect(UUID playerUUID, String skillName, String passiveName) {
+        // ... existing code ...
+    }
+    
+    /**
+     * Removes a passive effect from a player
+     * 
+     * @param playerUUID The player's UUID
+     * @param skillName The skill name
+     * @param passiveName The passive ability name
+     */
+    private void removePassiveEffect(UUID playerUUID, String skillName, String passiveName) {
+        // ... existing code ...
+    }
+    
+    /**
+     * Starts a task to periodically clean up the player-placed blocks set
+     * to prevent memory leaks from chunks that are unloaded
+     */
+    private void startPlacedBlocksCleanupTask() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            // Create a copy of the set to avoid ConcurrentModificationException
+            Set<String> toRemove = new HashSet<>();
+            
+            for (String blockKey : playerPlacedBlocks) {
+                String[] parts = blockKey.split(":");
+                if (parts.length != 4) continue;
+                
+                String worldName = parts[0];
+                int x = Integer.parseInt(parts[1]);
+                int y = Integer.parseInt(parts[2]);
+                int z = Integer.parseInt(parts[3]);
+                
+                World world = Bukkit.getWorld(worldName);
+                if (world == null) {
+                    // World is unloaded, remove the entry
+                    toRemove.add(blockKey);
+                    continue;
+                }
+                
+                // Check if the chunk is loaded
+                int chunkX = x >> 4;
+                int chunkZ = z >> 4;
+                if (!world.isChunkLoaded(chunkX, chunkZ)) {
+                    // Chunk is unloaded, remove the entry
+                    toRemove.add(blockKey);
+                    continue;
+                }
+                
+                // Check if the block is still there (might have been broken)
+                Block block = world.getBlockAt(x, y, z);
+                if (block.getType() == Material.AIR) {
+                    // Block is gone, remove the entry
+                    toRemove.add(blockKey);
+                }
+            }
+            
+            // Remove all entries that need to be removed
+            playerPlacedBlocks.removeAll(toRemove);
+            
+            // Log cleanup info if significant
+            if (toRemove.size() > 100) {
+                plugin.getLogger().info("Cleaned up " + toRemove.size() + " player-placed block entries");
+            }
+        }, 20 * 60 * 30, 20 * 60 * 30); // Run every 30 minutes
     }
 
     // --- OLD SYSTEM: Loading player passives from PlayerDataManager ---
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        loadPlayerPassives(event.getPlayer());
+        loadPlayerPassives(event.getPlayer().getUniqueId());
     }
 
     private void loadPlayerPassives(Player player) {
@@ -2159,6 +2566,38 @@ public class PassiveSkillManager implements Listener {
         ItemStack tool = player.getInventory().getItemInMainHand();
         boolean hasSilkTouch = tool.containsEnchantment(Enchantment.SILK_TOUCH);
         
+        // Check if this is a player-placed block - if so, don't give XP but still allow drops
+        if (isPlayerPlaced(block)) {
+            // If it's a player-placed block, we'll still allow normal drops
+            // but we won't give any XP or apply special passive effects
+            
+            // Remove from tracking set since it's been broken
+            playerPlacedBlocks.remove(getBlockLocationKey(block));
+            
+            // For ores, we still want to handle drops manually to be consistent
+            if (isOre(block.getType())) {
+                event.setDropItems(false);
+                
+                // Just drop the normal item without any bonuses
+                Material dropMaterial = getOreDrop(block.getType(), false);
+                if (hasSilkTouch) {
+                    // With silk touch, just drop the ore block itself
+                    block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(block.getType(), 1));
+                } else if (dropMaterial != null) {
+                    // Drop the normal amount without any bonuses
+                    int baseAmount = 1;
+                    // Set correct base amounts for redstone and lapis ores
+                    if (block.getType() == Material.REDSTONE_ORE || block.getType() == Material.DEEPSLATE_REDSTONE_ORE ||
+                        block.getType() == Material.LAPIS_ORE || block.getType() == Material.DEEPSLATE_LAPIS_ORE) {
+                        baseAmount = 4; // Default drop amount for redstone and lapis is 4
+                    }
+                    block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(dropMaterial, baseAmount));
+                }
+            }
+            
+            return; // Skip the rest of the method to avoid giving XP
+        }
+        
         // Handle Stone Efficiency
         if (hasPassive(playerId, "stoneEfficiency") && isStone(block.getType())) {
             // Cancel default drops since we're custom handling them
@@ -2245,6 +2684,12 @@ public class PassiveSkillManager implements Listener {
 
         int amount = 1;
         Material oreType = block.getType();
+        
+        // Set correct base amounts for redstone and lapis ores
+        if (oreType == Material.REDSTONE_ORE || oreType == Material.DEEPSLATE_REDSTONE_ORE ||
+            oreType == Material.LAPIS_ORE || oreType == Material.DEEPSLATE_LAPIS_ORE) {
+            amount = 4; // Default drop amount for redstone and lapis is 4
+        }
         
         // Check for silk touch on ores
         if (hasSilkTouch) {
@@ -2748,8 +3193,17 @@ public class PassiveSkillManager implements Listener {
         // Only handle farming-related blocks
         if (!isFarmCrop(blockType) && !isMelon(blockType) && !isPumpkin(blockType) && 
             blockType != Material.CACTUS && blockType != Material.SUGAR_CANE && 
-            blockType != Material.NETHER_WART) {
+            !blockType.name().contains("STEM")) {
             return;
+        }
+        
+        // Check if this is a player-placed block - if so, don't give XP
+        if (isPlayerPlaced(block)) {
+            // Remove from tracking set since it's been broken
+            playerPlacedBlocks.remove(getBlockLocationKey(block));
+            
+            // For crops, we'll still allow normal drops
+            return; // Skip the rest of the method to avoid giving XP
         }
         
         // Get the base drops
@@ -3314,9 +3768,18 @@ public class PassiveSkillManager implements Listener {
             return;
         }
         
-        // Check if the block is excavatable
+        // Only handle excavation-related blocks
         if (!isExcavatable(blockType)) {
             return;
+        }
+        
+        // Check if this is a player-placed block - if so, don't give XP
+        if (isPlayerPlaced(block)) {
+            // Remove from tracking set since it's been broken
+            playerPlacedBlocks.remove(getBlockLocationKey(block));
+            
+            // For excavation blocks, we'll still allow normal drops
+            return; // Skip the rest of the method to avoid giving XP
         }
         
         // Archaeology basics passive
@@ -3332,7 +3795,7 @@ public class PassiveSkillManager implements Listener {
         if (plugin.isPassiveEnabled("excavation", "doubleDrops") && doubleDropsPlayers.contains(playerId)) {
             double chance = plugin.getPassiveValue("excavation", "doubleDrops");
             if (Math.random() < chance) {
-                for (ItemStack drop : block.getDrops(tool)) {
+                for (ItemStack drop : block.getDrops(player.getInventory().getItemInMainHand())) {
                     block.getWorld().dropItemNaturally(block.getLocation(), drop.clone());
                 }
                 player.sendMessage(ChatColor.GREEN + "Your Double Drops passive gave you extra excavation items!");
@@ -3651,5 +4114,50 @@ public class PassiveSkillManager implements Listener {
                 }
             }
         }
+    }
+
+    /**
+     * Tracks blocks placed by players to prevent XP farming
+     */
+    @EventHandler
+    public void onBlockPlace(org.bukkit.event.block.BlockPlaceEvent event) {
+        Block block = event.getBlock();
+        Material blockType = block.getType();
+        
+        // Only track blocks that give XP when mined
+        if (isOre(blockType) || isStone(blockType) || isExcavatable(blockType) || 
+            isFarmCrop(blockType) || blockType == Material.CACTUS || 
+            blockType == Material.SUGAR_CANE || isPumpkin(blockType) || 
+            isMelon(blockType)) {
+            
+            // Create a unique identifier for this block location
+            String blockKey = getBlockLocationKey(block);
+            
+            // Add to our tracking set
+            playerPlacedBlocks.add(blockKey);
+            
+            // Schedule removal after a long time (e.g., server restart or chunk unload will handle cleanup)
+            // This prevents the set from growing too large
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                playerPlacedBlocks.remove(blockKey);
+            }, 20 * 60 * 60 * 3); // Remove after 3 hours
+        }
+    }
+    
+    /**
+     * Creates a unique string key for a block location
+     */
+    private String getBlockLocationKey(Block block) {
+        return block.getWorld().getName() + ":" + 
+               block.getX() + ":" + 
+               block.getY() + ":" + 
+               block.getZ();
+    }
+    
+    /**
+     * Checks if a block was placed by a player
+     */
+    private boolean isPlayerPlaced(Block block) {
+        return playerPlacedBlocks.contains(getBlockLocationKey(block));
     }
 }

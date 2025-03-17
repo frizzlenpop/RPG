@@ -14,6 +14,70 @@ A comprehensive RPG skills and progression system for Minecraft servers, allowin
 - **Custom GUI Menus**: User-friendly interfaces for all systems
 - **Admin Commands**: Comprehensive tools for server management
 - **Extensive Configuration**: Customize every aspect of the plugin
+- **Database Storage**: Store player data in MySQL or SQLite databases
+
+## Database Integration
+
+The plugin now supports storing player data in a database (MySQL or SQLite) instead of YAML files. This provides several benefits:
+
+- **Better Performance**: Faster data retrieval and storage, especially for servers with many players
+- **Improved Scalability**: Easily handle large amounts of player data
+- **Data Integrity**: Transactions ensure data is saved correctly
+- **Cross-Server Support**: Share player data across multiple servers
+
+### Configuration
+
+Database settings can be configured in the `config.yml` file:
+
+```yaml
+database:
+  # MySQL configuration
+  mysql:
+    enabled: false  # Set to true to use MySQL
+    host: localhost
+    port: 3306
+    database: rpgskills
+    username: root
+    password: ""
+  
+  # SQLite configuration (used as fallback if MySQL is disabled or fails)
+  sqlite:
+    enabled: true  # Set to false to disable SQLite fallback
+  
+  # Migration settings
+  migrate_on_startup: false  # Set to true to migrate YAML data to database on startup
+```
+
+### Migration
+
+You can migrate existing player data from YAML files to the database using the following methods:
+
+1. **Automatic Migration on Startup**: Set `database.migrate_on_startup` to `true` in the config.yml file
+2. **Command-Based Migration**: Use the `/rpgdb migrate` command (requires `rpgskills.admin` permission)
+
+### Database Commands
+
+The plugin provides several commands for managing the database:
+
+- `/rpgdb status` - Shows the current database status
+- `/rpgdb migrate` - Migrates data from YAML to database
+- `/rpgdb help` - Shows help information
+
+All database commands require the `rpgskills.admin` permission.
+
+### Database Schema
+
+The plugin creates the following tables in the database:
+
+- `player_skills` - Stores player skill levels and XP
+- `player_passives` - Stores player passive abilities
+- `player_placed_blocks` - Tracks blocks placed by players (for XP prevention)
+- `player_settings` - Stores player settings and preferences
+- `skill_tree_progress` - Tracks skill tree progress
+
+### Fallback Mechanism
+
+If the database connection fails, the plugin will automatically fall back to YAML file storage. This ensures that player data is always accessible, even if there are database issues.
 
 ## Documentation
 

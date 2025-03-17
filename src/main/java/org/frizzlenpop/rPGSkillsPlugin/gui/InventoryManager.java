@@ -1,6 +1,7 @@
 package org.frizzlenpop.rPGSkillsPlugin.gui;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,6 +21,17 @@ import java.util.*;
 public class InventoryManager implements Listener {
     private final JavaPlugin plugin;
     private final Map<UUID, Set<String>> trackedInventories = new HashMap<>();
+    private final Map<UUID, Long> animationTimeouts = new HashMap<>();
+    
+    // Standard sound effects
+    public static final Sound OPEN_SOUND = Sound.BLOCK_ENDER_CHEST_OPEN;
+    public static final Sound CLOSE_SOUND = Sound.BLOCK_ENDER_CHEST_CLOSE;
+    public static final Sound CLICK_SOUND = Sound.UI_BUTTON_CLICK;
+    public static final Sound SUCCESS_SOUND = Sound.ENTITY_PLAYER_LEVELUP;
+    public static final Sound ERROR_SOUND = Sound.ENTITY_VILLAGER_NO;
+    
+    // Animation timeout in milliseconds (30 seconds)
+    private static final long ANIMATION_TIMEOUT = 30000;
     
     /**
      * Creates a new InventoryManager
@@ -31,6 +43,9 @@ public class InventoryManager implements Listener {
         
         // Register events
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        
+        // Start animation timeout checker
+        startAnimationTimeoutChecker();
     }
     
     /**
@@ -43,6 +58,11 @@ public class InventoryManager implements Listener {
         UUID playerUUID = player.getUniqueId();
         trackedInventories.computeIfAbsent(playerUUID, k -> new HashSet<>())
                 .add(inventoryTitle);
+                
+        // If this is an animation inventory, set a timeout
+        if (inventoryTitle.contains("Opening") || inventoryTitle.contains("Animation")) {
+            animationTimeouts.put(playerUUID, System.currentTimeMillis() + ANIMATION_TIMEOUT);
+        }
     }
     
     /**
@@ -60,6 +80,11 @@ public class InventoryManager implements Listener {
             if (trackedInventories.get(playerUUID).isEmpty()) {
                 trackedInventories.remove(playerUUID);
             }
+        }
+        
+        // Remove animation timeout if this was an animation inventory
+        if (inventoryTitle.contains("Opening") || inventoryTitle.contains("Animation")) {
+            animationTimeouts.remove(playerUUID);
         }
     }
     
@@ -90,6 +115,21 @@ public class InventoryManager implements Listener {
         
         if (isInventoryTracked(player, inventoryTitle)) {
             event.setCancelled(true);
+            
+            // Check if this is a hub button click
+            if (event.getCurrentItem() != null && 
+                event.getCurrentItem().getItemMeta() != null && 
+                event.getCurrentItem().getItemMeta().getDisplayName().contains("Back to RPG Hub")) {
+                
+                // Close inventory and open hub
+                player.closeInventory();
+                player.playSound(player.getLocation(), CLICK_SOUND, 0.5f, 1.0f);
+                
+                // Schedule the hub command to run after inventory is closed
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    player.performCommand("rpghub");
+                }, 1L);
+            }
         }
     }
     
@@ -134,6 +174,7 @@ public class InventoryManager implements Listener {
         UUID playerUUID = player.getUniqueId();
         
         trackedInventories.remove(playerUUID);
+        animationTimeouts.remove(playerUUID);
     }
     
     /**
@@ -150,5 +191,78 @@ public class InventoryManager implements Listener {
         );
         
         inventory.setItem(slot, hubButton);
+    }
+    
+    /**
+     * Plays the standard open sound for a player
+     * 
+     * @param player The player
+     */
+    public void playOpenSound(Player player) {
+        player.playSound(player.getLocation(), OPEN_SOUND, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Plays the standard close sound for a player
+     * 
+     * @param player The player
+     */
+    public void playCloseSound(Player player) {
+        player.playSound(player.getLocation(), CLOSE_SOUND, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Plays the standard click sound for a player
+     * 
+     * @param player The player
+     */
+    public void playClickSound(Player player) {
+        player.playSound(player.getLocation(), CLICK_SOUND, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Plays the standard success sound for a player
+     * 
+     * @param player The player
+     */
+    public void playSuccessSound(Player player) {
+        player.playSound(player.getLocation(), SUCCESS_SOUND, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Plays the standard error sound for a player
+     * 
+     * @param player The player
+     */
+    public void playErrorSound(Player player) {
+        player.playSound(player.getLocation(), ERROR_SOUND, 0.5f, 1.0f);
+    }
+    
+    /**
+     * Starts the animation timeout checker task
+     */
+    private void startAnimationTimeoutChecker() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            long currentTime = System.currentTimeMillis();
+            
+            // Check for timed out animations
+            for (Map.Entry<UUID, Long> entry : new HashMap<>(animationTimeouts).entrySet()) {
+                if (currentTime > entry.getValue()) {
+                    // Animation has timed out
+                    UUID playerUUID = entry.getKey();
+                    Player player = Bukkit.getPlayer(playerUUID);
+                    
+                    if (player != null && player.isOnline()) {
+                        // Close the player's inventory
+                        player.closeInventory();
+                        player.sendMessage("§cAnimation timed out. Please try again.");
+                        playErrorSound(player);
+                    }
+                    
+                    // Remove the timeout
+                    animationTimeouts.remove(playerUUID);
+                }
+            }
+        }, 20L, 20L); // Check every second
     }
 } 

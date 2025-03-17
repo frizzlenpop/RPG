@@ -13,6 +13,7 @@ import org.frizzlenpop.rPGSkillsPlugin.mounts.MountManager;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountRarity;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountType;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.abilities.MountAbilityManager;
+import org.frizzlenpop.rPGSkillsPlugin.mounts.fusion.MountCombinationGUI;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.loot.MountChestCommand;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.xp.MountXPManager;
 
@@ -33,6 +34,7 @@ public class MountCommand implements CommandExecutor, TabCompleter {
     private final MountAbilityManager abilityManager;
     private final MountXPManager xpManager;
     private final MountChestCommand chestCommand;
+    private final MountCombinationGUI mountCombinationGUI;
     
     /**
      * Creates a new mount command handler
@@ -45,6 +47,7 @@ public class MountCommand implements CommandExecutor, TabCompleter {
         this.abilityManager = mountManager.getAbilityManager();
         this.xpManager = mountManager.getXPManager();
         this.chestCommand = plugin.getMountChestCommand();
+        this.mountCombinationGUI = plugin.getMountCombinationGUI();
     }
     
     @Override
@@ -75,6 +78,7 @@ public class MountCommand implements CommandExecutor, TabCompleter {
             case "ability" -> handleAbilityCommand(player, args);
             case "stats" -> handleStatsCommand(player, args);
             case "level" -> handleLevelCommand(player, args);
+            case "fusion" -> handleFusionCommand(player);
             
             // Chest and key commands
             case "chest", "keys", "open" -> {
@@ -128,6 +132,7 @@ public class MountCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.YELLOW + "/mount ability <ability>" + ChatColor.WHITE + " - Use a mount ability");
         player.sendMessage(ChatColor.YELLOW + "/mount stats [mount]" + ChatColor.WHITE + " - View mount stats");
         player.sendMessage(ChatColor.YELLOW + "/mount level [mount]" + ChatColor.WHITE + " - View mount level progress");
+        player.sendMessage(ChatColor.YELLOW + "/mount fusion" + ChatColor.WHITE + " - Open the mount fusion GUI");
         
         // Chest commands
         if (chestCommand != null) {
@@ -667,6 +672,24 @@ public class MountCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.RED + "Unknown admin subcommand: " + args[1]);
     }
     
+    /**
+     * Handles the fusion command to open the mount fusion GUI
+     * 
+     * @param player The player
+     */
+    private void handleFusionCommand(Player player) {
+        // Check if player has at least 2 mounts
+        Set<String> ownedMounts = mountManager.getPlayerOwnedMounts(player.getUniqueId());
+        
+        if (ownedMounts.size() < 2) {
+            player.sendMessage(ChatColor.RED + "You need at least 2 mounts to use the fusion system.");
+            return;
+        }
+        
+        // Open the fusion GUI
+        mountCombinationGUI.openMainGUI(player);
+    }
+    
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (!(sender instanceof Player player)) {
@@ -676,7 +699,7 @@ public class MountCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             // Main subcommands
             List<String> completions = new ArrayList<>(Arrays.asList(
-                    "list", "info", "summon", "dismiss", "ability", "stats", "level"));
+                    "list", "info", "summon", "dismiss", "ability", "stats", "level", "fusion"));
             
             // Add chest commands if available
             if (chestCommand != null) {

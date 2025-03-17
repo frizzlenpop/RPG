@@ -9,13 +9,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.data.PlayerDataManager;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.gui.MountGUI;
-import org.frizzlenpop.rPGSkillsPlugin.mounts.gui.MountShopGUI;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.fusion.MountCombinationGUI;
 import org.frizzlenpop.rPGSkillsPlugin.skilltree.SkillTreeGUI;
 import org.frizzlenpop.rPGSkillsPlugin.utils.ColorUtils;
@@ -32,8 +33,9 @@ public class RPGHubGUI implements Listener {
     private final SkillTreeGUI skillTreeGUI;
     private final PartyPerksGUI partyPerksGUI;
     private final MountGUI mountGUI;
-    private final MountShopGUI mountShopGUI;
     private final MountCombinationGUI mountCombinationGUI;
+    private final InventoryManager inventoryManager;
+    private final PlayerDataManager playerDataManager;
     
     // GUI constants
     private static final String GUI_TITLE = "✧ RPG Hub ✧";
@@ -50,8 +52,9 @@ public class RPGHubGUI implements Listener {
         this.skillTreeGUI = plugin.getSkillTreeGUI();
         this.partyPerksGUI = plugin.getPartyPerksGUI();
         this.mountGUI = plugin.getMountGUI();
-        this.mountShopGUI = plugin.getMountShopGUI();
         this.mountCombinationGUI = plugin.getMountCombinationGUI();
+        this.inventoryManager = plugin.getInventoryManager();
+        this.playerDataManager = plugin.getPlayerDataManager();
         
         // Register events
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -65,6 +68,9 @@ public class RPGHubGUI implements Listener {
     public void openGUI(Player player) {
         Inventory inventory = createHubInventory(player);
         player.openInventory(inventory);
+        
+        // Register this inventory with the inventory manager to prevent item theft
+        inventoryManager.registerInventory(player, GUI_TITLE);
         
         // Play a nice sound effect
         player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.5f, 1.0f);
@@ -91,14 +97,21 @@ public class RPGHubGUI implements Listener {
             }
         }
         
-        // Player info in the center top
+        // Player info in the center top (slot 4) with total XP earned
         ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta skullMeta = (SkullMeta) playerHead.getItemMeta();
         skullMeta.setOwningPlayer(player);
         skullMeta.setDisplayName(ChatColor.GOLD + "✧ " + player.getName() + " ✧");
+        
+        // Calculate total XP earned across all skills
+        int totalXpEarned = calculateTotalXpEarned(player.getUniqueId());
+        
         List<String> playerLore = new ArrayList<>();
         playerLore.add(ChatColor.GRAY + "Welcome to the RPG Hub!");
         playerLore.add(ChatColor.GRAY + "Select an option below to begin");
+        playerLore.add("");
+        playerLore.add(ChatColor.GOLD + "Total XP Earned: " + ChatColor.YELLOW + totalXpEarned);
+        
         skullMeta.setLore(playerLore);
         playerHead.setItemMeta(skullMeta);
         inventory.setItem(4, playerHead);
@@ -143,18 +156,8 @@ public class RPGHubGUI implements Listener {
                 ChatColor.YELLOW + "Click to open Mounts menu"
         ));
         
-        // Mount shop
+        // Mount fusion (moved to slot 29, replacing Mount Shop)
         inventory.setItem(29, createGuiItem(
-                Material.EMERALD,
-                ColorUtils.colorize("&6✦ &eMount Shop"),
-                ChatColor.GRAY + "Purchase new mounts",
-                ChatColor.GRAY + "Find rare and powerful companions",
-                "",
-                ChatColor.YELLOW + "Click to open Mount Shop"
-        ));
-        
-        // Mount fusion/combination
-        inventory.setItem(31, createGuiItem(
                 Material.ANVIL,
                 ColorUtils.colorize("&6✦ &eMount Fusion"),
                 ChatColor.GRAY + "Combine mounts to create",
@@ -163,8 +166,8 @@ public class RPGHubGUI implements Listener {
                 ChatColor.YELLOW + "Click to open Mount Fusion menu"
         ));
         
-        // Mount chests
-        inventory.setItem(33, createGuiItem(
+        // Mount chests (moved to slot 31, where Fusion was)
+        inventory.setItem(31, createGuiItem(
                 Material.CHEST,
                 ColorUtils.colorize("&6✦ &eMount Chests"),
                 ChatColor.GRAY + "Open chests to discover",
@@ -184,6 +187,23 @@ public class RPGHubGUI implements Listener {
         ));
         
         return inventory;
+    }
+    
+    /**
+     * Calculate the total XP earned across all skills for a player
+     * 
+     * @param playerUUID The player's UUID
+     * @return The total XP earned
+     */
+    private int calculateTotalXpEarned(UUID playerUUID) {
+        int totalXp = 0;
+        String[] skills = {"mining", "logging", "farming", "fighting", "fishing", "enchanting", "excavation", "repair"};
+        
+        for (String skill : skills) {
+            totalXp += playerDataManager.getTotalSkillXPEarned(playerUUID, skill);
+        }
+        
+        return totalXp;
     }
     
     /**
@@ -221,7 +241,8 @@ public class RPGHubGUI implements Listener {
             return;
         }
         
-        event.setCancelled(true); // Prevent item theft
+        // Cancel the event to prevent item theft
+        event.setCancelled(true);
         
         if (event.getCurrentItem() == null) {
             return;
@@ -249,17 +270,12 @@ public class RPGHubGUI implements Listener {
                 player.performCommand("mount");
                 break;
                 
-            case 29: // Mount shop
-                player.closeInventory();
-                player.performCommand("mount shop");
-                break;
-                
-            case 31: // Mount fusion
+            case 29: // Mount fusion (moved from slot 31)
                 player.closeInventory();
                 player.performCommand("mount fusion");
                 break;
                 
-            case 33: // Mount chests
+            case 31: // Mount chests (moved from slot 33)
                 player.closeInventory();
                 player.performCommand("mountchest");
                 break;
@@ -275,6 +291,23 @@ public class RPGHubGUI implements Listener {
     }
     
     /**
+     * Handles inventory dragging to prevent item theft
+     */
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getWhoClicked();
+        String title = event.getView().getTitle();
+        
+        if (title.equals(GUI_TITLE)) {
+            event.setCancelled(true);
+        }
+    }
+    
+    /**
      * Handles inventory closing to update tracking and play sound
      */
     @EventHandler
@@ -287,6 +320,9 @@ public class RPGHubGUI implements Listener {
         String title = event.getView().getTitle();
         
         if (title.equals(GUI_TITLE)) {
+            // Unregister this inventory with the inventory manager
+            inventoryManager.unregisterInventory(player, GUI_TITLE);
+            
             // Play a nice sound effect
             player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_CLOSE, 0.5f, 1.0f);
         }

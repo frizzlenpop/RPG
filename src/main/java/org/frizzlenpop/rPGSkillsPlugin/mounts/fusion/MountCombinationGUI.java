@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.gui.InventoryManager;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountManager;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountRarity;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountType;
@@ -30,10 +31,11 @@ public class MountCombinationGUI {
     private final RPGSkillsPlugin plugin;
     private final MountManager mountManager;
     private final MountXPManager xpManager;
+    private final InventoryManager inventoryManager;
     private final Map<UUID, Inventory> activeGUIs = new HashMap<>();
     private final Map<UUID, String> selectedFirstMount = new HashMap<>();
     private final Map<UUID, String> selectedSecondMount = new HashMap<>();
-    private final Map<UUID, Catalyst> selectedCatalyst = new HashMap<>();
+    private final Map<UUID, String> selectedCatalyst = new HashMap<>();
     private final Random random = new Random();
     
     /**
@@ -84,6 +86,7 @@ public class MountCombinationGUI {
         this.plugin = plugin;
         this.mountManager = mountManager;
         this.xpManager = mountManager.getXPManager();
+        this.inventoryManager = plugin.getInventoryManager();
     }
     
     /**
@@ -110,7 +113,9 @@ public class MountCombinationGUI {
                 ChatColor.WHITE + "3. Click the combine button"));
         
         // Add catalyst selection button
-        Catalyst catalyst = selectedCatalyst.getOrDefault(playerUUID, Catalyst.NONE);
+        Catalyst catalyst = selectedCatalyst.containsKey(playerUUID) ? 
+                            Catalyst.valueOf(selectedCatalyst.get(playerUUID)) : 
+                            Catalyst.NONE;
         inventory.setItem(49, createCatalystItem(catalyst));
         
         // Add fusion button (disabled initially)
@@ -125,6 +130,12 @@ public class MountCombinationGUI {
         
         // Open inventory for player
         player.openInventory(inventory);
+        
+        // Register this inventory with the inventory manager to prevent item theft
+        inventoryManager.registerInventory(player, ChatColor.DARK_PURPLE + "Mount Fusion");
+        
+        // Play sound
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 0.5f, 1.0f);
     }
     
     /**
@@ -281,7 +292,9 @@ public class MountCombinationGUI {
             if (canFuse) {
                 MountType mountType = mountManager.getMountType(firstMountId);
                 MountRarity rarity = MountRarity.COMMON; // Should be retrieved from player data
-                Catalyst catalyst = selectedCatalyst.getOrDefault(playerUUID, Catalyst.NONE);
+                Catalyst catalyst = selectedCatalyst.containsKey(playerUUID) ? 
+                                    Catalyst.valueOf(selectedCatalyst.get(playerUUID)) : 
+                                    Catalyst.NONE;
                 
                 int baseChance = getBaseUpgradeChance(rarity);
                 int totalChance = Math.min(100, baseChance + catalyst.getUpgradeChanceBoost());
@@ -368,6 +381,12 @@ public class MountCombinationGUI {
         
         // Open inventory
         player.openInventory(inventory);
+        
+        // Register this inventory with the inventory manager to prevent item theft
+        inventoryManager.registerInventory(player, ChatColor.GOLD + "Select Catalyst");
+        
+        // Play sound
+        player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.5f, 1.0f);
     }
     
     /**
@@ -385,7 +404,9 @@ public class MountCombinationGUI {
         
         MountType mountType = mountManager.getMountType(mountId);
         MountRarity currentRarity = MountRarity.COMMON; // Should be fetched from player data
-        Catalyst catalyst = selectedCatalyst.getOrDefault(playerUUID, Catalyst.NONE);
+        Catalyst catalyst = selectedCatalyst.containsKey(playerUUID) ? 
+                            Catalyst.valueOf(selectedCatalyst.get(playerUUID)) : 
+                            Catalyst.NONE;
         
         // Calculate chance of rarity upgrade
         int baseChance = getBaseUpgradeChance(currentRarity);
@@ -528,6 +549,9 @@ public class MountCombinationGUI {
         
         // Open inventory
         player.openInventory(inventory);
+        
+        // Register this inventory with the inventory manager to prevent item theft
+        inventoryManager.registerInventory(player, ChatColor.GOLD + "Fusion Complete!");
     }
     
     /**
@@ -608,7 +632,7 @@ public class MountCombinationGUI {
             // Handle catalyst slots
             for (int i = 0; i < Catalyst.values().length; i++) {
                 if (slot == 10 + i) {
-                    selectedCatalyst.put(playerUUID, Catalyst.values()[i]);
+                    selectedCatalyst.put(playerUUID, Catalyst.values()[i].name());
                     openMainGUI(player);
                     return true;
                 }
@@ -692,11 +716,20 @@ public class MountCombinationGUI {
     }
     
     /**
-     * Removes a player's GUI reference when they close the inventory
+     * Handles inventory close events
      * 
-     * @param playerUUID The player's UUID
+     * @param player The player
+     * @param inventoryTitle The title of the closed inventory
      */
-    public void handleInventoryClose(UUID playerUUID) {
-        activeGUIs.remove(playerUUID);
+    public void handleInventoryClose(Player player, String inventoryTitle) {
+        // Unregister this inventory with the inventory manager
+        inventoryManager.unregisterInventory(player, inventoryTitle);
+        
+        // Play sound
+        if (inventoryTitle.equals(ChatColor.DARK_PURPLE + "Mount Fusion") || 
+            inventoryTitle.equals(ChatColor.GOLD + "Select Catalyst") || 
+            inventoryTitle.equals(ChatColor.GOLD + "Fusion Complete!")) {
+            player.playSound(player.getLocation(), Sound.BLOCK_ENDER_CHEST_CLOSE, 0.5f, 1.0f);
+        }
     }
 } 

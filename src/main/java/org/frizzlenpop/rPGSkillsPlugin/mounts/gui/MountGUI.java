@@ -3,11 +3,13 @@ package org.frizzlenpop.rPGSkillsPlugin.mounts.gui;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.frizzlenpop.rPGSkillsPlugin.RPGSkillsPlugin;
+import org.frizzlenpop.rPGSkillsPlugin.gui.InventoryManager;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.Mount;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountManager;
 import org.frizzlenpop.rPGSkillsPlugin.mounts.MountType;
@@ -29,9 +31,13 @@ public class MountGUI {
     private final MountXPManager xpManager;
     private final Map<UUID, Inventory> activeGUIs = new HashMap<>();
     private final Map<UUID, String> selectedMounts = new HashMap<>();
+    private final InventoryManager inventoryManager;
+    
+    private static final String MAIN_GUI_TITLE = ChatColor.DARK_PURPLE + "Mount Manager";
+    private static final String DETAILS_GUI_TITLE_PREFIX = ChatColor.DARK_PURPLE + "Mount Details: ";
     
     /**
-     * Creates a new mount GUI manager
+     * Creates a new MountGUI
      * 
      * @param plugin The plugin instance
      * @param mountManager The mount manager
@@ -40,6 +46,7 @@ public class MountGUI {
         this.plugin = plugin;
         this.mountManager = mountManager;
         this.xpManager = mountManager.getXPManager();
+        this.inventoryManager = plugin.getInventoryManager();
     }
     
     /**
@@ -48,7 +55,7 @@ public class MountGUI {
      * @param player The player
      */
     public void openMainGUI(Player player) {
-        Inventory inventory = Bukkit.createInventory(null, 54, ChatColor.DARK_PURPLE + "Mount Manager");
+        Inventory inventory = Bukkit.createInventory(null, 54, MAIN_GUI_TITLE);
         UUID playerUUID = player.getUniqueId();
         
         // Get player's owned mounts
@@ -58,131 +65,145 @@ public class MountGUI {
         int slot = 10;
         for (String mountId : ownedMounts) {
             MountType mountType = mountManager.getMountType(mountId);
-            if (mountType == null) continue;
-            
-            // Get level data
-            int level = xpManager.getMountLevel(playerUUID, mountId);
-            
-            // Create item
-            ItemStack mountItem = createMountItem(mountType, level);
-            inventory.setItem(slot, mountItem);
-            
-            // Increment slot, handling row wrapping
-            slot++;
-            if (slot % 9 == 8) {
-                slot += 2; // Skip to next row
+            if (mountType != null) {
+                int level = xpManager.getMountLevel(playerUUID, mountId);
+                ItemStack mountItem = createMountItem(mountType, level);
+                inventory.setItem(slot, mountItem);
+                
+                // Increment slot, skipping to next row if needed
+                slot++;
+                if (slot % 9 == 8) {
+                    slot += 2;
+                }
             }
-            
-            // Stop if we run out of space
-            if (slot >= 45) break;
         }
         
-        // Add action buttons
-        inventory.setItem(45, createGuiItem(Material.SADDLE, ChatColor.GREEN + "Summon Selected Mount", 
-                "Click to summon the selected mount"));
-        
-        inventory.setItem(46, createGuiItem(Material.BARRIER, ChatColor.RED + "Dismiss Current Mount", 
-                "Click to dismiss your current mount"));
-        
-        inventory.setItem(47, createGuiItem(Material.EXPERIENCE_BOTTLE, ChatColor.AQUA + "View Mount Stats", 
-                "Click to view detailed stats for the selected mount"));
-        
-        inventory.setItem(49, createGuiItem(Material.BOOK, ChatColor.GOLD + "Mount Abilities", 
-                "Click to view and use mount abilities"));
-        
-        inventory.setItem(53, createGuiItem(Material.BARRIER, ChatColor.RED + "Close", 
-                "Click to close this menu"));
-        
-        // Store active GUI reference
+        // Store the active GUI
         activeGUIs.put(playerUUID, inventory);
         
-        // Open inventory for player
+        // Add decorative glass panes
+        for (int i = 0; i < 54; i++) {
+            if (inventory.getItem(i) == null) {
+                if (i % 9 == 0 || i % 9 == 8 || i < 9 || i >= 45) {
+                    inventory.setItem(i, createGuiItem(Material.PURPLE_STAINED_GLASS_PANE, " "));
+                }
+            }
+        }
+        
+        // Add back button
+        inventory.setItem(49, createGuiItem(
+                Material.ARROW,
+                ChatColor.GOLD + "« Back to RPG Hub",
+                ChatColor.GRAY + "Return to the main RPG Hub"
+        ));
+        
         player.openInventory(inventory);
+        
+        // Register this inventory with the inventory manager to prevent item theft
+        inventoryManager.registerInventory(player, MAIN_GUI_TITLE);
+        
+        // Play sound
+        player.playSound(player.getLocation(), Sound.ENTITY_HORSE_ARMOR, 0.5f, 1.0f);
     }
     
     /**
      * Opens the mount details GUI for a player
      * 
      * @param player The player
-     * @param mountId The mount ID to view
+     * @param mountId The mount ID
      */
     public void openMountDetailsGUI(Player player, String mountId) {
-        UUID playerUUID = player.getUniqueId();
         MountType mountType = mountManager.getMountType(mountId);
-        
         if (mountType == null) {
-            player.sendMessage(ChatColor.RED + "Unknown mount type: " + mountId);
             return;
         }
         
-        // Set this as selected mount
+        UUID playerUUID = player.getUniqueId();
+        int level = xpManager.getMountLevel(playerUUID, mountId);
+        
+        String guiTitle = DETAILS_GUI_TITLE_PREFIX + mountType.getDisplayName();
+        Inventory inventory = Bukkit.createInventory(null, 54, guiTitle);
+        
+        // Store the active GUI and selected mount
+        activeGUIs.put(playerUUID, inventory);
         selectedMounts.put(playerUUID, mountId);
         
-        // Get mount level data
-        int level = xpManager.getMountLevel(playerUUID, mountId);
-        int xp = xpManager.getMountXP(playerUUID, mountId);
-        int nextLevelXP = xpManager.getRequiredXP(level + 1);
-        int progress = xpManager.getLevelProgress(playerUUID, mountId);
+        // Add mount info
+        ItemStack mountItem = createMountItem(mountType, level);
+        inventory.setItem(13, mountItem);
         
-        // Create inventory
-        String title = ChatColor.GOLD + mountType.getDisplayName() + " Details";
-        Inventory inventory = Bukkit.createInventory(null, 54, title);
+        // Add XP progress
+        int currentXP = xpManager.getMountXP(playerUUID, mountId);
+        int requiredXP = xpManager.getRequiredXP(level + 1);
+        double progress = (double) currentXP / requiredXP;
         
-        // Mount info item (center top)
-        ItemStack infoItem = createGuiItem(Material.NAME_TAG, 
-                ChatColor.GOLD + mountType.getDisplayName(),
-                ChatColor.GRAY + mountType.getDescription(),
-                "",
-                ChatColor.YELLOW + "Level: " + ChatColor.WHITE + level,
-                ChatColor.YELLOW + "XP: " + ChatColor.WHITE + xp + " / " + nextLevelXP,
-                ChatColor.YELLOW + "Progress: " + ChatColor.WHITE + progress + "%");
-        inventory.setItem(4, infoItem);
+        List<String> xpLore = new ArrayList<>();
+        xpLore.add(ChatColor.GRAY + "Current Level: " + ChatColor.GOLD + level);
+        xpLore.add(ChatColor.GRAY + "XP: " + ChatColor.GOLD + currentXP + "/" + requiredXP);
+        xpLore.add("");
         
-        // Stats (left side)
-        ItemStack statsItem = createGuiItem(Material.DIAMOND_HORSE_ARMOR,
-                ChatColor.AQUA + "Mount Stats",
-                "",
-                ChatColor.GRAY + "Speed: " + ChatColor.WHITE + mountType.getSpeed(),
-                ChatColor.GRAY + "Jump: " + ChatColor.WHITE + mountType.getJump(),
-                ChatColor.GRAY + "Health: " + ChatColor.WHITE + mountType.getHealth());
-        inventory.setItem(20, statsItem);
+        // Create XP bar
+        StringBuilder xpBar = new StringBuilder(ChatColor.GRAY + "[");
+        int barLength = 20;
+        int filledBars = (int) (progress * barLength);
         
-        // Abilities (right side)
-        Map<String, MountType.MountAbility> abilities = mountType.getAbilities();
-        List<String> abilityLore = new ArrayList<>();
-        abilityLore.add("");
+        for (int i = 0; i < barLength; i++) {
+            if (i < filledBars) {
+                xpBar.append(ChatColor.GREEN + "■");
+            } else {
+                xpBar.append(ChatColor.RED + "■");
+            }
+        }
+        xpBar.append(ChatColor.GRAY + "]");
+        xpLore.add(xpBar.toString());
         
-        if (abilities.isEmpty()) {
-            abilityLore.add(ChatColor.GRAY + "None");
+        inventory.setItem(22, createGuiItem(
+                Material.EXPERIENCE_BOTTLE,
+                ChatColor.GOLD + "Mount Level Progress",
+                xpLore.toArray(new String[0])
+        ));
+        
+        // Add equip/unequip button
+        boolean isEquipped = mountManager.getActiveMount(playerUUID) != null && 
+                             mountManager.getActiveMount(playerUUID).getId().equals(mountId);
+        
+        if (isEquipped) {
+            inventory.setItem(31, createGuiItem(
+                    Material.BARRIER,
+                    ChatColor.RED + "Unequip Mount",
+                    ChatColor.GRAY + "Click to unequip this mount"
+            ));
         } else {
-            for (MountType.MountAbility ability : abilities.values()) {
-                String status = level >= ability.getMinLevel() ? ChatColor.GREEN + "✓ " : ChatColor.RED + "✗ ";
-                String type = ability.isPassive() ? " (Passive)" : "";
-                abilityLore.add(status + ChatColor.YELLOW + ability.getKey() + ChatColor.GRAY + type);
-                abilityLore.add(ChatColor.GRAY + "  Unlocked at level " + ability.getMinLevel());
+            inventory.setItem(31, createGuiItem(
+                    Material.SADDLE,
+                    ChatColor.GREEN + "Equip Mount",
+                    ChatColor.GRAY + "Click to equip this mount"
+            ));
+        }
+        
+        // Add decorative glass panes
+        for (int i = 0; i < 54; i++) {
+            if (inventory.getItem(i) == null) {
+                if (i % 9 == 0 || i % 9 == 8 || i < 9 || i >= 45) {
+                    inventory.setItem(i, createGuiItem(Material.PURPLE_STAINED_GLASS_PANE, " "));
+                }
             }
         }
         
-        ItemStack abilitiesItem = createGuiItem(Material.BLAZE_POWDER,
-                ChatColor.GOLD + "Mount Abilities",
-                abilityLore.toArray(new String[0]));
-        inventory.setItem(24, abilitiesItem);
+        // Add back button
+        inventory.setItem(49, createGuiItem(
+                Material.ARROW,
+                ChatColor.GOLD + "« Back to Mount List",
+                ChatColor.GRAY + "Return to your mount collection"
+        ));
         
-        // Control buttons
-        inventory.setItem(45, createGuiItem(Material.SADDLE, ChatColor.GREEN + "Summon This Mount", 
-                "Click to summon this mount"));
-        
-        inventory.setItem(49, createGuiItem(Material.ARROW, ChatColor.YELLOW + "Back", 
-                "Return to mount list"));
-        
-        inventory.setItem(53, createGuiItem(Material.BARRIER, ChatColor.RED + "Close", 
-                "Click to close this menu"));
-        
-        // Store active GUI reference
-        activeGUIs.put(playerUUID, inventory);
-        
-        // Open inventory for player
         player.openInventory(inventory);
+        
+        // Register this inventory with the inventory manager to prevent item theft
+        inventoryManager.registerInventory(player, guiTitle);
+        
+        // Play sound
+        player.playSound(player.getLocation(), Sound.ENTITY_HORSE_ARMOR, 0.5f, 1.0f);
     }
     
     /**
@@ -268,7 +289,7 @@ public class MountGUI {
         }
         
         // Handle main menu
-        if (inventoryTitle.equals(ChatColor.DARK_PURPLE + "Mount Manager")) {
+        if (inventoryTitle.equals(MAIN_GUI_TITLE)) {
             // Handle mount selection (slots 10-44)
             if (slot >= 10 && slot < 45 && slot % 9 != 0 && slot % 9 != 8) {
                 ItemStack clickedItem = activeGUIs.get(playerUUID).getItem(slot);
@@ -309,13 +330,16 @@ public class MountGUI {
                         player.sendMessage(ChatColor.RED + "You need to select a mount first!");
                     }
                     return true;
+                case 49: // Back
+                    openMainGUI(player);
+                    return true;
                 case 53: // Close
                     player.closeInventory();
                     return true;
             }
         }
         // Handle mount details GUI
-        else if (inventoryTitle.contains("Details")) {
+        else if (inventoryTitle.contains(DETAILS_GUI_TITLE_PREFIX)) {
             switch (slot) {
                 case 45: // Summon
                     String selectedMount = selectedMounts.get(playerUUID);
@@ -337,12 +361,20 @@ public class MountGUI {
     }
     
     /**
-     * Removes a player's GUI reference when they close the inventory
+     * Handles inventory close events
      * 
      * @param playerUUID The player's UUID
+     * @param inventoryTitle The title of the closed inventory
      */
-    public void handleInventoryClose(UUID playerUUID) {
+    public void handleInventoryClose(UUID playerUUID, String inventoryTitle) {
+        // Clean up
         activeGUIs.remove(playerUUID);
+        
+        // Unregister this inventory with the inventory manager
+        Player player = Bukkit.getPlayer(playerUUID);
+        if (player != null) {
+            inventoryManager.unregisterInventory(player, inventoryTitle);
+        }
     }
     
     /**
